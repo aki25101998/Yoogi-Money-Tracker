@@ -9,7 +9,7 @@ export const parseLoanInfo = async (text) => {
     }
 
     // UPDATE: Use the model proven to work in App.jsx
-    const MODEL_NAME = "gemini-1.5-flash-8b";
+    const MODEL_NAME = "gemini-2.5-flash";
     const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
 
     const prompt = `

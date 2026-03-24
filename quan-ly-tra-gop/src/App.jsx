@@ -458,7 +458,7 @@ export default function App() {
 
             const prompt = `Hãy đóng vai một Chuyên Gia Phân Tích Tài Chính Cấp Cao.\nDựa trên dữ liệu: ${JSON.stringify(summaryData)}.\nHãy lập BÁO CÁO TÀI CHÍNH NGẮN GỌN (tối đa 300 chữ) theo 3 phần:\n1. TỔNG QUAN DANH MỤC NỢ 📊\n2. KHUYẾN NGHỊ THANH KHOẢN 🎯\n3. GIẢI PHÁP TỐI ƯU DÒNG TIỀN 💡\nQUY TẮC TRÌNH BÀY (BẮT BUỘC TUÂN THỦ):\n⛔ CẤM TUYỆT ĐỐI dùng Markdown.\n⛔ KHÔNG dùng gạch đầu dòng.\n✅ Văn phong: Chuyên nghiệp, súc tích.\n✅ Chỉ dùng Emoji ở đầu câu.`;
             const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${import.meta.env.VITE_GENERATIVE_AI_KEY || ""}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GENERATIVE_AI_KEY || ""}`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

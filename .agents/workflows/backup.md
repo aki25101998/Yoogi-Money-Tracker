@@ -1,30 +1,30 @@
 ---
-description: Tự động backup (git commit + push GitHub) trước khi sửa code để đảm bảo an toàn
+description: Tự động backup (git commit + push GitHub) và Deploy lên Firebase
 ---
 
 // turbo-all
 
-## Trước khi sửa code
+## Trước khi sửa code / Khi cần sao lưu
 
-1. Kiểm tra trạng thái
-```powershell
-git status
-```
-
-2. Nếu có thay đổi chưa commit, lưu checkpoint
+1. Lưu toàn bộ thay đổi và đẩy lên GitHub
 ```powershell
 git add .
-git commit -m "Auto-backup truoc khi sua code"
+git commit -m "Auto-backup code"
 git push
 ```
 
-## Sau khi sửa code xong
+## Khi sửa code xong hoặc muốn Deploy
 
-3. Lưu checkpoint mới và push lên GitHub
+2. Build source code
 ```powershell
-git add .
-git commit -m "[Mo ta thay doi]"
-git push
+cd quan-ly-tra-gop
+npm run build
+```
+
+3. Deploy lên Firebase
+```powershell
+cd quan-ly-tra-gop
+npx firebase-tools deploy
 ```
 
 ## Khi user muốn quay lại bản trước
