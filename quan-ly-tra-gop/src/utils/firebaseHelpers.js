@@ -1,0 +1,260 @@
+import {
+    collection, addDoc, deleteDoc, updateDoc, doc,
+    onSnapshot, query, getDocs, setDoc, where, orderBy, writeBatch
+} from 'firebase/firestore';
+import { db, APP_ID } from '../config/firebase';
+import { ALL_DEFAULT_CATEGORIES } from './defaultCategories';
+
+// ============================================================
+// PATH HELPERS
+// ============================================================
+
+const getUserPath = (userId) => `artifacts/${APP_ID}/users/${userId}`;
+
+const getCollectionRef = (userId, collectionName) =>
+    collection(db, getUserPath(userId), collectionName);
+
+const getDocRef = (userId, collectionName, docId) =>
+    doc(db, getUserPath(userId), collectionName, docId);
+
+// ============================================================
+// CATEGORIES
+// ============================================================
+
+/**
+ * Seed default categories if the user has none
+ */
+export const seedDefaultCategories = async (userId) => {
+    const catRef = getCollectionRef(userId, 'categories');
+    const snapshot = await getDocs(catRef);
+
+    if (snapshot.size > 0) return false; // Already seeded
+
+    const batch = writeBatch(db);
+
+    for (const cat of ALL_DEFAULT_CATEGORIES) {
+        const docRef = doc(catRef); // Auto-generate ID
+        batch.set(docRef, {
+            ...cat,
+            createdAt: new Date().toISOString(),
+        });
+    }
+
+    await batch.commit();
+    return true;
+};
+
+/**
+ * Listen to categories in real-time
+ */
+export const subscribeCategories = (userId, callback) => {
+    const q = query(
+        getCollectionRef(userId, 'categories'),
+        orderBy('order', 'asc')
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        const categories = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        callback(categories);
+    });
+};
+
+/**
+ * Add a new category
+ */
+export const addCategory = async (userId, categoryData) => {
+    return await addDoc(getCollectionRef(userId, 'categories'), {
+        ...categoryData,
+        createdAt: new Date().toISOString(),
+    });
+};
+
+/**
+ * Update an existing category
+ */
+export const updateCategory = async (userId, categoryId, updates) => {
+    const docRef = getDocRef(userId, 'categories', categoryId);
+    return await updateDoc(docRef, {
+        ...updates,
+        updatedAt: new Date().toISOString(),
+    });
+};
+
+/**
+ * Delete a category
+ */
+export const deleteCategory = async (userId, categoryId) => {
+    return await deleteDoc(getDocRef(userId, 'categories', categoryId));
+};
+
+// ============================================================
+// TRANSACTIONS
+// ============================================================
+
+/**
+ * Listen to transactions in real-time
+ */
+export const subscribeTransactions = (userId, callback) => {
+    const q = query(getCollectionRef(userId, 'transactions'));
+
+    return onSnapshot(q, (snapshot) => {
+        const transactions = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        // Sort by date descending (newest first)
+        transactions.sort((a, b) => {
+            const dateCompare = b.date.localeCompare(a.date);
+            if (dateCompare !== 0) return dateCompare;
+            // Same date? Sort by createdAt descending
+            return (b.createdAt || '').localeCompare(a.createdAt || '');
+        });
+        callback(transactions);
+    });
+};
+
+/**
+ * Add a new transaction
+ */
+export const addTransaction = async (userId, transactionData) => {
+    return await addDoc(getCollectionRef(userId, 'transactions'), {
+        ...transactionData,
+        createdAt: new Date().toISOString(),
+    });
+};
+
+/**
+ * Update a transaction
+ */
+export const updateTransaction = async (userId, transactionId, updates) => {
+    const docRef = getDocRef(userId, 'transactions', transactionId);
+    return await updateDoc(docRef, {
+        ...updates,
+        updatedAt: new Date().toISOString(),
+    });
+};
+
+/**
+ * Delete a transaction
+ */
+export const deleteTransaction = async (userId, transactionId) => {
+    return await deleteDoc(getDocRef(userId, 'transactions', transactionId));
+};
+
+// ============================================================
+// AI MEMORY
+// ============================================================
+
+/**
+ * Listen to AI memory rules in real-time
+ */
+export const subscribeAIMemory = (userId, callback) => {
+    const q = query(getCollectionRef(userId, 'ai_memory'));
+
+    return onSnapshot(q, (snapshot) => {
+        const memories = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        memories.sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0));
+        callback(memories);
+    });
+};
+
+/**
+ * Get all AI memory rules (one-time fetch)
+ */
+export const getAIMemory = async (userId) => {
+    const snapshot = await getDocs(getCollectionRef(userId, 'ai_memory'));
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+    }));
+};
+
+/**
+ * Add a new AI memory rule
+ */
+export const addAIMemory = async (userId, memoryData) => {
+    return await addDoc(getCollectionRef(userId, 'ai_memory'), {
+        ...memoryData,
+        usageCount: 0,
+        createdAt: new Date().toISOString(),
+    });
+};
+
+/**
+ * Update an AI memory rule
+ */
+export const updateAIMemory = async (userId, memoryId, updates) => {
+    const docRef = getDocRef(userId, 'ai_memory', memoryId);
+    return await updateDoc(docRef, {
+        ...updates,
+        updatedAt: new Date().toISOString(),
+    });
+};
+
+/**
+ * Delete an AI memory rule
+ */
+export const deleteAIMemory = async (userId, memoryId) => {
+    return await deleteDoc(getDocRef(userId, 'ai_memory', memoryId));
+};
+
+/**
+ * Increment usage count for a memory rule
+ */
+export const incrementMemoryUsage = async (userId, memoryId) => {
+    const docRef = getDocRef(userId, 'ai_memory', memoryId);
+    const snapshot = await getDocs(query(getCollectionRef(userId, 'ai_memory')));
+    const mem = snapshot.docs.find(d => d.id === memoryId);
+    if (mem) {
+        await updateDoc(docRef, {
+            usageCount: (mem.data().usageCount || 0) + 1,
+        });
+    }
+};
+
+/**
+ * Create or update AI memory from a user correction
+ * When user re-categorizes a transaction, AI learns from it
+ */
+export const learnFromCorrection = async (userId, keyword, categoryId, subcategoryId) => {
+    // Check if rule already exists for this keyword
+    const memories = await getAIMemory(userId);
+    const normalizedKeyword = keyword.toLowerCase().trim();
+
+    const existing = memories.find(m =>
+        m.keyword.toLowerCase().trim() === normalizedKeyword
+    );
+
+    if (existing) {
+        // Update existing rule
+        await updateAIMemory(userId, existing.id, {
+            categoryId,
+            subcategoryId,
+            source: 'auto',
+        });
+    } else {
+        // Create new rule
+        await addAIMemory(userId, {
+            keyword: normalizedKeyword,
+            categoryId,
+            subcategoryId,
+            source: 'auto',
+        });
+    }
+};
+
+// ============================================================
+// INSTALLMENTS (Keep existing path structure)
+// ============================================================
+
+export const getInstallmentsRef = (userId) =>
+    getCollectionRef(userId, 'installments');
+
+export const getInstallmentDocRef = (userId, docId) =>
+    getDocRef(userId, 'installments', docId);
