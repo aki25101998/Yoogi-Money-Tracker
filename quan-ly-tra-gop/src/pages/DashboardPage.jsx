@@ -1,33 +1,33 @@
 import React, { useState, useMemo } from 'react';
 import {
-    TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight,
-    CreditCard, PieChart as PieChartIcon, Sparkles, Loader2, Plus, Pencil,
-    Filter, Calendar, X
+    Wallet, ArrowUpRight, ArrowDownRight, CreditCard,
+    PieChart as PieChartIcon, Sparkles, Loader2, Plus, Pencil,
+    Filter, Calendar, ChevronDown, Check, Info
 } from 'lucide-react';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
 import { categorizeTransaction } from '../utils/aiCategorizer';
 import { addTransaction, incrementMemoryUsage } from '../utils/firebaseHelpers';
 import TransactionModal from '../components/modals/TransactionModal';
 
-const COLORS = ['#10b981', '#f43f5e', '#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6'];
+const COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#2dd4bf', '#fb923c', '#94a3b8'];
 
 const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, installmentItems }) => {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-    // --- AI Input State ---
+    // --- State ---
     const [aiInput, setAiInput] = useState('');
     const [isAIProcessing, setIsAIProcessing] = useState(false);
     const [aiStatus, setAiStatus] = useState(null);
 
-    // --- Modal State ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
 
-    // --- Filters ---
-    const [timeFilter, setTimeFilter] = useState('month'); // today, week, month, year, custom
+    const [timeFilter, setTimeFilter] = useState('month'); 
     const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
+
+    const [chartType, setChartType] = useState('expense'); // 'expense' or 'income'
 
     // --- Date Helpers ---
     const getStartOfWeek = (d) => {
@@ -37,42 +37,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
         return new Date(date.setDate(diff)).setHours(0,0,0,0);
     };
 
-    // --- Filter Logic ---
-    const filteredTransactions = useMemo(() => {
-        const todayStr = now.toISOString().split('T')[0];
-        const currentYear = `${now.getFullYear()}`;
-        const startOfWeek = getStartOfWeek(now);
-
-        return transactions.filter(t => {
-            if (!t.date) return false;
-            const tDate = new Date(t.date);
-
-            switch (timeFilter) {
-                case 'today':
-                    return t.date === todayStr;
-                case 'week':
-                    return tDate.getTime() >= startOfWeek && tDate.getTime() <= now.getTime();
-                case 'month':
-                    return t.date.startsWith(currentMonth);
-                case 'year':
-                    return t.date.startsWith(currentYear);
-                case 'custom':
-                    if (customDateRange.start && t.date < customDateRange.start) return false;
-                    if (customDateRange.end && t.date > customDateRange.end) return false;
-                    return true;
-                default:
-                    return true;
-            }
-        });
-    }, [transactions, timeFilter, customDateRange, currentMonth, now]);
-
-    // --- Stats ---
-    const summaryStats = useMemo(() => {
-        const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
-        const expense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
-        return { income, expense, balance: income - expense };
-    }, [filteredTransactions]);
-
+    // --- Calculations ---
     const walletBalances = useMemo(() => {
         const balances = {};
         wallets?.forEach(w => { balances[w.id] = { name: w.name, icon: w.icon, balance: 0 }; });
@@ -85,24 +50,60 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
         return Object.values(balances);
     }, [transactions, wallets]);
 
-    // Top categories for Pie Chart
+    const totalBalance = useMemo(() => walletBalances.reduce((sum, w) => sum + w.balance, 0), [walletBalances]);
+
+    const filteredTransactions = useMemo(() => {
+        const todayStr = now.toISOString().split('T')[0];
+        const currentYear = `${now.getFullYear()}`;
+        const startOfWeek = getStartOfWeek(now);
+
+        return transactions.filter(t => {
+            if (!t.date) return false;
+            const tDate = new Date(t.date);
+
+            switch (timeFilter) {
+                case 'today': return t.date === todayStr;
+                case 'week': return tDate.getTime() >= startOfWeek && tDate.getTime() <= now.getTime();
+                case 'month': return t.date.startsWith(currentMonth);
+                case 'year': return t.date.startsWith(currentYear);
+                case 'custom':
+                    if (customDateRange.start && t.date < customDateRange.start) return false;
+                    if (customDateRange.end && t.date > customDateRange.end) return false;
+                    return true;
+                default: return true;
+            }
+        });
+    }, [transactions, timeFilter, customDateRange, currentMonth, now]);
+
+    const summaryStats = useMemo(() => {
+        const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
+        const expense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
+        return { income, expense, balance: income - expense };
+    }, [filteredTransactions]);
+
     const pieChartData = useMemo(() => {
-        const filteredExpenses = filteredTransactions.filter(t => t.type === 'expense');
+        const filteredByType = filteredTransactions.filter(t => t.type === chartType);
+        const totalAmount = filteredByType.reduce((sum, t) => sum + (t.amount || 0), 0);
 
         const catMap = {};
-        filteredExpenses.forEach(t => {
+        filteredByType.forEach(t => {
             const cat = categories.find(c => c.id === t.categoryId);
             const catName = cat ? cat.name : 'Chưa phân loại';
-            catMap[catName] = (catMap[catName] || 0) + (t.amount || 0);
+            const catIcon = cat ? cat.icon : '❓';
+            if (!catMap[catName]) catMap[catName] = { name: catName, icon: catIcon, value: 0 };
+            catMap[catName].value += (t.amount || 0);
         });
 
-        return Object.entries(catMap)
-            .map(([name, value]) => ({ name, value }))
+        return Object.values(catMap)
             .sort((a, b) => b.value - a.value)
-            .slice(0, 8); // top 8 to prevent chart clutter
-    }, [filteredTransactions, categories]);
+            .map(item => ({
+                ...item,
+                percent: totalAmount > 0 ? (item.value / totalAmount) * 100 : 0
+            }))
+            .slice(0, 8); 
+    }, [filteredTransactions, categories, chartType]);
 
-    const recentTransactions = useMemo(() => filteredTransactions.slice(0, 8), [filteredTransactions]);
+    const recentTransactions = useMemo(() => filteredTransactions.slice(0, 5), [filteredTransactions]);
 
     const installmentStats = useMemo(() => {
         const active = installmentItems.filter(item => {
@@ -172,8 +173,12 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
         if (active && payload && payload.length) {
             return (
                 <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-lg border border-slate-100 dark:border-slate-700">
-                    <p className="font-bold text-slate-800 dark:text-white">{payload[0].name}</p>
-                    <p className="text-rose-600 dark:text-rose-400 font-medium">{formatCurrency(payload[0].value)}</p>
+                    <p className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        {payload[0].payload.icon} {payload[0].name}
+                    </p>
+                    <p className={`font-medium ${chartType === 'income' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {formatCurrency(payload[0].value)}
+                    </p>
                 </div>
             );
         }
@@ -181,243 +186,261 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
     };
 
     return (
-        <div className="space-y-6">
-            {/* Input Section (Moved from Transactions) */}
-            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl p-5 border border-emerald-200/50 dark:border-emerald-800/30 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-emerald-200/50 to-transparent dark:from-emerald-500/10 rounded-full -translate-y-16 translate-x-16" />
-                
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center relative z-10">
-                    <div className="flex-1 w-full">
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className="bg-emerald-100 dark:bg-emerald-800/50 p-1.5 rounded-lg">
-                                <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                            </div>
-                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200">Nhập nhanh bằng AI</span>
-                        </div>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={aiInput}
-                                onChange={(e) => setAiInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAISubmit()}
-                                placeholder="Vd: ăn sáng 50k, grab 30k, lương 15 triệu..."
-                                className="flex-1 px-4 py-3 bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800/50 rounded-xl text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                                disabled={isAIProcessing}
-                            />
-                            <button
-                                onClick={handleAISubmit}
-                                disabled={isAIProcessing || !aiInput.trim()}
-                                className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition-all disabled:opacity-50"
-                            >
-                                {isAIProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Ghi'}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="hidden sm:block w-px h-16 bg-emerald-200 dark:bg-emerald-800/50 mx-2" />
-
-                    <button
-                        onClick={() => { setEditingTransaction(null); setIsModalOpen(true); }}
-                        className="w-full sm:w-auto mt-4 sm:mt-0 flex items-center justify-center gap-2 px-6 py-4 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-white rounded-xl font-bold shadow-sm border border-slate-200 dark:border-slate-700 transition-all"
-                    >
-                        <Plus className="w-5 h-5 text-emerald-500" />
-                        <span className="whitespace-nowrap">Thêm thủ công</span>
-                    </button>
+        <div className="space-y-6 pb-20 relative min-h-screen">
+            
+            {/* 1. AI Input Bar (Compact) */}
+            <div className="bg-white dark:bg-slate-800 rounded-full p-2 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-5 h-5 text-emerald-500" />
                 </div>
+                <input
+                    type="text"
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAISubmit()}
+                    placeholder="Nhập nhanh: ăn sáng 50k..."
+                    className="flex-1 bg-transparent border-none focus:outline-none text-sm text-slate-700 dark:text-slate-200"
+                    disabled={isAIProcessing}
+                />
+                <button
+                    onClick={handleAISubmit}
+                    disabled={isAIProcessing || !aiInput.trim()}
+                    className="w-10 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center disabled:opacity-50 transition-colors"
+                >
+                    {isAIProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-5 h-5" />}
+                </button>
+            </div>
+            {aiStatus && (
+                <div className={`px-4 py-2 rounded-xl text-xs font-medium text-center ${aiStatus.type === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                    {aiStatus.message}
+                </div>
+            )}
 
-                {aiStatus && (
-                    <div className={`mt-3 px-4 py-2.5 rounded-xl text-sm font-medium ${
-                        aiStatus.type === 'success'
-                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                            : 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300'
-                    }`}>
-                        {aiStatus.message}
-                    </div>
-                )}
+            {/* 2. Total Balance & Wallets */}
+            <div className="text-center pt-2">
+                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1">Tổng số dư</p>
+                <h1 className="text-4xl font-bold text-slate-800 dark:text-white tracking-tight">
+                    {formatCurrency(totalBalance)}
+                </h1>
             </div>
 
-            {/* Header & Filter Bar */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm relative z-20">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                            <Filter className="w-5 h-5 text-indigo-500" />
-                            Lịch sử Giao dịch
-                        </h2>
-                    </div>
-
-                    {/* Filter Controls */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        {['today', 'week', 'month', 'year', 'custom'].map(filter => (
-                            <button
-                                key={filter}
-                                onClick={() => setTimeFilter(filter)}
-                                className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
-                                    timeFilter === filter 
-                                        ? 'bg-indigo-600 text-white shadow-md' 
-                                        : 'bg-slate-50 dark:bg-slate-900 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
-                                }`}
-                            >
-                                {filter === 'today' && 'Hôm nay'}
-                                {filter === 'week' && 'Tuần này'}
-                                {filter === 'month' && 'Tháng này'}
-                                {filter === 'year' && 'Năm nay'}
-                                {filter === 'custom' && 'Tùy chỉnh'}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Custom Date Range Picker */}
-                {timeFilter === 'custom' && (
-                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Từ:</span>
-                            <input type="date" value={customDateRange.start} onChange={e => setCustomDateRange({...customDateRange, start: e.target.value})} className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:border-indigo-500" />
+            <div className="flex overflow-x-auto gap-3 pb-2 snap-x hide-scrollbar">
+                {walletBalances.map((w, i) => (
+                    <div key={i} className="min-w-[140px] flex-shrink-0 snap-start bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-lg">{w.icon}</span>
+                            <Pencil className="w-3.5 h-3.5 text-slate-300" />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Đến:</span>
-                            <input type="date" value={customDateRange.end} onChange={e => setCustomDateRange({...customDateRange, end: e.target.value})} className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:border-indigo-500" />
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Summary Banner */}
-            <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 text-center shadow-sm">
-                    <p className="text-xs font-bold text-slate-400 uppercase mb-1">Thu nhập</p>
-                    <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">+{formatCurrency(summaryStats.income)}</p>
-                </div>
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 text-center shadow-sm">
-                    <p className="text-xs font-bold text-slate-400 uppercase mb-1">Chi tiêu</p>
-                    <p className="text-lg font-bold text-rose-600 dark:text-rose-400">-{formatCurrency(summaryStats.expense)}</p>
-                </div>
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 text-center shadow-sm">
-                    <p className="text-xs font-bold text-slate-400 uppercase mb-1">Cân đối</p>
-                    <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(summaryStats.balance)}</p>
-                </div>
-            </div>
-
-            {/* Wallets & Installments Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-
-                {/* Wallets Overview */}
-                {walletBalances.slice(0, 2).map((w, i) => (
-                    <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-center">
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl">{w.icon}</span>
-                            <span className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">{w.name}</span>
-                        </div>
-                        <p className="text-xl font-bold text-slate-800 dark:text-white">{formatCurrency(w.balance)}</p>
+                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate mb-1">{w.name}</p>
+                        <p className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(w.balance)}</p>
                     </div>
                 ))}
+            </div>
 
-                {/* Installments */}
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Trả góp/tháng</span>
-                        <div className="bg-indigo-50 dark:bg-indigo-900/30 p-2 rounded-xl">
-                            <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            {/* 3. Time Filter & Net Change Card */}
+            <div>
+                <div className="relative inline-block mb-3">
+                    <select
+                        value={timeFilter}
+                        onChange={(e) => setTimeFilter(e.target.value)}
+                        className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-bold py-2 pl-4 pr-10 rounded-full focus:outline-none focus:ring-2 focus:ring-cyan-500/20 shadow-sm cursor-pointer"
+                    >
+                        <option value="today">Hôm nay</option>
+                        <option value="week">Tuần này</option>
+                        <option value="month">Tháng này</option>
+                        <option value="year">Năm nay</option>
+                        <option value="custom">Tùy chỉnh</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                        <ChevronDown className="w-4 h-4" />
+                    </div>
+                </div>
+
+                {timeFilter === 'custom' && (
+                    <div className="mb-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap gap-2 text-sm">
+                        <input type="date" value={customDateRange.start} onChange={e => setCustomDateRange({...customDateRange, start: e.target.value})} className="px-2 py-1 border rounded" />
+                        <span className="self-center">-</span>
+                        <input type="date" value={customDateRange.end} onChange={e => setCustomDateRange({...customDateRange, end: e.target.value})} className="px-2 py-1 border rounded" />
+                    </div>
+                )}
+
+                {/* Net Change Card - Themed like the image */}
+                <div className="bg-gradient-to-br from-cyan-100 to-teal-50 dark:from-cyan-900/30 dark:to-teal-900/20 rounded-[28px] p-6 shadow-sm border border-white/50 dark:border-cyan-800/30">
+                    <div className="flex justify-between items-start mb-6">
+                        <div>
+                            <p className="text-slate-600 dark:text-slate-300 font-bold mb-1 flex items-center gap-1">
+                                Thay đổi ròng <Info className="w-4 h-4 text-slate-400" />
+                            </p>
+                            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
+                                {formatCurrency(summaryStats.balance)}
+                            </h2>
                         </div>
                     </div>
-                    <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(installmentStats.monthlyTotal)}</p>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 text-center">
+                            <p className="text-rose-500 text-xs font-bold uppercase mb-1">Chi phí</p>
+                            <p className="text-rose-600 dark:text-rose-400 font-bold flex items-center justify-center gap-1">
+                                <ArrowDownRight className="w-4 h-4" />
+                                {formatCurrency(summaryStats.expense)}
+                            </p>
+                        </div>
+                        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 text-center">
+                            <p className="text-emerald-500 text-xs font-bold uppercase mb-1">Thu nhập</p>
+                            <p className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center gap-1">
+                                <ArrowUpRight className="w-4 h-4" />
+                                {formatCurrency(summaryStats.income)}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Charts & Recent Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Pie Chart: Top Categories */}
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
-                        <PieChartIcon className="w-4 h-4 text-slate-400" />
-                        Cơ cấu chi tiêu tháng này
-                    </h3>
-                    {pieChartData.length === 0 ? (
-                        <div className="flex-1 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm py-10">
-                            Chưa có dữ liệu chi tiêu
-                        </div>
-                    ) : (
-                        <div className="flex-1 h-64 min-h-[250px]">
+            {/* 4. Chart Toggle & Donut Chart */}
+            <div className="bg-white dark:bg-slate-800 rounded-[28px] p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                
+                {/* Toggle */}
+                <div className="flex justify-center mb-6">
+                    <div className="bg-slate-100 dark:bg-slate-900 p-1 rounded-full flex">
+                        <button
+                            onClick={() => setChartType('expense')}
+                            className={`px-6 py-2 rounded-full text-sm font-bold transition-colors ${chartType === 'expense' ? 'bg-cyan-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                        >
+                            Chi phí
+                        </button>
+                        <button
+                            onClick={() => setChartType('income')}
+                            className={`px-6 py-2 rounded-full text-sm font-bold transition-colors ${chartType === 'income' ? 'bg-cyan-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                        >
+                            Thu nhập
+                        </button>
+                    </div>
+                </div>
+
+                {/* Donut Chart */}
+                {pieChartData.length === 0 ? (
+                    <div className="text-center py-12 text-slate-400">
+                        Chưa có dữ liệu {chartType === 'income' ? 'thu nhập' : 'chi phí'}
+                    </div>
+                ) : (
+                    <>
+                        <div className="h-64 mb-6 relative">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
                                         data={pieChartData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={90}
-                                        paddingAngle={2}
+                                        cx="50%" cy="50%"
+                                        innerRadius={70} outerRadius={100}
+                                        paddingAngle={3}
                                         dataKey="value"
-                                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
-                                            if (percent < 0.05) return null;
-                                            const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                                            const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
-                                            const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
-                                            return (
-                                                <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="11" fontWeight="bold">
-                                                    {`${(percent * 100).toFixed(0)}%`}
-                                                </text>
-                                            );
-                                        }}
-                                        labelLine={false}
+                                        stroke="none"
                                     >
                                         {pieChartData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
                                     <Tooltip content={<CustomTooltip />} />
-                                    <Legend 
-                                        verticalAlign="bottom" 
-                                        height={36} 
-                                        iconType="circle"
-                                        formatter={(value) => <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">{value}</span>}
-                                    />
                                 </PieChart>
                             </ResponsiveContainer>
+                            {/* Inner Donut Text */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span className="text-slate-400 text-xs font-bold uppercase mb-1">Tổng cộng</span>
+                                <span className="text-lg font-bold text-slate-800 dark:text-white">
+                                    {formatCurrency(summaryStats[chartType])}
+                                </span>
+                            </div>
                         </div>
-                    )}
-                </div>
 
-                {/* Recent Transactions */}
-                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
-                    <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
-                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Giao dịch gần đây</h3>
+                        {/* Progress Bars List */}
+                        <div className="space-y-4">
+                            {pieChartData.map((item, idx) => (
+                                <div key={idx} className="relative">
+                                    <div className="flex justify-between items-center mb-1 relative z-10">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm shadow-inner">
+                                                {item.icon}
+                                            </div>
+                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{item.name}</span>
+                                        </div>
+                                        <span className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(item.value)}</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                        <div 
+                                            className="h-full rounded-full transition-all duration-500"
+                                            style={{ 
+                                                width: `${Math.max(item.percent, 2)}%`, 
+                                                backgroundColor: COLORS[idx % COLORS.length] 
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="text-right mt-1">
+                                        <span className="text-[10px] font-bold text-slate-400">{item.percent.toFixed(1)}%</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {/* 5. Installments Section (Moved down) */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-xl">
+                        <CreditCard className="w-5 h-5 text-indigo-500" />
                     </div>
+                    <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase">Trả góp/tháng</p>
+                        <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(installmentStats.monthlyTotal)}</p>
+                    </div>
+                </div>
+                <div className="text-xs font-bold text-slate-500">
+                    {installmentStats.active} khoản
+                </div>
+            </div>
+
+            {/* 6. Recent Transactions */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Giao dịch gần đây</h3>
+                </div>
+                <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
                     {recentTransactions.length === 0 ? (
-                        <div className="px-5 py-12 text-center text-slate-400 dark:text-slate-500 text-sm flex-1">
-                            Chưa có giao dịch nào. Hãy thêm giao dịch đầu tiên!
+                        <div className="px-5 py-8 text-center text-slate-400 text-sm">
+                            Chưa có giao dịch.
                         </div>
                     ) : (
-                        <div className="divide-y divide-slate-50 dark:divide-slate-700/50 flex-1 overflow-y-auto max-h-[300px]">
-                            {recentTransactions.map(txn => {
-                                const cat = categories.find(c => c.id === txn.categoryId);
-                                const isIncome = txn.type === 'income';
-                                const wallet = wallets?.find(w => w.id === txn.walletId);
-                                
-                                return (
-                                    <div key={txn.id} className="px-5 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer" onClick={() => { setEditingTransaction(txn); setIsModalOpen(true); }}>
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${isIncome ? 'bg-emerald-50 dark:bg-emerald-900/30' : 'bg-rose-50 dark:bg-rose-900/30'}`}>
-                                            {cat?.icon || '❓'}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{txn.description}</p>
-                                            <p className="text-xs text-slate-400 dark:text-slate-500">
-                                                {wallet?.icon} {wallet?.name || 'Chưa rõ ví'} • {new Date(txn.date).toLocaleDateString('vi-VN')}
-                                            </p>
-                                        </div>
-                                        <span className={`text-sm font-bold whitespace-nowrap ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                            {isIncome ? '+' : '-'}{formatCurrency(txn.amount)}
-                                        </span>
-                                        <Pencil className="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        recentTransactions.map(txn => {
+                            const cat = categories.find(c => c.id === txn.categoryId);
+                            const isIncome = txn.type === 'income';
+                            return (
+                                <div key={txn.id} className="px-5 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer" onClick={() => { setEditingTransaction(txn); setIsModalOpen(true); }}>
+                                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg">
+                                        {cat?.icon || '❓'}
                                     </div>
-                                );
-                            })}
-                        </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{txn.description}</p>
+                                        <p className="text-xs text-slate-400 truncate">{cat?.name || 'Chưa phân loại'}</p>
+                                    </div>
+                                    <span className={`text-sm font-bold ${isIncome ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                        {isIncome ? '+' : '-'}{formatCurrency(txn.amount)}
+                                    </span>
+                                </div>
+                            );
+                        })
                     )}
                 </div>
             </div>
 
+            {/* Floating Action Button (FAB) */}
+            <button
+                onClick={() => { setEditingTransaction(null); setIsModalOpen(true); }}
+                className="fixed bottom-20 right-6 md:bottom-6 md:right-8 w-14 h-14 bg-slate-800 dark:bg-cyan-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-slate-400/30 dark:shadow-none hover:scale-105 active:scale-95 transition-all z-40"
+            >
+                <Plus className="w-6 h-6" />
+            </button>
+
+            {/* Modals */}
             <TransactionModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
