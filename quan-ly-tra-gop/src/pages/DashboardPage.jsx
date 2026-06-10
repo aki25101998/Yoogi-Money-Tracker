@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import {
     TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight,
-    CreditCard, PieChart as PieChartIcon, Sparkles, Loader2, Plus, Pencil
+    CreditCard, PieChart as PieChartIcon, Sparkles, Loader2, Plus, Pencil,
+    Filter, Calendar, X
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
@@ -24,13 +25,53 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
 
+    // --- Filters ---
+    const [timeFilter, setTimeFilter] = useState('month'); // today, week, month, year, custom
+    const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
+
+    // --- Date Helpers ---
+    const getStartOfWeek = (d) => {
+        const date = new Date(d);
+        const day = date.getDay();
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1); 
+        return new Date(date.setDate(diff)).setHours(0,0,0,0);
+    };
+
+    // --- Filter Logic ---
+    const filteredTransactions = useMemo(() => {
+        const todayStr = now.toISOString().split('T')[0];
+        const currentYear = `${now.getFullYear()}`;
+        const startOfWeek = getStartOfWeek(now);
+
+        return transactions.filter(t => {
+            if (!t.date) return false;
+            const tDate = new Date(t.date);
+
+            switch (timeFilter) {
+                case 'today':
+                    return t.date === todayStr;
+                case 'week':
+                    return tDate.getTime() >= startOfWeek && tDate.getTime() <= now.getTime();
+                case 'month':
+                    return t.date.startsWith(currentMonth);
+                case 'year':
+                    return t.date.startsWith(currentYear);
+                case 'custom':
+                    if (customDateRange.start && t.date < customDateRange.start) return false;
+                    if (customDateRange.end && t.date > customDateRange.end) return false;
+                    return true;
+                default:
+                    return true;
+            }
+        });
+    }, [transactions, timeFilter, customDateRange, currentMonth, now]);
+
     // --- Stats ---
-    const monthlyStats = useMemo(() => {
-        const monthTxns = transactions.filter(t => t.date?.startsWith(currentMonth));
-        const income = monthTxns.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
-        const expense = monthTxns.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
-        return { income, expense, balance: income - expense, count: monthTxns.length };
-    }, [transactions, currentMonth]);
+    const summaryStats = useMemo(() => {
+        const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
+        const expense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
+        return { income, expense, balance: income - expense };
+    }, [filteredTransactions]);
 
     const walletBalances = useMemo(() => {
         const balances = {};
@@ -46,12 +87,10 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
 
     // Top categories for Pie Chart
     const pieChartData = useMemo(() => {
-        const monthExpenses = transactions.filter(t =>
-            t.date?.startsWith(currentMonth) && t.type === 'expense'
-        );
+        const filteredExpenses = filteredTransactions.filter(t => t.type === 'expense');
 
         const catMap = {};
-        monthExpenses.forEach(t => {
+        filteredExpenses.forEach(t => {
             const cat = categories.find(c => c.id === t.categoryId);
             const catName = cat ? cat.name : 'Chưa phân loại';
             catMap[catName] = (catMap[catName] || 0) + (t.amount || 0);
@@ -61,9 +100,9 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value)
             .slice(0, 8); // top 8 to prevent chart clutter
-    }, [transactions, categories, currentMonth]);
+    }, [filteredTransactions, categories]);
 
-    const recentTransactions = useMemo(() => transactions.slice(0, 8), [transactions]);
+    const recentTransactions = useMemo(() => filteredTransactions.slice(0, 8), [filteredTransactions]);
 
     const installmentStats = useMemo(() => {
         const active = installmentItems.filter(item => {
@@ -197,19 +236,71 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
                 )}
             </div>
 
-            {/* Wallets & Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Balance (Combined) */}
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Wallet className="w-5 h-5 text-emerald-100" />
-                            <span className="text-emerald-100 text-xs font-bold uppercase tracking-wider">Cân đối tháng</span>
-                        </div>
-                        <p className="text-3xl font-bold tracking-tight">{formatCurrency(monthlyStats.balance)}</p>
+            {/* Header & Filter Bar */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm relative z-20">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <Filter className="w-5 h-5 text-indigo-500" />
+                            Lịch sử Giao dịch
+                        </h2>
+                    </div>
+
+                    {/* Filter Controls */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {['today', 'week', 'month', 'year', 'custom'].map(filter => (
+                            <button
+                                key={filter}
+                                onClick={() => setTimeFilter(filter)}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                                    timeFilter === filter 
+                                        ? 'bg-indigo-600 text-white shadow-md' 
+                                        : 'bg-slate-50 dark:bg-slate-900 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                }`}
+                            >
+                                {filter === 'today' && 'Hôm nay'}
+                                {filter === 'week' && 'Tuần này'}
+                                {filter === 'month' && 'Tháng này'}
+                                {filter === 'year' && 'Năm nay'}
+                                {filter === 'custom' && 'Tùy chỉnh'}
+                            </button>
+                        ))}
                     </div>
                 </div>
+
+                {/* Custom Date Range Picker */}
+                {timeFilter === 'custom' && (
+                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Từ:</span>
+                            <input type="date" value={customDateRange.start} onChange={e => setCustomDateRange({...customDateRange, start: e.target.value})} className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:border-indigo-500" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Đến:</span>
+                            <input type="date" value={customDateRange.end} onChange={e => setCustomDateRange({...customDateRange, end: e.target.value})} className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:border-indigo-500" />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Summary Banner */}
+            <div className="grid grid-cols-3 gap-4">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 text-center shadow-sm">
+                    <p className="text-xs font-bold text-slate-400 uppercase mb-1">Thu nhập</p>
+                    <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">+{formatCurrency(summaryStats.income)}</p>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 text-center shadow-sm">
+                    <p className="text-xs font-bold text-slate-400 uppercase mb-1">Chi tiêu</p>
+                    <p className="text-lg font-bold text-rose-600 dark:text-rose-400">-{formatCurrency(summaryStats.expense)}</p>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 text-center shadow-sm">
+                    <p className="text-xs font-bold text-slate-400 uppercase mb-1">Cân đối</p>
+                    <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(summaryStats.balance)}</p>
+                </div>
+            </div>
+
+            {/* Wallets & Installments Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
                 {/* Wallets Overview */}
                 {walletBalances.slice(0, 2).map((w, i) => (
