@@ -1,0 +1,158 @@
+import React, { useState, useEffect } from 'react';
+import { X, ArrowDownRight, ArrowUpRight, Check } from 'lucide-react';
+import { formatCurrency } from '../../utils/formatters';
+
+const TransactionModal = ({ isOpen, onClose, onSave, categories, wallets, initialData = null }) => {
+    const defaultWallet = wallets?.find(w => w.isDefault)?.id || wallets?.[0]?.id || '';
+    
+    const [form, setForm] = useState({
+        type: 'expense',
+        amount: '',
+        description: '',
+        categoryId: '',
+        subcategoryId: '',
+        date: new Date().toISOString().split('T')[0],
+        walletId: defaultWallet,
+    });
+
+    useEffect(() => {
+        if (isOpen) {
+            if (initialData) {
+                setForm({
+                    type: initialData.type || 'expense',
+                    amount: initialData.amount || '',
+                    description: initialData.description || '',
+                    categoryId: initialData.categoryId || '',
+                    subcategoryId: initialData.subcategoryId || '',
+                    date: initialData.date || new Date().toISOString().split('T')[0],
+                    walletId: initialData.walletId || defaultWallet,
+                });
+            } else {
+                setForm({
+                    type: 'expense',
+                    amount: '',
+                    description: '',
+                    categoryId: '',
+                    subcategoryId: '',
+                    date: new Date().toISOString().split('T')[0],
+                    walletId: defaultWallet,
+                });
+            }
+        }
+    }, [isOpen, initialData, defaultWallet]);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave({
+            ...form,
+            amount: parseFloat(form.amount) || 0,
+        });
+    };
+
+    const getCategoriesByType = (type) => categories.filter(c => c.type === type);
+    const getSubcategories = (categoryId) => {
+        const cat = categories.find(c => c.id === categoryId);
+        return cat?.subcategories || [];
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+                <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">
+                        {initialData ? 'Sửa giao dịch' : 'Thêm giao dịch'}
+                    </h3>
+                    <button onClick={onClose}><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
+                </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    {/* Type Toggle */}
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setForm({ ...form, type: 'expense', categoryId: '', subcategoryId: '' })}
+                            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${form.type === 'expense' ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border-2 border-rose-300 dark:border-rose-700' : 'bg-slate-50 dark:bg-slate-900 text-slate-400 border-2 border-transparent'}`}
+                        >
+                            <ArrowDownRight className="w-4 h-4 inline mr-1" /> Chi tiêu
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setForm({ ...form, type: 'income', categoryId: '', subcategoryId: '' })}
+                            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${form.type === 'income' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-300 dark:border-emerald-700' : 'bg-slate-50 dark:bg-slate-900 text-slate-400 border-2 border-transparent'}`}
+                        >
+                            <ArrowUpRight className="w-4 h-4 inline mr-1" /> Thu nhập
+                        </button>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Mô tả</label>
+                        <input type="text" required value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none" />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Số tiền</label>
+                        <input type="number" required value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none" />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Ngày</label>
+                        <input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none" />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Ví tiền</label>
+                        <select
+                            required
+                            value={form.walletId}
+                            onChange={e => setForm({ ...form, walletId: e.target.value })}
+                            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none"
+                        >
+                            <option value="">Chọn ví...</option>
+                            {wallets?.map(w => (
+                                <option key={w.id} value={w.id}>{w.icon} {w.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Danh mục</label>
+                        <select
+                            value={form.categoryId}
+                            onChange={e => setForm({ ...form, categoryId: e.target.value, subcategoryId: '' })}
+                            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none"
+                        >
+                            <option value="">Chọn danh mục...</option>
+                            {getCategoriesByType(form.type).map(c => (
+                                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {form.categoryId && getSubcategories(form.categoryId).length > 0 && (
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Danh mục con</label>
+                            <select
+                                value={form.subcategoryId}
+                                onChange={e => setForm({ ...form, subcategoryId: e.target.value })}
+                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none"
+                            >
+                                <option value="">Chọn mục con...</option>
+                                {getSubcategories(form.categoryId).map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    <button type="submit" className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl mt-2 shadow-lg shadow-emerald-200 dark:shadow-none transition-all flex items-center justify-center gap-2">
+                        <Check className="w-5 h-5" />
+                        {initialData ? 'Lưu thay đổi' : 'Lưu giao dịch'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+export default TransactionModal;

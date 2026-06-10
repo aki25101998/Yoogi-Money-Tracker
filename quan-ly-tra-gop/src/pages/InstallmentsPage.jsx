@@ -19,7 +19,7 @@ import InstallmentItem from '../components/InstallmentItem';
 import AddEditModal from '../components/modals/AddEditModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 
-const InstallmentsPage = ({ user, items, isLoading }) => {
+const InstallmentsPage = ({ user, items, payers, isLoading }) => {
     // Modal States
     const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
@@ -51,9 +51,8 @@ const InstallmentsPage = ({ user, items, isLoading }) => {
 
     // --- Derived State ---
     const uniqueOwners = useMemo(() => {
-        const owners = new Set(items.map(i => i.owner || 'Tôi'));
-        return ['all', ...Array.from(owners)];
-    }, [items]);
+        return ['all', ...(payers?.map(p => p.name) || [])];
+    }, [payers]);
 
     const filteredItems = useMemo(() => {
         let result = items;
@@ -422,7 +421,7 @@ const InstallmentsPage = ({ user, items, isLoading }) => {
                 onClose={() => setIsAddEditModalOpen(false)}
                 onSave={handleSaveItem}
                 editingItem={editingItem}
-                uniqueOwners={uniqueOwners}
+                uniqueOwners={payers}
             />
             <ConfirmModal
                 isOpen={confirmModalState.isOpen}

@@ -18,8 +18,7 @@ import Layout from './components/Layout';
 import DashboardPage from './pages/DashboardPage';
 import TransactionsPage from './pages/TransactionsPage';
 import InstallmentsPage from './pages/InstallmentsPage';
-import CategoriesPage from './pages/CategoriesPage';
-import AINotesPage from './pages/AINotesPage';
+import SettingsPage from './pages/SettingsPage';
 
 // Helpers
 import {
@@ -27,6 +26,8 @@ import {
     subscribeCategories,
     subscribeTransactions,
     subscribeAIMemory,
+    subscribeWallets,
+    subscribePayers,
 } from './utils/firebaseHelpers';
 
 export default function App() {
@@ -39,6 +40,8 @@ export default function App() {
     const [transactions, setTransactions] = useState([]);
     const [categories, setCategories] = useState([]);
     const [aiMemories, setAiMemories] = useState([]);
+    const [wallets, setWallets] = useState([]);
+    const [payers, setPayers] = useState([]);
     const [isDataLoading, setIsDataLoading] = useState(true);
 
     // --- Navigation ---
@@ -84,6 +87,8 @@ export default function App() {
             setTransactions([]);
             setCategories([]);
             setAiMemories([]);
+            setWallets([]);
+            setPayers([]);
             setIsDataLoading(false);
             return;
         }
@@ -116,6 +121,12 @@ export default function App() {
         // Subscribe to AI Memory
         const unsubMem = subscribeAIMemory(user.uid, setAiMemories);
 
+        // Subscribe to Wallets
+        const unsubWallets = subscribeWallets(user.uid, setWallets);
+
+        // Subscribe to Payers
+        const unsubPayers = subscribePayers(user.uid, setPayers);
+
         // Mark loading as done after a short delay to allow subscriptions to initialize
         const timer = setTimeout(() => setIsDataLoading(false), 500);
 
@@ -124,6 +135,8 @@ export default function App() {
             unsubCats();
             unsubTxns();
             unsubMem();
+            unsubWallets();
+            unsubPayers();
             clearTimeout(timer);
         };
     }, [user]);
@@ -241,6 +254,7 @@ export default function App() {
                         transactions={transactions}
                         categories={categories}
                         aiMemories={aiMemories}
+                        wallets={wallets}
                     />
                 );
             case 'installments':
@@ -248,22 +262,18 @@ export default function App() {
                     <InstallmentsPage
                         user={user}
                         items={installments}
+                        payers={payers}
                         isLoading={false}
                     />
                 );
-            case 'categories':
+            case 'settings':
                 return (
-                    <CategoriesPage
+                    <SettingsPage
                         user={user}
                         categories={categories}
-                    />
-                );
-            case 'ai-notes':
-                return (
-                    <AINotesPage
-                        user={user}
                         aiMemories={aiMemories}
-                        categories={categories}
+                        wallets={wallets}
+                        payers={payers}
                     />
                 );
             default:

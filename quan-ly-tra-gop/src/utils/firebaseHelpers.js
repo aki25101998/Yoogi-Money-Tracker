@@ -3,7 +3,7 @@ import {
     onSnapshot, query, getDocs, setDoc, where, orderBy, writeBatch
 } from 'firebase/firestore';
 import { db, APP_ID } from '../config/firebase';
-import { ALL_DEFAULT_CATEGORIES } from './defaultCategories';
+import { DEFAULT_CATEGORIES } from './defaultCategories';
 
 // ============================================================
 // PATH HELPERS
@@ -32,7 +32,7 @@ export const seedDefaultCategories = async (userId) => {
 
     const batch = writeBatch(db);
 
-    for (const cat of ALL_DEFAULT_CATEGORIES) {
+    for (const cat of DEFAULT_CATEGORIES) {
         const docRef = doc(catRef); // Auto-generate ID
         batch.set(docRef, {
             ...cat,
@@ -41,6 +41,29 @@ export const seedDefaultCategories = async (userId) => {
     }
 
     await batch.commit();
+
+    // Also seed a default wallet if wallets are empty
+    const walletRef = getCollectionRef(userId, 'wallets');
+    const walletSnapshot = await getDocs(walletRef);
+    if (walletSnapshot.size === 0) {
+        await addDoc(walletRef, {
+            name: 'Tiền mặt',
+            icon: '💵',
+            isDefault: true,
+            createdAt: new Date().toISOString(),
+        });
+    }
+
+    // Also seed a default payer if payers are empty
+    const payerRef = getCollectionRef(userId, 'payers');
+    const payerSnapshot = await getDocs(payerRef);
+    if (payerSnapshot.size === 0) {
+        await addDoc(payerRef, {
+            name: 'Tôi',
+            createdAt: new Date().toISOString(),
+        });
+    }
+
     return true;
 };
 
@@ -258,3 +281,71 @@ export const getInstallmentsRef = (userId) =>
 
 export const getInstallmentDocRef = (userId, docId) =>
     getDocRef(userId, 'installments', docId);
+
+// ============================================================
+// WALLETS
+// ============================================================
+
+export const subscribeWallets = (userId, callback) => {
+    const q = query(getCollectionRef(userId, 'wallets'));
+    return onSnapshot(q, (snapshot) => {
+        const wallets = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        callback(wallets);
+    });
+};
+
+export const addWallet = async (userId, walletData) => {
+    return await addDoc(getCollectionRef(userId, 'wallets'), {
+        ...walletData,
+        createdAt: new Date().toISOString(),
+    });
+};
+
+export const updateWallet = async (userId, walletId, updates) => {
+    const docRef = getDocRef(userId, 'wallets', walletId);
+    return await updateDoc(docRef, {
+        ...updates,
+        updatedAt: new Date().toISOString(),
+    });
+};
+
+export const deleteWallet = async (userId, walletId) => {
+    return await deleteDoc(getDocRef(userId, 'wallets', walletId));
+};
+
+// ============================================================
+// PAYERS (Người trả góp)
+// ============================================================
+
+export const subscribePayers = (userId, callback) => {
+    const q = query(getCollectionRef(userId, 'payers'));
+    return onSnapshot(q, (snapshot) => {
+        const payers = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        callback(payers);
+    });
+};
+
+export const addPayer = async (userId, payerData) => {
+    return await addDoc(getCollectionRef(userId, 'payers'), {
+        ...payerData,
+        createdAt: new Date().toISOString(),
+    });
+};
+
+export const updatePayer = async (userId, payerId, updates) => {
+    const docRef = getDocRef(userId, 'payers', payerId);
+    return await updateDoc(docRef, {
+        ...updates,
+        updatedAt: new Date().toISOString(),
+    });
+};
+
+export const deletePayer = async (userId, payerId) => {
+    return await deleteDoc(getDocRef(userId, 'payers', payerId));
+};

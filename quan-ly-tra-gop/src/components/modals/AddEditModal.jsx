@@ -149,8 +149,17 @@ const AddEditModal = ({
 
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Người trả</label>
-                        <input type="text" list="owners" required className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-indigo-500 focus:outline-none" value={formData.owner} onChange={e => setFormData({ ...formData, owner: e.target.value })} />
-                        <datalist id="owners">{uniqueOwners && uniqueOwners.filter(o => o !== 'all').map(o => <option key={o} value={o} />)}<option value="Tôi" /><option value="Vợ" /><option value="Chồng" /></datalist>
+                        <select
+                            required
+                            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-indigo-500 focus:outline-none"
+                            value={formData.owner}
+                            onChange={e => setFormData({ ...formData, owner: e.target.value })}
+                        >
+                            <option value="">Chọn người trả...</option>
+                            {uniqueOwners && uniqueOwners.map(o => (
+                                <option key={o.id} value={o.name}>{o.name}</option>
+                            ))}
+                        </select>
                     </div>
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Tên món đồ</label>

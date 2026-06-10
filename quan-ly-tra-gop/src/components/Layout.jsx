@@ -1,15 +1,22 @@
 import React from 'react';
 import {
-    LayoutDashboard, ArrowLeftRight, CreditCard, Tags, Brain,
-    Moon, Sun, LogOut, User, ChevronLeft, ChevronRight
+    LayoutDashboard,
+    CreditCard,
+    Settings,
+    ArrowRightLeft,
+    LogOut,
+    Moon,
+    Sun,
+    User,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 
 const NAV_ITEMS = [
     { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
-    { id: 'transactions', label: 'Giao dịch', icon: ArrowLeftRight },
+    { id: 'transactions', label: 'Giao dịch', icon: ArrowRightLeft },
     { id: 'installments', label: 'Trả góp', icon: CreditCard },
-    { id: 'categories', label: 'Danh mục', icon: Tags },
-    { id: 'ai-notes', label: 'AI Ghi chú', icon: Brain },
+    { id: 'settings', label: 'Cài đặt', icon: Settings },
 ];
 
 const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onToggleTheme }) => {

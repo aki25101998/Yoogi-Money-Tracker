@@ -8,7 +8,7 @@ import {
 } from '../utils/firebaseHelpers';
 import ConfirmModal from '../components/modals/ConfirmModal';
 
-const AINotesPage = ({ user, aiMemories, categories }) => {
+const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
     // Modal
     const [editModal, setEditModal] = useState({ isOpen: false, mode: 'add', data: null });
     const [formKeyword, setFormKeyword] = useState('');
@@ -109,23 +109,35 @@ const AINotesPage = ({ user, aiMemories, categories }) => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                        <Brain className="w-6 h-6 text-purple-500" />
-                        AI Ghi chú
-                    </h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Bộ nhớ học của AI — giúp AI phân loại giao dịch chính xác hơn
-                    </p>
+            {!hideHeader && (
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <Brain className="w-6 h-6 text-purple-500" />
+                            AI Ghi chú
+                        </h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                            Bộ nhớ học của AI — giúp AI phân loại giao dịch chính xác hơn
+                        </p>
+                    </div>
+                    <button
+                        onClick={openAdd}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-200 dark:shadow-none transition-all hover:-translate-y-0.5"
+                    >
+                        <Plus className="w-4 h-4" /> Ghi chú giùm AI
+                    </button>
                 </div>
-                <button
-                    onClick={openAdd}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-200 dark:shadow-none transition-all hover:-translate-y-0.5"
-                >
-                    <Plus className="w-4 h-4" /> Ghi chú giùm AI
-                </button>
-            </div>
+            )}
+            {hideHeader && (
+                <div className="flex justify-end mb-2">
+                    <button
+                        onClick={openAdd}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-bold shadow-sm transition-all"
+                    >
+                        <Plus className="w-4 h-4" /> Ghi chú giùm AI
+                    </button>
+                </div>
+            )}
 
             {/* Explainer */}
             <div className="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-5 border border-purple-100 dark:border-purple-800/30">

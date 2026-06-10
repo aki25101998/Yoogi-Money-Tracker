@@ -1,116 +1,121 @@
-// Default 2-level categories based on user's specification
-// Each category has subcategories with "Chưa phân loại" always present
-
-export const DEFAULT_EXPENSE_CATEGORIES = [
+export const DEFAULT_CATEGORIES = [
+    // --- CHI TIÊU (EXPENSE) ---
     {
+        id: 'nhu_cau_thiet_yeu',
         name: 'Nhu cầu thiết yếu',
         icon: '🏠',
         type: 'expense',
         order: 1,
         subcategories: [
-            { id: 'nha_cua', name: 'Nhà cửa', description: 'Thuê nhà, phí quản lý' },
-            { id: 'hoa_don', name: 'Hóa đơn', description: 'Điện, nước, internet' },
-            { id: 'an_uong_co_ban', name: 'Ăn uống cơ bản', description: 'Siêu thị, đi chợ' },
-            { id: 'di_chuyen', name: 'Di chuyển', description: 'Xăng, bảo dưỡng xe' },
-            { id: 'lat_vat', name: 'Lặt vặt & Phát sinh', description: 'Gửi xe, trà đá (Hao hụt)' },
-            { id: 'chua_phan_loai', name: 'Chưa phân loại', description: 'Mặc định' },
+            { id: 'an_uong_co_ban', name: 'Ăn uống cơ bản', description: 'Cơm, phở, bún hằng ngày' },
+            { id: 'di_chuyen', name: 'Di chuyển', description: 'Xăng xe, Grab, gửi xe' },
+            { id: 'nha_cua_dien_nuoc', name: 'Nhà cửa & Điện nước', description: 'Tiền thuê nhà, điện, nước, rác' },
+            { id: 'sieu_thi_tap_hoa', name: 'Siêu thị, chợ', description: 'Đồ dùng sinh hoạt, thực phẩm' },
         ],
     },
     {
+        id: 'chi_tieu_ca_nhan',
         name: 'Chi tiêu cá nhân',
         icon: '🛍️',
         type: 'expense',
         order: 2,
         subcategories: [
-            { id: 'an_ngoai', name: 'Ăn ngoài & Cà phê', description: 'Nhà hàng, đồ ăn nhanh' },
-            { id: 'so_thich', name: 'Sở thích & Giải trí', description: 'Xem phim, game' },
-            { id: 'mua_sam', name: 'Mua sắm', description: 'Quần áo, giày dép' },
-            { id: 'du_lich', name: 'Du lịch', description: 'Trekking, đi chơi xa' },
-            { id: 'chua_phan_loai', name: 'Chưa phân loại', description: 'Mặc định' },
+            { id: 'mua_sam', name: 'Mua sắm', description: 'Quần áo, giày dép, phụ kiện' },
+            { id: 'lam_dep', name: 'Làm đẹp', description: 'Cắt tóc, mỹ phẩm, spa' },
+            { id: 'giai_tri', name: 'Giải trí', description: 'Xem phim, game, netflix' },
+            { id: 'cafe_an_vat', name: 'Cafe & Ăn vặt', description: 'Cafe bạn bè, trà sữa' },
         ],
     },
     {
-        name: 'Phát triển & Sức khỏe',
-        icon: '💪',
+        id: 'phat_trien_cong_viec',
+        name: 'Phát triển & Công việc',
+        icon: '📚',
         type: 'expense',
         order: 3,
         subcategories: [
-            { id: 'giao_duc', name: 'Giáo dục', description: 'Khóa học, chứng chỉ' },
-            { id: 'the_thao', name: 'Thể thao', description: 'Gym, võ thuật' },
-            { id: 'suc_khoe', name: 'Sức khỏe', description: 'Khám bệnh, TPCN' },
-            { id: 'chua_phan_loai', name: 'Chưa phân loại', description: 'Mặc định' },
+            { id: 'hoc_tap', name: 'Học tập', description: 'Khóa học, sách, thi cử' },
+            { id: 'cong_viec', name: 'Công việc', description: 'Công tác, thiết bị làm việc' },
+            { id: 'ngoai_giao', name: 'Ngoại giao', description: 'Biếu xén, quà tặng đối tác' },
         ],
     },
     {
-        name: 'Đầu tư & Tích lũy',
-        icon: '📈',
+        id: 'suc_khoe_the_thao',
+        name: 'Sức khỏe & Thể thao',
+        icon: '💪',
         type: 'expense',
         order: 4,
         subcategories: [
-            { id: 'chung_khoan', name: 'Chứng khoán & Quỹ', description: 'Cổ phiếu, ETF' },
-            { id: 'crypto', name: 'Crypto', description: 'Bitcoin, Altcoins' },
-            { id: 'trading', name: 'Trading', description: 'Vốn MT5, e-commerce' },
-            { id: 'tich_luy', name: 'Tích lũy', description: 'Tiết kiệm, Mua vàng' },
-            { id: 'chua_phan_loai', name: 'Chưa phân loại', description: 'Mặc định' },
+            { id: 'the_thao', name: 'Thể thao', description: 'Gym, yoga, đá bóng' },
+            { id: 'kham_chua_benh', name: 'Khám chữa bệnh', description: 'Thuốc men, đi viện' },
+            { id: 'bao_hiem', name: 'Bảo hiểm', description: 'Bảo hiểm nhân thọ, y tế' },
         ],
     },
     {
-        name: 'Giao tế & Nghĩa vụ',
+        id: 'hieu_hi_quan_he',
+        name: 'Hiếu hỉ & Quan hệ',
         icon: '🤝',
         type: 'expense',
         order: 5,
         subcategories: [
-            { id: 'giao_te', name: 'Giao tế', description: 'Quà tặng, mừng cưới' },
-            { id: 'tu_thien', name: 'Từ thiện', description: 'Ủng hộ người nghèo' },
-            { id: 'tra_no', name: 'Trả nợ', description: 'Thanh toán Thẻ tín dụng, nợ cũ' },
-            { id: 'cho_muon', name: 'Cho mượn', description: 'Đưa tiền mặt cho bạn bè/người thân mượn' },
-            { id: 'chua_phan_loai', name: 'Chưa phân loại', description: 'Mặc định' },
+            { id: 'cuoi_hoi_dam_tiec', name: 'Cưới hỏi, đám tiệc', description: 'Mừng cưới, sinh nhật, thôi nôi' },
+            { id: 'gia_dinh', name: 'Gia đình', description: 'Biếu bố mẹ, tiền cho con' },
         ],
     },
-];
-
-export const DEFAULT_INCOME_CATEGORIES = [
     {
+        id: 'uncategorized_expense',
+        name: '❓ Chưa phân loại',
+        icon: '❓',
+        type: 'expense',
+        order: 99,
+        subcategories: [
+            { id: 'chua_phan_loai', name: 'Chưa phân loại', description: 'Mục mặc định' }
+        ],
+    },
+
+    // --- THU NHẬP (INCOME) ---
+    {
+        id: 'thu_nhap_chu_dong',
         name: 'Thu nhập Chủ động',
-        icon: '💼',
+        icon: '💰',
         type: 'income',
         order: 1,
         subcategories: [
-            { id: 'luong_chinh', name: 'Lương chính', description: 'Tiền lương' },
-            { id: 'thuong', name: 'Thưởng', description: 'KPI, tháng 13' },
-            { id: 'lam_them', name: 'Làm thêm', description: 'Freelance' },
-            { id: 'chua_phan_loai', name: 'Chưa phân loại', description: 'Mặc định' },
+            { id: 'luong_chinh', name: 'Lương chính', description: 'Lương từ công việc chính' },
+            { id: 'thuong', name: 'Thưởng', description: 'Thưởng KPI, tháng 13' },
+            { id: 'lam_them', name: 'Làm thêm', description: 'Freelance, ngoài giờ' },
         ],
     },
     {
+        id: 'thu_nhap_thu_dong',
         name: 'Thu nhập Thụ động',
-        icon: '🌱',
+        icon: '📈',
         type: 'income',
         order: 2,
         subcategories: [
-            { id: 'lai_tiet_kiem', name: 'Lãi tiết kiệm', description: 'Lãi NH' },
-            { id: 'co_tuc', name: 'Cổ tức / Lãi đầu tư', description: 'Lãi ETF, Trade' },
-            { id: 'ban_tai_san', name: 'Bán tài sản', description: 'Bán vàng, chốt lời' },
-            { id: 'chua_phan_loai', name: 'Chưa phân loại', description: 'Mặc định' },
+            { id: 'co_tuc_lai_suat', name: 'Cổ tức / Lãi suất', description: 'Lãi tiết kiệm, cổ tức' },
+            { id: 'cho_thue', name: 'Cho thuê tài sản', description: 'Tiền thuê nhà, thuê xe' },
         ],
     },
     {
+        id: 'thu_nhap_khac',
         name: 'Thu nhập Khác',
         icon: '🎁',
         type: 'income',
         order: 3,
         subcategories: [
-            { id: 'duoc_tang', name: 'Được tặng', description: 'Quà sinh nhật' },
-            { id: 'hoan_tien', name: 'Hoàn tiền', description: 'Cashback' },
-            { id: 'chinh_so_quy', name: 'Chỉnh sổ quỹ', description: 'Ghi nhận tiền dư' },
-            { id: 'di_vay', name: 'Đi vay / Tạm ứng', description: 'Vay mượn tiền mặt từ người khác/thẻ' },
-            { id: 'thu_hoi_no', name: 'Thu hồi nợ', description: 'Người khác trả lại tiền đã mượn' },
-            { id: 'chua_phan_loai', name: 'Chưa phân loại', description: 'Mặc định' },
+            { id: 'duoc_tang_cho', name: 'Được tặng/cho', description: 'Tiền biếu, quà tặng quy ra tiền' },
+            { id: 'hoan_tien', name: 'Hoàn tiền', description: 'Cashback từ thẻ tín dụng' },
+            { id: 'thanh_ly_do', name: 'Thanh lý đồ', description: 'Bán đồ cũ' },
         ],
     },
-];
-
-export const ALL_DEFAULT_CATEGORIES = [
-    ...DEFAULT_EXPENSE_CATEGORIES,
-    ...DEFAULT_INCOME_CATEGORIES,
+    {
+        id: 'uncategorized_income',
+        name: '❓ Chưa phân loại',
+        icon: '❓',
+        type: 'income',
+        order: 99,
+        subcategories: [
+            { id: 'chua_phan_loai', name: 'Chưa phân loại', description: 'Mục mặc định' }
+        ],
+    },
 ];

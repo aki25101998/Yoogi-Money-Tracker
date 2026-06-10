@@ -8,7 +8,7 @@ import {
 } from '../utils/firebaseHelpers';
 import ConfirmModal from '../components/modals/ConfirmModal';
 
-const CategoriesPage = ({ user, categories }) => {
+const CategoriesPage = ({ user, categories, hideHeader = false }) => {
     const [activeTab, setActiveTab] = useState('expense'); // 'expense' | 'income'
     const [expandedCats, setExpandedCats] = useState({});
 
@@ -156,18 +156,30 @@ const CategoriesPage = ({ user, categories }) => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Danh mục</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Quản lý danh mục thu chi 2 cấp</p>
+            {!hideHeader && (
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Danh mục</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Quản lý danh mục thu chi 2 cấp</p>
+                    </div>
+                    <button
+                        onClick={openAddCategory}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-200 dark:shadow-none transition-all hover:-translate-y-0.5"
+                    >
+                        <Plus className="w-4 h-4" /> Thêm danh mục
+                    </button>
                 </div>
-                <button
-                    onClick={openAddCategory}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-200 dark:shadow-none transition-all hover:-translate-y-0.5"
-                >
-                    <Plus className="w-4 h-4" /> Thêm danh mục
-                </button>
-            </div>
+            )}
+            {hideHeader && (
+                <div className="flex justify-end mb-2">
+                    <button
+                        onClick={openAddCategory}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-sm transition-all"
+                    >
+                        <Plus className="w-4 h-4" /> Thêm danh mục
+                    </button>
+                </div>
+            )}
 
             {/* Tab: Expense / Income */}
             <div className="flex gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
