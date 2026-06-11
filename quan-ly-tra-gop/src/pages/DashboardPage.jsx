@@ -260,13 +260,19 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
 
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length) {
+            const data = payload[0].payload;
             return (
-                <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-lg border border-slate-100 dark:border-slate-700">
-                    <p className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                        {payload[0].payload.icon} {payload[0].name}
-                    </p>
-                    <p className={`font-medium ${chartType === 'income' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                        {formatCurrency(payload[0].value)}
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 z-50">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xl shadow-inner">
+                            {data.icon}
+                        </div>
+                        <p className="font-bold text-slate-800 dark:text-white text-base">
+                            {data.name}
+                        </p>
+                    </div>
+                    <p className={`font-bold text-xl ${chartType === 'income' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {formatCurrency(data.value)}
                     </p>
                 </div>
             );
@@ -458,6 +464,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                                         paddingAngle={3}
                                         dataKey="value"
                                         stroke="none"
+                                        activeShape={false}
                                     >
                                         {pieChartData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
