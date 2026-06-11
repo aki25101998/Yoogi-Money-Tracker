@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, ArrowDownRight, ArrowUpRight, Check } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
-const TransactionModal = ({ isOpen, onClose, onSave, categories, wallets, initialData = null }) => {
-    const defaultWallet = wallets?.find(w => w.isDefault)?.id || wallets?.[0]?.id || '';
+const TransactionModal = ({ isOpen, onClose, onSave, categories, wallets, initialData = null, defaultWalletId = null }) => {
+    const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || wallets?.[0]?.id || '';
     
     const [form, setForm] = useState({
         type: 'expense',
@@ -62,7 +62,7 @@ const TransactionModal = ({ isOpen, onClose, onSave, categories, wallets, initia
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
                 <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
                     <h3 className="font-bold text-lg text-slate-800 dark:text-white">
-                        {initialData ? 'Sửa giao dịch' : 'Thêm giao dịch'}
+                        {initialData && initialData.id ? 'Sửa giao dịch' : 'Thêm giao dịch'}
                     </h3>
                     <button onClick={onClose}><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
                 </div>
@@ -147,7 +147,7 @@ const TransactionModal = ({ isOpen, onClose, onSave, categories, wallets, initia
 
                     <button type="submit" className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl mt-2 shadow-lg shadow-emerald-200 dark:shadow-none transition-all flex items-center justify-center gap-2">
                         <Check className="w-5 h-5" />
-                        {initialData ? 'Lưu thay đổi' : 'Lưu giao dịch'}
+                        {initialData && initialData.id ? 'Lưu thay đổi' : 'Lưu giao dịch'}
                     </button>
                 </form>
             </div>

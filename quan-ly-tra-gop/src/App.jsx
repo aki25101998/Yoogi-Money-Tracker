@@ -242,9 +242,11 @@ export default function App() {
             case 'dashboard':
                 return (
                     <DashboardPage
+                        user={user}
                         transactions={transactions}
                         categories={categories}
-                        installmentItems={installments}
+                        aiMemories={aiMemories}
+                        wallets={wallets}
                     />
                 );
             case 'transactions':

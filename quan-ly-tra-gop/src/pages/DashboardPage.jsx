@@ -12,11 +12,12 @@ import TransactionModal from '../components/modals/TransactionModal';
 
 const COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#2dd4bf', '#fb923c', '#94a3b8'];
 
-const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, installmentItems }) => {
+const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) => {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     // --- State ---
+    const [selectedWalletId, setSelectedWalletId] = useState('all');
     const [aiInput, setAiInput] = useState('');
     const [isAIProcessing, setIsAIProcessing] = useState(false);
     const [aiStatus, setAiStatus] = useState(null);
@@ -40,7 +41,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
     // --- Calculations ---
     const walletBalances = useMemo(() => {
         const balances = {};
-        wallets?.forEach(w => { balances[w.id] = { name: w.name, icon: w.icon, balance: 0 }; });
+        wallets?.forEach(w => { balances[w.id] = { id: w.id, name: w.name, icon: w.icon, balance: 0 }; });
         
         transactions.forEach(t => {
             if (!t.walletId || !balances[t.walletId]) return;
@@ -50,7 +51,13 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
         return Object.values(balances);
     }, [transactions, wallets]);
 
-    const totalBalance = useMemo(() => walletBalances.reduce((sum, w) => sum + w.balance, 0), [walletBalances]);
+    const totalBalance = useMemo(() => {
+        return transactions.reduce((sum, t) => {
+            if (t.type === 'income') return sum + (t.amount || 0);
+            if (t.type === 'expense') return sum - (t.amount || 0);
+            return sum;
+        }, 0);
+    }, [transactions]);
 
     const filteredTransactions = useMemo(() => {
         const todayStr = now.toISOString().split('T')[0];
@@ -59,6 +66,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
 
         return transactions.filter(t => {
             if (!t.date) return false;
+            if (selectedWalletId !== 'all' && t.walletId !== selectedWalletId) return false;
             const tDate = new Date(t.date);
 
             switch (timeFilter) {
@@ -105,15 +113,6 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
 
     const recentTransactions = useMemo(() => filteredTransactions.slice(0, 5), [filteredTransactions]);
 
-    const installmentStats = useMemo(() => {
-        const active = installmentItems.filter(item => {
-            const paidCount = item.paidMonths?.length || 0;
-            return paidCount < item.term;
-        });
-        const monthlyTotal = active.reduce((sum, item) => sum + (item.monthlyPayment || 0), 0);
-        return { active: active.length, monthlyTotal };
-    }, [installmentItems]);
-
     // --- Handlers ---
     const handleAISubmit = async () => {
         if (!aiInput.trim() || !user) return;
@@ -122,6 +121,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
 
         try {
             const defaultWallet = wallets?.find(w => w.isDefault)?.id || wallets?.[0]?.id || '';
+            const activeWalletId = selectedWalletId !== 'all' ? selectedWalletId : defaultWallet;
             const result = await categorizeTransaction(aiInput, categories, aiMemories);
 
             await addTransaction(user.uid, {
@@ -131,7 +131,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
                 categoryId: result.categoryId,
                 subcategoryId: result.subcategoryId,
                 date: result.date,
-                walletId: defaultWallet,
+                walletId: activeWalletId,
                 aiCategorized: result.aiCategorized,
             });
 
@@ -224,17 +224,37 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
                 </h1>
             </div>
 
+            <div className="px-1 mb-2 flex items-center">
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-300 cursor-pointer">
+                    <input 
+                        type="radio" 
+                        name="walletSelection" 
+                        checked={selectedWalletId === 'all'} 
+                        onChange={() => setSelectedWalletId('all')}
+                        className="w-4 h-4 text-emerald-500 border-slate-300 focus:ring-emerald-500"
+                    />
+                    Chọn nhiều ví
+                </label>
+            </div>
+            
             <div className="flex overflow-x-auto gap-3 pb-2 snap-x hide-scrollbar">
-                {walletBalances.map((w, i) => (
-                    <div key={i} className="min-w-[140px] flex-shrink-0 snap-start bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-lg">{w.icon}</span>
-                            <Pencil className="w-3.5 h-3.5 text-slate-300" />
+                {walletBalances.map((w, i) => {
+                    const isSelected = selectedWalletId === w.id;
+                    return (
+                        <div 
+                            key={i} 
+                            onClick={() => setSelectedWalletId(w.id)}
+                            className={`min-w-[140px] flex-shrink-0 snap-start rounded-2xl p-4 border cursor-pointer transition-all ${isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-lg">{w.icon}</span>
+                                {isSelected ? <Check className="w-4 h-4 text-emerald-500" /> : <Pencil className="w-3.5 h-3.5 text-slate-300" />}
+                            </div>
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate mb-1">{w.name}</p>
+                            <p className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(w.balance)}</p>
                         </div>
-                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate mb-1">{w.name}</p>
-                        <p className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(w.balance)}</p>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* 3. Time Filter & Net Change Card */}
@@ -383,22 +403,6 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
                 )}
             </div>
 
-            {/* 5. Installments Section (Moved down) */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                    <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-xl">
-                        <CreditCard className="w-5 h-5 text-indigo-500" />
-                    </div>
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase">Trả góp/tháng</p>
-                        <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(installmentStats.monthlyTotal)}</p>
-                    </div>
-                </div>
-                <div className="text-xs font-bold text-slate-500">
-                    {installmentStats.active} khoản
-                </div>
-            </div>
-
             {/* 6. Recent Transactions */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
@@ -448,6 +452,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, in
                 categories={categories}
                 wallets={wallets}
                 initialData={editingTransaction}
+                defaultWalletId={selectedWalletId !== 'all' ? selectedWalletId : null}
             />
         </div>
     );
