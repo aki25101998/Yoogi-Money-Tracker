@@ -479,7 +479,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                                             animation: `tooltip-slide-${activeSegment.direction} 0.25s ease-out both`,
                                         }}
                                     >
-                                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+                                        <p className="text-sm text-slate-600 dark:text-white mb-1">
                                             {activeSegment.data.name}
                                         </p>
                                         <div className="flex items-center gap-2">
