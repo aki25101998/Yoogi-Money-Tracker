@@ -63,13 +63,11 @@ export const DEFAULT_CATEGORIES = [
     },
     {
         id: 'uncategorized_expense',
-        name: '❓ Chưa phân loại',
+        name: 'Chưa phân loại',
         icon: '❓',
         type: 'expense',
         order: 99,
-        subcategories: [
-            { id: 'chua_phan_loai', name: 'Chưa phân loại', description: 'Mục mặc định' }
-        ],
+        subcategories: [],
     },
 
     // --- THU NHẬP (INCOME) ---
@@ -110,12 +108,10 @@ export const DEFAULT_CATEGORIES = [
     },
     {
         id: 'uncategorized_income',
-        name: '❓ Chưa phân loại',
+        name: 'Chưa phân loại',
         icon: '❓',
         type: 'income',
         order: 99,
-        subcategories: [
-            { id: 'chua_phan_loai', name: 'Chưa phân loại', description: 'Mục mặc định' }
-        ],
+        subcategories: [],
     },
 ];

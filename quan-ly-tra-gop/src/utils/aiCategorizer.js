@@ -110,29 +110,27 @@ export const searchMemory = (memories, description) => {
 };
 
 /**
- * Find the "Chưa phân loại" subcategory in a category
- */
-const findUncategorizedSub = (category) => {
-    if (!category || !category.subcategories) return null;
-    return category.subcategories.find(sub =>
-        sub.name === 'Chưa phân loại' || sub.id === 'chua_phan_loai'
-    );
-};
-
-/**
- * Find the first category of a given type that has "Chưa phân loại"
+ * Find the main "Chưa phân loại" category
  */
 const findDefaultUncategorized = (categories, type) => {
     const filtered = categories.filter(c => c.type === type);
-    for (const cat of filtered) {
-        const sub = findUncategorizedSub(cat);
-        if (sub) return { categoryId: cat.id, subcategoryId: sub.id };
+    
+    // Find the dedicated uncategorized category
+    const uncategorizedCat = filtered.find(c => 
+        c.id === (type === 'expense' ? 'uncategorized_expense' : 'uncategorized_income') || 
+        c.name === 'Chưa phân loại' || 
+        c.name === '❓ Chưa phân loại'
+    );
+    
+    if (uncategorizedCat) {
+        return { categoryId: uncategorizedCat.id, subcategoryId: '' };
     }
+    
     // Fallback: first category of that type
     if (filtered.length > 0) {
         return {
             categoryId: filtered[0].id,
-            subcategoryId: filtered[0].subcategories?.[0]?.id || 'chua_phan_loai',
+            subcategoryId: '',
         };
     }
     return { categoryId: '', subcategoryId: '' };
@@ -152,9 +150,7 @@ const callGeminiForCategory = async (description, type, categories) => {
     const categoryContext = relevantCats.map(cat => ({
         id: cat.id,
         name: cat.name,
-        subcategories: cat.subcategories
-            .filter(s => s.name !== 'Chưa phân loại')
-            .map(s => ({ id: s.id, name: s.name, description: s.description })),
+        subcategories: (cat.subcategories || []).map(s => ({ id: s.id, name: s.name, description: s.description })),
     }));
 
     const prompt = `Bạn là trợ lý phân loại chi tiêu/thu nhập cá nhân.

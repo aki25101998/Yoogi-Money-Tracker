@@ -77,9 +77,7 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                         icon: formIcon || '📁',
                         type: activeTab,
                         order: maxOrder + 1,
-                        subcategories: [
-                            { id: 'chua_phan_loai', name: 'Chưa phân loại', description: 'Mặc định' },
-                        ],
+                        subcategories: [],
                     });
                 } else {
                     // Edit existing category
@@ -234,28 +232,25 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                                     <div className="border-t border-slate-100 dark:border-slate-700">
                                         <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
                                             {(cat.subcategories || []).map(sub => {
-                                                const isDefault = sub.name === 'Chưa phân loại' || sub.id === 'chua_phan_loai';
                                                 return (
                                                     <div key={sub.id} className="flex items-center gap-3 px-4 py-3 pl-12 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group">
-                                                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDefault ? 'bg-amber-400' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                                                        <div className="w-2 h-2 rounded-full flex-shrink-0 bg-slate-300 dark:bg-slate-600" />
                                                         <div className="flex-1 min-w-0">
-                                                            <p className={`text-sm font-medium ${isDefault ? 'text-amber-600 dark:text-amber-400 italic' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                                                 {sub.name}
                                                             </p>
                                                             {sub.description && (
                                                                 <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{sub.description}</p>
                                                             )}
                                                         </div>
-                                                        {!isDefault && (
-                                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <button onClick={() => openEditSubcategory(cat.id, sub)} className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg transition-colors">
-                                                                    <Pencil className="w-3.5 h-3.5" />
-                                                                </button>
-                                                                <button onClick={() => confirmDeleteSubcategory(cat.id, sub)} className="p-1.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg transition-colors">
-                                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                                </button>
-                                                            </div>
-                                                        )}
+                                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button onClick={() => openEditSubcategory(cat.id, sub)} className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg transition-colors">
+                                                                <Pencil className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button onClick={() => confirmDeleteSubcategory(cat.id, sub)} className="p-1.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg transition-colors">
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
