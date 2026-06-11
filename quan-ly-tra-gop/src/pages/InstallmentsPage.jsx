@@ -313,31 +313,60 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         }
     };
 
-    const renderInstallmentList = (listItems, title, isEmptyMessage, bgClass = "") => (
-        <div className={`space-y-4 p-4 rounded-xl ${bgClass}`}>
-            <h3 className="font-semibold text-slate-700 dark:text-slate-300 text-sm uppercase tracking-wider pl-1 border-l-4 border-indigo-500 hover:text-indigo-600 transition-colors cursor-default">{title} ({listItems.length})</h3>
-            {listItems.length === 0 ? (
-                <div className="text-center py-10 bg-white/50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 transition-all group hover:border-indigo-300 dark:hover:border-indigo-700">
-                    <p className="text-slate-400 dark:text-slate-500 font-medium text-xs group-hover:text-indigo-500 transition-colors">{isEmptyMessage}</p>
-                </div>
-            ) : (
-                <div className="grid gap-4">
-                    {listItems.map((item) => {
-                        const targetMonthStr = getYearMonth(activeReferenceDate);
-                        const isPaid = item.paidMonths?.includes(targetMonthStr);
-                        return (
-                            <InstallmentItem
-                                key={item.id}
-                                item={item}
-                                onEdit={handleOpenEdit}
-                                onDelete={confirmDelete}
-                                referenceDate={activeReferenceDate}
-                                isPaid={isPaid}
-                                onTogglePaid={handleTogglePaid}
-                                isReadOnly={false}
+    const renderInstallmentList = (listItems, title, isEmptyMessage, bgClass = "", isCompletedSection = false) => (
+        <div className={`space-y-4 p-4 rounded-xl flex flex-col h-full ${bgClass}`}>
+            <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-slate-700 dark:text-slate-300 text-sm uppercase tracking-wider pl-1 border-l-4 border-indigo-500 hover:text-indigo-600 transition-colors cursor-default">
+                    {title} ({listItems.length})
+                </h3>
+                {isCompletedSection && (
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors select-none">
+                        <div className="relative flex items-center">
+                            <input 
+                                type="checkbox" 
+                                checked={hideCompleted}
+                                onChange={(e) => setHideCompleted(e.target.checked)}
+                                className="peer sr-only"
                             />
-                        );
-                    })}
+                            <div className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 peer-checked:bg-indigo-600 peer-checked:border-indigo-600 transition-colors flex items-center justify-center bg-white dark:bg-slate-800 peer-checked:dark:bg-indigo-600">
+                                <Check className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" />
+                            </div>
+                        </div>
+                        <span className="font-medium">Ẩn danh sách</span>
+                    </label>
+                )}
+            </div>
+            
+            {(!isCompletedSection || !hideCompleted) && (
+                listItems.length === 0 ? (
+                    <div className="text-center py-10 bg-white/50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 transition-all group hover:border-indigo-300 dark:hover:border-indigo-700">
+                        <p className="text-slate-400 dark:text-slate-500 font-medium text-xs group-hover:text-indigo-500 transition-colors">{isEmptyMessage}</p>
+                    </div>
+                ) : (
+                    <div className="grid gap-4">
+                        {listItems.map((item) => {
+                            const targetMonthStr = getYearMonth(activeReferenceDate);
+                            const isPaid = item.paidMonths?.includes(targetMonthStr);
+                            return (
+                                <InstallmentItem
+                                    key={item.id}
+                                    item={item}
+                                    onEdit={handleOpenEdit}
+                                    onDelete={confirmDelete}
+                                    referenceDate={activeReferenceDate}
+                                    isPaid={isPaid}
+                                    onTogglePaid={handleTogglePaid}
+                                    isReadOnly={false}
+                                />
+                            );
+                        })}
+                    </div>
+                )
+            )}
+            
+            {isCompletedSection && hideCompleted && listItems.length > 0 && (
+                <div className="text-center py-6 bg-slate-100/50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex-1 flex items-center justify-center">
+                    <p className="text-slate-400 dark:text-slate-500 font-medium text-xs">Đã ẩn {listItems.length} khoản vay hoàn thành.</p>
                 </div>
             )}
         </div>
@@ -356,33 +385,16 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         <>
             {/* Toolbar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                <div className="flex flex-wrap items-center gap-4">
-                    <div className="relative group">
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 transition-colors group-hover:bg-slate-50 dark:group-hover:bg-slate-700">
-                            <Filter className="w-3.5 h-3.5 text-slate-400" />
-                            <span className="whitespace-nowrap">Người trả:</span>
-                            <span className="font-bold text-indigo-600 dark:text-indigo-400 truncate max-w-[100px]">{filterOwner === 'all' ? 'Tất cả' : filterOwner}</span>
-                            <ChevronDown className="w-3 h-3 text-slate-400" />
-                        </div>
-                        <select value={filterOwner} onChange={(e) => setFilterOwner(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                            {uniqueOwners.map(owner => <option key={owner} value={owner}>{owner === 'all' ? 'Tất cả' : owner}</option>)}
-                        </select>
+                <div className="relative group">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 transition-colors group-hover:bg-slate-50 dark:group-hover:bg-slate-700">
+                        <Filter className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="whitespace-nowrap">Người trả:</span>
+                        <span className="font-bold text-indigo-600 dark:text-indigo-400 truncate max-w-[100px]">{filterOwner === 'all' ? 'Tất cả' : filterOwner}</span>
+                        <ChevronDown className="w-3 h-3 text-slate-400" />
                     </div>
-
-                    <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-600 dark:text-slate-300 hover:text-indigo-600 transition-colors select-none">
-                        <div className="relative flex items-center">
-                            <input 
-                                type="checkbox" 
-                                checked={hideCompleted}
-                                onChange={(e) => setHideCompleted(e.target.checked)}
-                                className="peer sr-only"
-                            />
-                            <div className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 peer-checked:bg-indigo-600 peer-checked:border-indigo-600 transition-colors flex items-center justify-center bg-white dark:bg-slate-800 peer-checked:dark:bg-indigo-600">
-                                <Check className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" />
-                            </div>
-                        </div>
-                        <span className="font-medium">Ẩn đã xong</span>
-                    </label>
+                    <select value={filterOwner} onChange={(e) => setFilterOwner(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        {uniqueOwners.map(owner => <option key={owner} value={owner}>{owner === 'all' ? 'Tất cả' : owner}</option>)}
+                    </select>
                 </div>
 
                 <div className="flex gap-2 ml-auto items-center">
@@ -447,9 +459,9 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
             )}
 
             {/* Items Lists */}
-            <div className={`grid grid-cols-1 ${hideCompleted ? '' : 'lg:grid-cols-2'} gap-6 items-start`}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                 {renderInstallmentList(inProgressItems, "Đang chờ thanh toán", "Tất cả đã được thanh toán cho tháng này!", "bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700")}
-                {!hideCompleted && renderInstallmentList(completedItems, "Đã hoàn thành", "Chưa có mục nào hoàn thành.", "bg-slate-50/50 dark:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700")}
+                {renderInstallmentList(completedItems, "Đã hoàn thành", "Chưa có mục nào hoàn thành.", "bg-slate-50/50 dark:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700", true)}
             </div>
 
             {/* Modals */}
