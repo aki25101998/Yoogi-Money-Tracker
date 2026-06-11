@@ -46,3 +46,24 @@ svg path:focus,
 svg path:active {
   outline: none !important;
 }
+
+/* Tooltip directional slide animations */
+@keyframes tooltip-slide-left {
+  from { opacity: 0; transform: translateX(-14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes tooltip-slide-right {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes tooltip-slide-top {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tooltip-slide-bottom {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}

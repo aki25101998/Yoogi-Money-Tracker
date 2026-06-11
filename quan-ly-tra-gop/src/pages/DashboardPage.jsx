@@ -104,6 +104,8 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     };
 
     const [chartType, setChartType] = useState('expense'); // 'expense' or 'income'
+    const [tooltipDirection, setTooltipDirection] = useState('left');
+    const [hoveredIndex, setHoveredIndex] = useState(null);
 
     // --- Calculations ---
     const walletBalances = useMemo(() => {
@@ -238,11 +240,33 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
         }
     };
 
+    const handlePieMouseEnter = (data, index) => {
+        const midAngle = (data.startAngle + data.endAngle) / 2;
+        const normalized = ((midAngle % 360) + 360) % 360;
+
+        if (normalized >= 315 || normalized < 45) {
+            setTooltipDirection('right');
+        } else if (normalized >= 45 && normalized < 135) {
+            setTooltipDirection('top');
+        } else if (normalized >= 135 && normalized < 225) {
+            setTooltipDirection('left');
+        } else {
+            setTooltipDirection('bottom');
+        }
+        setHoveredIndex(index);
+    };
+
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length) {
             const data = payload[0].payload;
             return (
-                <div className="bg-white dark:bg-slate-800 p-2 rounded shadow-md border border-slate-200 dark:border-slate-700 z-50 min-w-[120px]">
+                <div 
+                    key={`tooltip-${hoveredIndex}`}
+                    className="bg-white dark:bg-slate-800 p-2.5 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 z-50 min-w-[120px]"
+                    style={{
+                        animation: `tooltip-slide-${tooltipDirection} 0.3s ease-out both`,
+                    }}
+                >
                     <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
                         {data.name}
                     </p>
@@ -439,12 +463,13 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                                             activeIndex={-1}
                                             activeShape={false}
                                             isAnimationActive={true}
+                                            onMouseEnter={handlePieMouseEnter}
                                         >
                                             {pieChartData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" strokeWidth={0} />
                                             ))}
                                         </Pie>
-                                        <Tooltip content={<CustomTooltip />} />
+                                        <Tooltip content={<CustomTooltip />} isAnimationActive={false} />
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
