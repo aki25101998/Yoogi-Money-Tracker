@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, ArrowDownRight, ArrowUpRight, Check } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { X, ArrowDownRight, ArrowUpRight, Check, Trash2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
-const TransactionModal = ({ isOpen, onClose, onSave, categories, wallets, initialData = null, defaultWalletId = null }) => {
+const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, wallets, initialData = null, defaultWalletId = null }) => {
     const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || wallets?.[0]?.id || '';
     
     const [form, setForm] = useState({
@@ -57,7 +58,7 @@ const TransactionModal = ({ isOpen, onClose, onSave, categories, wallets, initia
         return cat?.subcategories || [];
     };
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
                 <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
@@ -145,13 +146,30 @@ const TransactionModal = ({ isOpen, onClose, onSave, categories, wallets, initia
                         </div>
                     )}
 
-                    <button type="submit" className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl mt-2 shadow-lg shadow-emerald-200 dark:shadow-none transition-all flex items-center justify-center gap-2">
-                        <Check className="w-5 h-5" />
-                        {initialData && initialData.id ? 'Lưu thay đổi' : 'Lưu giao dịch'}
-                    </button>
+                    <div className="flex gap-3 pt-2">
+                        {initialData && initialData.id && onDelete && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (window.confirm('Bạn có chắc chắn muốn xóa giao dịch này?')) {
+                                        onDelete(initialData.id);
+                                    }
+                                }}
+                                className="flex-1 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 dark:text-rose-400 font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                            >
+                                <Trash2 className="w-5 h-5" />
+                                Xóa
+                            </button>
+                        )}
+                        <button type="submit" className="flex-[2] py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-none transition-all flex items-center justify-center gap-2">
+                            <Check className="w-5 h-5" />
+                            {initialData && initialData.id ? 'Lưu thay đổi' : 'Lưu giao dịch'}
+                        </button>
+                    </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

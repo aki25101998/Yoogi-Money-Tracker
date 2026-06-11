@@ -169,6 +169,18 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
         }
     };
 
+    const handleDeleteTransaction = async (transactionId) => {
+        if (!user) return;
+        try {
+            const { deleteTransaction } = await import('../utils/firebaseHelpers');
+            await deleteTransaction(user.uid, transactionId);
+            setIsModalOpen(false);
+            setEditingTransaction(null);
+        } catch (err) {
+            alert('Lỗi khi xóa: ' + err.message);
+        }
+    };
+
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length) {
             return (
@@ -449,6 +461,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSaveTransaction}
+                onDelete={handleDeleteTransaction}
                 categories={categories}
                 wallets={wallets}
                 initialData={editingTransaction}

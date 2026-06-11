@@ -99,6 +99,17 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
         setIsDeleting(false);
     };
 
+    const handleDeleteFromModal = async (id) => {
+        if (!user || !id) return;
+        try {
+            await deleteTransaction(user.uid, id);
+            setIsModalOpen(false);
+            setEditingTransaction(null);
+        } catch (error) {
+            alert("Lỗi khi xóa: " + error.message);
+        }
+    };
+
     const openEditModal = (e, txn) => {
         e.stopPropagation();
         setEditingTransaction(txn);
@@ -253,6 +264,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSaveTransaction}
+                onDelete={handleDeleteFromModal}
                 categories={categories}
                 wallets={wallets}
                 initialData={editingTransaction}
