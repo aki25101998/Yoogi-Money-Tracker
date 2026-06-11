@@ -106,6 +106,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     const [chartType, setChartType] = useState('expense'); // 'expense' or 'income'
     const [tooltipDirection, setTooltipDirection] = useState('left');
     const [hoveredIndex, setHoveredIndex] = useState(null);
+    const [tooltipPos, setTooltipPos] = useState(null);
 
     // --- Calculations ---
     const walletBalances = useMemo(() => {
@@ -243,6 +244,15 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     const handlePieMouseEnter = (data, index) => {
         const midAngle = (data.startAngle + data.endAngle) / 2;
         const normalized = ((midAngle % 360) + 360) % 360;
+        const radian = (Math.PI / 180) * midAngle;
+
+        // Position tooltip just outside the outer edge of the chart
+        const tooltipDistance = (data.outerRadius || 100) + 18;
+        const cx = data.cx;
+        const cy = data.cy;
+        const x = cx + tooltipDistance * Math.cos(radian);
+        const y = cy - tooltipDistance * Math.sin(radian);
+        setTooltipPos({ x, y });
 
         if (normalized >= 315 || normalized < 45) {
             setTooltipDirection('right');
@@ -255,6 +265,17 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
         }
         setHoveredIndex(index);
     };
+
+    // Transform to anchor tooltip outward from chart edge based on direction
+    const tooltipTransform = useMemo(() => {
+        const transforms = {
+            right: 'translate(0, -50%)',
+            left: 'translate(-100%, -50%)',
+            top: 'translate(-50%, -100%)',
+            bottom: 'translate(-50%, 0)',
+        };
+        return transforms[tooltipDirection] || 'none';
+    }, [tooltipDirection]);
 
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length) {
@@ -469,7 +490,12 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" strokeWidth={0} />
                                             ))}
                                         </Pie>
-                                        <Tooltip content={<CustomTooltip />} isAnimationActive={false} />
+                                        <Tooltip 
+                                            content={<CustomTooltip />} 
+                                            position={tooltipPos || undefined}
+                                            wrapperStyle={{ transform: tooltipTransform, transition: 'none' }}
+                                            isAnimationActive={false} 
+                                        />
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
