@@ -244,23 +244,23 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
         const normalized = ((midAngle % 360) + 360) % 360;
         const radian = (Math.PI / 180) * midAngle;
 
-        const tooltipDistance = (data.outerRadius || 100) + 12;
+        const tooltipDistance = (data.outerRadius || 100) + 22;
         const x = data.cx + tooltipDistance * Math.cos(radian);
         const y = data.cy - tooltipDistance * Math.sin(radian);
 
         let direction, transform;
         if (normalized >= 315 || normalized < 45) {
             direction = 'right';
-            transform = 'translate(4px, -50%)';
+            transform = 'translate(6px, -50%)';
         } else if (normalized >= 45 && normalized < 135) {
             direction = 'top';
-            transform = 'translate(-50%, calc(-100% - 4px))';
+            transform = 'translate(-50%, calc(-100% - 6px))';
         } else if (normalized >= 135 && normalized < 225) {
             direction = 'left';
-            transform = 'translate(calc(-100% - 4px), -50%)';
+            transform = 'translate(calc(-100% - 6px), -50%)';
         } else {
             direction = 'bottom';
-            transform = 'translate(-50%, 4px)';
+            transform = 'translate(-50%, 6px)';
         }
 
         setActiveSegment({
