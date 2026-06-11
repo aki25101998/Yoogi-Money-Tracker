@@ -436,10 +436,12 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                                             paddingAngle={3}
                                             dataKey="value"
                                             stroke="none"
+                                            activeIndex={-1}
                                             activeShape={false}
+                                            isAnimationActive={true}
                                         >
                                             {pieChartData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" strokeWidth={0} />
                                             ))}
                                         </Pie>
                                         <Tooltip content={<CustomTooltip />} />

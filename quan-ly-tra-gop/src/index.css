@@ -24,3 +24,25 @@
     scrollbar-width: none;
   }
 }
+
+/* Remove black outlines from Recharts pie chart on click/focus */
+.recharts-pie-sector,
+.recharts-pie-sector:focus,
+.recharts-pie-sector:active,
+.recharts-sector,
+.recharts-sector:focus,
+.recharts-sector:active {
+  outline: none !important;
+  stroke: none !important;
+  stroke-width: 0 !important;
+}
+
+.recharts-surface:focus,
+.recharts-wrapper:focus {
+  outline: none !important;
+}
+
+svg path:focus,
+svg path:active {
+  outline: none !important;
+}
