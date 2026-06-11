@@ -181,9 +181,10 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
 
         return Object.values(catMap)
             .sort((a, b) => b.value - a.value)
-            .map(item => ({
+            .map((item, index) => ({
                 ...item,
-                percent: totalAmount > 0 ? (item.value / totalAmount) * 100 : 0
+                percent: totalAmount > 0 ? (item.value / totalAmount) * 100 : 0,
+                fill: COLORS[index % COLORS.length]
             }))
             .slice(0, 8); 
     }, [filteredTransactions, categories, chartType]);
@@ -262,18 +263,19 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
         if (active && payload && payload.length) {
             const data = payload[0].payload;
             return (
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 z-50">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xl shadow-inner">
-                            {data.icon}
-                        </div>
-                        <p className="font-bold text-slate-800 dark:text-white text-base">
-                            {data.name}
+                <div className="bg-white dark:bg-slate-800 p-2 rounded shadow-md border border-slate-200 dark:border-slate-700 z-50 min-w-[120px]">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+                        {data.name}
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <div 
+                            className="w-3 h-3 border border-slate-300 dark:border-slate-600 rounded-sm" 
+                            style={{ backgroundColor: data.fill || COLORS[0] }} 
+                        />
+                        <p className="text-sm font-bold text-slate-800 dark:text-white">
+                            {formatCurrency(data.value)} ({data.percent ? data.percent.toFixed(1) : 0}%)
                         </p>
                     </div>
-                    <p className={`font-bold text-xl ${chartType === 'income' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                        {formatCurrency(data.value)}
-                    </p>
                 </div>
             );
         }
