@@ -214,7 +214,7 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                         return (
                             <div key={cat.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                                 {/* Category Header */}
-                                <div className="flex items-center gap-3 px-4 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors" onClick={() => toggleExpand(cat.id)}>
+                                <div className={`flex items-center gap-3 px-4 py-4 transition-colors ${!isUncategorized ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30' : ''}`} onClick={() => !isUncategorized && toggleExpand(cat.id)}>
                                     <span className="text-2xl">{cat.icon}</span>
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-bold text-slate-800 dark:text-white text-base">{cat.name}</h4>
@@ -229,11 +229,11 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                                                 <button onClick={(e) => { e.stopPropagation(); confirmDeleteCategory(cat); }} className="p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors">
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
+                                                <button className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                                                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                                </button>
                                             </>
                                         )}
-                                        <button className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
-                                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                        </button>
                                     </div>
                                 </div>
 
