@@ -263,7 +263,7 @@ const YEARS = [2025, 2026, 2027, 2028];
                         <div className="flex items-center gap-3 mb-6">
                             <div className="flex-1 bg-teal-50/50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800 rounded-2xl p-3 relative overflow-hidden text-center">
                                 <div className="flex items-center justify-center gap-1 text-teal-600 dark:text-teal-400 text-xs font-medium mb-1">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-teal-500"></div> Ngày bắt đầu
+                                    Ngày bắt đầu
                                 </div>
                                 <div className="text-sm font-semibold text-slate-800 dark:text-white">
                                     {customRange.start ? getDayLabel(new Date(customRange.start)) : 'Chưa chọn'}
@@ -279,7 +279,7 @@ const YEARS = [2025, 2026, 2027, 2028];
                             <ArrowRight size={20} className="text-slate-300 dark:text-slate-600 shrink-0" />
                             <div className="flex-1 bg-teal-50/50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800 rounded-2xl p-3 relative overflow-hidden hover:bg-teal-100/50 dark:hover:bg-teal-900/40 transition-colors text-center">
                                 <div className="flex items-center justify-center gap-1 text-teal-600 dark:text-teal-400 text-xs font-medium mb-1">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-teal-500"></div> Ngày kết thúc
+                                    Ngày kết thúc
                                 </div>
                                 <div className="text-sm font-semibold text-slate-800 dark:text-white">
                                     {customRange.end ? getDayLabel(new Date(customRange.end)) : 'Chưa chọn'}
