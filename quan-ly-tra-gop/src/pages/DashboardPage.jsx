@@ -27,7 +27,7 @@ const SortableWalletCard = ({ w, isSelected, onClick }) => {
 
     const style = {
         transform: CSS.Transform.toString(transform),
-        transition,
+        transition: isDragging ? 'none' : transition,
         zIndex: isDragging ? 10 : 1,
         opacity: isDragging ? 0.8 : 1,
     };
