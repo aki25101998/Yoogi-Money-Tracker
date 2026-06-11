@@ -25,7 +25,10 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
     const filteredCategories = categories.filter(c => c.type === activeTab);
 
     const toggleExpand = (catId) => {
-        setExpandedCats(prev => ({ ...prev, [catId]: !prev[catId] }));
+        setExpandedCats(prev => {
+            const isCurrentlyExpanded = prev[catId] !== false;
+            return { ...prev, [catId]: !isCurrentlyExpanded };
+        });
     };
 
     // --- Add/Edit Category (Level 1) ---
