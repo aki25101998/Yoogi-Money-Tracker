@@ -17,7 +17,8 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     // --- State ---
-    const [selectedWalletId, setSelectedWalletId] = useState('all');
+    const [selectedWalletIds, setSelectedWalletIds] = useState([]);
+    const [isMultiSelect, setIsMultiSelect] = useState(false);
     const [aiInput, setAiInput] = useState('');
     const [isAIProcessing, setIsAIProcessing] = useState(false);
     const [aiStatus, setAiStatus] = useState(null);
@@ -52,12 +53,13 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     }, [transactions, wallets]);
 
     const totalBalance = useMemo(() => {
-        return transactions.reduce((sum, t) => {
-            if (t.type === 'income') return sum + (t.amount || 0);
-            if (t.type === 'expense') return sum - (t.amount || 0);
-            return sum;
-        }, 0);
-    }, [transactions]);
+        if (selectedWalletIds.length === 0) {
+            return walletBalances.reduce((sum, w) => sum + w.balance, 0);
+        }
+        return walletBalances
+            .filter(w => selectedWalletIds.includes(w.id))
+            .reduce((sum, w) => sum + w.balance, 0);
+    }, [walletBalances, selectedWalletIds]);
 
     const filteredTransactions = useMemo(() => {
         const todayStr = now.toISOString().split('T')[0];
@@ -66,7 +68,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
 
         return transactions.filter(t => {
             if (!t.date) return false;
-            if (selectedWalletId !== 'all' && t.walletId !== selectedWalletId) return false;
+            if (selectedWalletIds.length > 0 && !selectedWalletIds.includes(t.walletId)) return false;
             const tDate = new Date(t.date);
 
             switch (timeFilter) {
@@ -121,7 +123,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
 
         try {
             const defaultWallet = wallets?.find(w => w.isDefault)?.id || wallets?.[0]?.id || '';
-            const activeWalletId = selectedWalletId !== 'all' ? selectedWalletId : defaultWallet;
+            const activeWalletId = selectedWalletIds.length === 1 ? selectedWalletIds[0] : defaultWallet;
             const result = await categorizeTransaction(aiInput, categories, aiMemories);
 
             await addTransaction(user.uid, {
@@ -236,14 +238,32 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                 </h1>
             </div>
 
-            <div className="px-1 mb-2 flex items-center">
+            <div className="px-1 mb-2 flex flex-wrap items-center justify-between gap-2">
                 <label className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-300 cursor-pointer">
                     <input 
                         type="radio" 
-                        name="walletSelection" 
-                        checked={selectedWalletId === 'all'} 
-                        onChange={() => setSelectedWalletId('all')}
+                        name="walletMode" 
+                        checked={selectedWalletIds.length === 0} 
+                        onChange={() => {
+                            setSelectedWalletIds([]);
+                            setIsMultiSelect(false);
+                        }}
                         className="w-4 h-4 text-emerald-500 border-slate-300 focus:ring-emerald-500"
+                    />
+                    Tất cả ví
+                </label>
+
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-300 cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        checked={isMultiSelect} 
+                        onChange={(e) => {
+                            setIsMultiSelect(e.target.checked);
+                            if (!e.target.checked && selectedWalletIds.length > 1) {
+                                setSelectedWalletIds([]); 
+                            }
+                        }}
+                        className="w-4 h-4 text-emerald-500 border-slate-300 rounded focus:ring-emerald-500"
                     />
                     Chọn nhiều ví
                 </label>
@@ -251,11 +271,24 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
             
             <div className="flex overflow-x-auto gap-3 pb-2 snap-x hide-scrollbar">
                 {walletBalances.map((w, i) => {
-                    const isSelected = selectedWalletId === w.id;
+                    const isSelected = selectedWalletIds.length === 0 || selectedWalletIds.includes(w.id);
                     return (
                         <div 
                             key={i} 
-                            onClick={() => setSelectedWalletId(w.id)}
+                            onClick={() => {
+                                if (isMultiSelect) {
+                                    if (selectedWalletIds.length === 0) {
+                                        setSelectedWalletIds([w.id]);
+                                    } else if (selectedWalletIds.includes(w.id)) {
+                                        const newSelection = selectedWalletIds.filter(id => id !== w.id);
+                                        setSelectedWalletIds(newSelection);
+                                    } else {
+                                        setSelectedWalletIds([...selectedWalletIds, w.id]);
+                                    }
+                                } else {
+                                    setSelectedWalletIds([w.id]);
+                                }
+                            }}
                             className={`min-w-[140px] flex-shrink-0 snap-start rounded-2xl p-4 border cursor-pointer transition-all ${isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
                         >
                             <div className="flex items-center justify-between mb-2">
@@ -465,7 +498,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                 categories={categories}
                 wallets={wallets}
                 initialData={editingTransaction}
-                defaultWalletId={selectedWalletId !== 'all' ? selectedWalletId : null}
+                defaultWalletId={selectedWalletIds.length === 1 ? selectedWalletIds[0] : null}
             />
         </div>
     );
