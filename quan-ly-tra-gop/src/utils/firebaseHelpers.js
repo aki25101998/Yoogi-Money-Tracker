@@ -68,6 +68,81 @@ export const seedDefaultCategories = async (userId) => {
 };
 
 /**
+ * Ensure required categories exist and migrate old ones
+ */
+export const ensureRequiredCategories = async (userId) => {
+    const catRef = getCollectionRef(userId, 'categories');
+    const snapshot = await getDocs(catRef);
+    if (snapshot.size === 0) return; // handled by seedDefaultCategories
+
+    const categories = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+
+    const hasUncategorizedExpense = categories.some(c => c.id === 'uncategorized_expense' || c.name === 'Chưa phân loại' || c.name === '❓ Chưa phân loại');
+    const hasUncategorizedIncome = categories.some(c => c.id === 'uncategorized_income' || c.name === 'Chưa phân loại' || c.name === '❓ Chưa phân loại');
+
+    const batch = writeBatch(db);
+    let updated = false;
+
+    // Check if we need to rename existing ones or clear their subcategories
+    for (const cat of categories) {
+        if (cat.id === 'uncategorized_expense' || cat.id === 'uncategorized_income' || cat.name === '❓ Chưa phân loại') {
+            const docRef = getDocRef(userId, 'categories', cat.docId);
+            let needsUpdate = false;
+            let updates = {};
+
+            if (cat.name === '❓ Chưa phân loại') {
+                updates.name = 'Chưa phân loại';
+                needsUpdate = true;
+            }
+
+            // Remove the subcategory 'chua_phan_loai' if it exists
+            if (cat.subcategories && cat.subcategories.some(s => s.id === 'chua_phan_loai')) {
+                updates.subcategories = cat.subcategories.filter(s => s.id !== 'chua_phan_loai');
+                needsUpdate = true;
+            }
+
+            if (needsUpdate) {
+                batch.update(docRef, updates);
+                updated = true;
+            }
+        }
+    }
+
+    // Add missing ones if they were somehow deleted
+    if (!hasUncategorizedExpense) {
+        const docRef = doc(catRef);
+        batch.set(docRef, {
+            id: 'uncategorized_expense',
+            name: 'Chưa phân loại',
+            icon: '❓',
+            type: 'expense',
+            order: 99,
+            subcategories: [],
+            createdAt: new Date().toISOString(),
+        });
+        updated = true;
+    }
+
+    if (!hasUncategorizedIncome) {
+        const docRef = doc(catRef);
+        batch.set(docRef, {
+            id: 'uncategorized_income',
+            name: 'Chưa phân loại',
+            icon: '❓',
+            type: 'income',
+            order: 99,
+            subcategories: [],
+            createdAt: new Date().toISOString(),
+        });
+        updated = true;
+    }
+
+    if (updated) {
+        await batch.commit();
+    }
+};
+
+/**
  * Listen to categories in real-time
  */
 export const subscribeCategories = (userId, callback) => {

@@ -23,6 +23,7 @@ import SettingsPage from './pages/SettingsPage';
 // Helpers
 import {
     seedDefaultCategories,
+    ensureRequiredCategories,
     subscribeCategories,
     subscribeTransactions,
     subscribeAIMemory,
@@ -96,10 +97,14 @@ export default function App() {
         setIsDataLoading(true);
 
         // Seed default categories if needed
-        seedDefaultCategories(user.uid).then(() => {
-            console.log('Categories check complete');
+        seedDefaultCategories(user.uid).then((seeded) => {
+            if (!seeded) {
+                return ensureRequiredCategories(user.uid);
+            }
+        }).then(() => {
+            console.log('Categories check & migration complete');
         }).catch(err => {
-            console.error('Error seeding categories:', err);
+            console.error('Error with categories:', err);
         });
 
         // Subscribe to installments (legacy path)
