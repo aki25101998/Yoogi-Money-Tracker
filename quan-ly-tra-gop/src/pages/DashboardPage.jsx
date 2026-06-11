@@ -457,30 +457,33 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                 ) : (
                     <>
                         <div className="h-64 mb-6 relative">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={pieChartData}
-                                        cx="50%" cy="50%"
-                                        innerRadius={70} outerRadius={100}
-                                        paddingAngle={3}
-                                        dataKey="value"
-                                        stroke="none"
-                                        activeShape={false}
-                                    >
-                                        {pieChartData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip content={<CustomTooltip />} />
-                                </PieChart>
-                            </ResponsiveContainer>
                             {/* Inner Donut Text */}
-                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
                                 <span className="text-slate-400 text-xs font-bold uppercase mb-1">Tổng cộng</span>
                                 <span className="text-lg font-bold text-slate-800 dark:text-white">
                                     {formatCurrency(summaryStats[chartType])}
                                 </span>
+                            </div>
+                            
+                            <div className="relative z-10 w-full h-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={pieChartData}
+                                            cx="50%" cy="50%"
+                                            innerRadius={70} outerRadius={100}
+                                            paddingAngle={3}
+                                            dataKey="value"
+                                            stroke="none"
+                                            activeShape={false}
+                                        >
+                                            {pieChartData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip content={<CustomTooltip />} />
+                                    </PieChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
 
