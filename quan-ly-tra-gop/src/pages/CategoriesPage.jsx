@@ -206,6 +206,7 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                     filteredCategories.map((cat, idx) => {
                         const isExpanded = expandedCats[cat.id] !== false; // Default expanded
                         const subCount = cat.subcategories?.length || 0;
+                        const isUncategorized = cat.id === 'uncategorized_expense' || cat.id === 'uncategorized_income' || cat.name === 'Chưa phân loại' || cat.name === '❓ Chưa phân loại';
 
                         return (
                             <div key={cat.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
@@ -217,12 +218,16 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                                         <p className="text-xs text-slate-400 dark:text-slate-500">{subCount} mục con</p>
                                     </div>
                                     <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                        <button onClick={() => openEditCategory(cat)} className="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors">
-                                            <Pencil className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => confirmDeleteCategory(cat)} className="p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        {!isUncategorized && (
+                                            <>
+                                                <button onClick={() => openEditCategory(cat)} className="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors">
+                                                    <Pencil className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={() => confirmDeleteCategory(cat)} className="p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
                                         {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                                     </div>
                                 </div>
@@ -257,12 +262,14 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                                         </div>
 
                                         {/* Add Subcategory Button */}
-                                        <button
-                                            onClick={() => openAddSubcategory(cat.id)}
-                                            className="w-full py-3 px-4 pl-12 text-left text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-2 border-t border-slate-100 dark:border-slate-700"
-                                        >
-                                            <Plus className="w-3.5 h-3.5" /> Thêm mục con
-                                        </button>
+                                        {!isUncategorized && (
+                                            <button
+                                                onClick={() => openAddSubcategory(cat.id)}
+                                                className="w-full py-3 px-4 pl-12 text-left text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-2 border-t border-slate-100 dark:border-slate-700"
+                                            >
+                                                <Plus className="w-3.5 h-3.5" /> Thêm mục con
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
