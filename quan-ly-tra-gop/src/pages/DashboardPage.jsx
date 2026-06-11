@@ -237,21 +237,20 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                 </h1>
             </div>
 
+            <div className="px-1 mb-2 flex items-center">
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-300 cursor-pointer">
+                    <input 
+                        type="radio" 
+                        name="selectAllWallets"
+                        checked={selectedWalletIds.length === 0} 
+                        onChange={() => setSelectedWalletIds([])}
+                        className="w-4 h-4 text-emerald-500 border-slate-300 focus:ring-emerald-500"
+                    />
+                    Tất cả ví
+                </label>
+            </div>
+
             <div className="flex overflow-x-auto gap-3 pb-2 pt-2 snap-x hide-scrollbar">
-                {/* Nút "Tất cả ví" */}
-                <div 
-                    onClick={() => setSelectedWalletIds([])}
-                    className={`min-w-[120px] flex-shrink-0 snap-start rounded-2xl p-4 border cursor-pointer transition-all ${selectedWalletIds.length === 0 ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
-                >
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-lg">🌍</span>
-                        {selectedWalletIds.length === 0 ? <Check className="w-4 h-4 text-emerald-500" /> : null}
-                    </div>
-                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate mb-1">Tất cả ví</p>
-                    <p className="text-sm font-bold text-slate-800 dark:text-white">
-                        {formatCurrency(walletBalances.reduce((sum, w) => sum + w.balance, 0))}
-                    </p>
-                </div>
 
                 {/* Các ví cụ thể */}
                 {walletBalances.map((w, i) => {
