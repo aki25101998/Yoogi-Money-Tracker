@@ -250,11 +250,11 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                 </label>
             </div>
 
-            <div className="flex overflow-x-auto gap-3 pb-2 pt-2 snap-x hide-scrollbar">
+            <div className="flex overflow-x-auto gap-3 pb-2 pt-2 px-1 snap-x hide-scrollbar">
 
                 {/* Các ví cụ thể */}
                 {walletBalances.map((w, i) => {
-                    const isSelected = selectedWalletIds.includes(w.id);
+                    const isSelected = selectedWalletIds.length === 0 || selectedWalletIds.includes(w.id);
                     return (
                         <div 
                             key={i} 
