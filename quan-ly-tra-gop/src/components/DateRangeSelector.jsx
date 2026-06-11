@@ -161,6 +161,8 @@ const DateRangeSelector = ({ initialMode = 'month', onChange }) => {
         }
     };
 
+const YEARS = [2025, 2026, 2027, 2028];
+
     return (
         <div className="flex flex-wrap items-center gap-2 relative">
             {/* Tầng 1: Chọn Chế độ (Mode) */}
@@ -210,24 +212,26 @@ const DateRangeSelector = ({ initialMode = 'month', onChange }) => {
                         {mode === 'month' && (
                             <input 
                                 type="month" 
-                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer z-10"
                                 onChange={handleNativeChange}
+                                onClick={(e) => { try { e.target.showPicker(); } catch(err) {} }}
                             />
                         )}
                         {(mode === 'day' || mode === 'week') && (
                             <input 
                                 type="date" 
-                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer z-10"
                                 onChange={handleNativeChange}
+                                onClick={(e) => { try { e.target.showPicker(); } catch(err) {} }}
                             />
                         )}
                         {mode === 'year' && (
                             <select 
-                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer z-10"
                                 value={currentDate.getFullYear()}
                                 onChange={handleYearChange}
                             >
-                                {Array.from({length: 21}, (_, i) => new Date().getFullYear() - 10 + i).map(y => (
+                                {YEARS.map(y => (
                                     <option key={y} value={y}>{y}</option>
                                 ))}
                             </select>
@@ -268,11 +272,12 @@ const DateRangeSelector = ({ initialMode = 'month', onChange }) => {
                                     type="date" 
                                     value={customRange.start}
                                     onChange={(e) => setCustomRange(prev => ({...prev, start: e.target.value}))}
-                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                    onClick={(e) => { try { e.target.showPicker(); } catch(err) {} }}
+                                    className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer z-10"
                                 />
                             </div>
                             <ArrowRight size={20} className="text-slate-300 dark:text-slate-600 shrink-0" />
-                            <div className="flex-1 bg-teal-50/50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800 rounded-2xl p-3 relative overflow-hidden">
+                            <div className="flex-1 bg-teal-50/50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800 rounded-2xl p-3 relative overflow-hidden hover:bg-teal-100/50 dark:hover:bg-teal-900/40 transition-colors">
                                 <div className="flex items-center gap-1 text-teal-600 dark:text-teal-400 text-xs font-medium mb-1">
                                     <div className="w-1.5 h-1.5 rounded-full bg-teal-500"></div> Ngày kết thúc
                                 </div>
@@ -283,7 +288,8 @@ const DateRangeSelector = ({ initialMode = 'month', onChange }) => {
                                     type="date" 
                                     value={customRange.end}
                                     onChange={(e) => setCustomRange(prev => ({...prev, end: e.target.value}))}
-                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                    onClick={(e) => { try { e.target.showPicker(); } catch(err) {} }}
+                                    className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer z-10"
                                 />
                             </div>
                         </div>
