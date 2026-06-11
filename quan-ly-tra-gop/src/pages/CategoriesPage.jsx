@@ -217,18 +217,20 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                                         <h4 className="font-bold text-slate-800 dark:text-white text-base">{cat.name}</h4>
                                         <p className="text-xs text-slate-400 dark:text-slate-500">{subCount} mục con</p>
                                     </div>
-                                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex items-center gap-1">
                                         {!isUncategorized && (
                                             <>
-                                                <button onClick={() => openEditCategory(cat)} className="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors">
+                                                <button onClick={(e) => { e.stopPropagation(); openEditCategory(cat); }} className="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors">
                                                     <Pencil className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => confirmDeleteCategory(cat)} className="p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors">
+                                                <button onClick={(e) => { e.stopPropagation(); confirmDeleteCategory(cat); }} className="p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors">
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </>
                                         )}
-                                        {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                                        <button className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                        </button>
                                     </div>
                                 </div>
 
