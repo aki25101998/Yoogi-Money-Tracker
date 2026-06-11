@@ -4,7 +4,7 @@ import {
     PieChart as PieChartIcon, Sparkles, Loader2, Plus, Pencil,
     Filter, Calendar, ChevronDown, Check, Info
 } from 'lucide-react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
 import { categorizeTransaction } from '../utils/aiCategorizer';
 import { addTransaction, incrementMemoryUsage, updateWalletOrder, addWallet } from '../utils/firebaseHelpers';
@@ -104,9 +104,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     };
 
     const [chartType, setChartType] = useState('expense'); // 'expense' or 'income'
-    const [tooltipDirection, setTooltipDirection] = useState('left');
-    const [hoveredIndex, setHoveredIndex] = useState(null);
-    const [tooltipPos, setTooltipPos] = useState(null);
+    const [activeSegment, setActiveSegment] = useState(null);
 
     // --- Calculations ---
     const walletBalances = useMemo(() => {
@@ -246,64 +244,33 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
         const normalized = ((midAngle % 360) + 360) % 360;
         const radian = (Math.PI / 180) * midAngle;
 
-        // Position tooltip just outside the outer edge of the chart
-        const tooltipDistance = (data.outerRadius || 100) + 18;
-        const cx = data.cx;
-        const cy = data.cy;
-        const x = cx + tooltipDistance * Math.cos(radian);
-        const y = cy - tooltipDistance * Math.sin(radian);
-        setTooltipPos({ x, y });
+        const tooltipDistance = (data.outerRadius || 100) + 12;
+        const x = data.cx + tooltipDistance * Math.cos(radian);
+        const y = data.cy - tooltipDistance * Math.sin(radian);
 
+        let direction, transform;
         if (normalized >= 315 || normalized < 45) {
-            setTooltipDirection('right');
+            direction = 'right';
+            transform = 'translate(4px, -50%)';
         } else if (normalized >= 45 && normalized < 135) {
-            setTooltipDirection('top');
+            direction = 'top';
+            transform = 'translate(-50%, calc(-100% - 4px))';
         } else if (normalized >= 135 && normalized < 225) {
-            setTooltipDirection('left');
+            direction = 'left';
+            transform = 'translate(calc(-100% - 4px), -50%)';
         } else {
-            setTooltipDirection('bottom');
+            direction = 'bottom';
+            transform = 'translate(-50%, 4px)';
         }
-        setHoveredIndex(index);
+
+        setActiveSegment({
+            data: pieChartData[index],
+            x, y, direction, transform, index,
+        });
     };
 
-    // Transform to anchor tooltip outward from chart edge based on direction
-    const tooltipTransform = useMemo(() => {
-        const transforms = {
-            right: 'translate(0, -50%)',
-            left: 'translate(-100%, -50%)',
-            top: 'translate(-50%, -100%)',
-            bottom: 'translate(-50%, 0)',
-        };
-        return transforms[tooltipDirection] || 'none';
-    }, [tooltipDirection]);
-
-    const CustomTooltip = ({ active, payload }) => {
-        if (active && payload && payload.length) {
-            const data = payload[0].payload;
-            return (
-                <div 
-                    key={`tooltip-${hoveredIndex}`}
-                    className="bg-white dark:bg-slate-800 p-2.5 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 z-50 min-w-[120px]"
-                    style={{
-                        animation: `tooltip-slide-${tooltipDirection} 0.3s ease-out both`,
-                    }}
-                >
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-                        {data.name}
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <div 
-                            className="w-3 h-3 border border-slate-300 dark:border-slate-600 rounded-sm" 
-                            style={{ backgroundColor: data.fill || COLORS[0] }} 
-                        />
-                        <p className="text-sm font-bold text-slate-800 dark:text-white">
-                            {formatCurrency(data.value)} ({data.percent ? data.percent.toFixed(1) : 0}%)
-                        </p>
-                    </div>
-                </div>
-            );
-        }
-        return null;
+    const handlePieMouseLeave = () => {
+        setActiveSegment(null);
     };
 
     return (
@@ -462,7 +429,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                     </div>
                 ) : (
                     <>
-                        <div className="h-64 mb-6 relative">
+                        <div className="h-64 mb-6 relative overflow-visible">
                             {/* Inner Donut Text */}
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
                                 <span className="text-slate-400 text-xs font-bold uppercase mb-1">Tổng cộng</span>
@@ -485,20 +452,48 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                                             activeShape={false}
                                             isAnimationActive={true}
                                             onMouseEnter={handlePieMouseEnter}
+                                            onMouseLeave={handlePieMouseLeave}
                                         >
                                             {pieChartData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" strokeWidth={0} />
                                             ))}
                                         </Pie>
-                                        <Tooltip 
-                                            content={<CustomTooltip />} 
-                                            position={tooltipPos || undefined}
-                                            wrapperStyle={{ transform: tooltipTransform, transition: 'none' }}
-                                            isAnimationActive={false} 
-                                        />
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
+
+                            {/* Custom Tooltip */}
+                            {activeSegment && (
+                                <div 
+                                    className="absolute z-30 pointer-events-none"
+                                    style={{
+                                        left: activeSegment.x,
+                                        top: activeSegment.y,
+                                        transform: activeSegment.transform,
+                                    }}
+                                >
+                                    <div 
+                                        key={`seg-${activeSegment.index}`}
+                                        className="bg-white dark:bg-slate-800 p-2.5 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 min-w-[120px] whitespace-nowrap"
+                                        style={{
+                                            animation: `tooltip-slide-${activeSegment.direction} 0.25s ease-out both`,
+                                        }}
+                                    >
+                                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+                                            {activeSegment.data.name}
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <div 
+                                                className="w-3 h-3 rounded-sm" 
+                                                style={{ backgroundColor: activeSegment.data.fill || COLORS[0] }} 
+                                            />
+                                            <p className="text-sm font-bold text-slate-800 dark:text-white">
+                                                {formatCurrency(activeSegment.data.value)} ({activeSegment.data.percent ? activeSegment.data.percent.toFixed(1) : 0}%)
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Progress Bars List */}
