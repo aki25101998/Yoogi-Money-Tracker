@@ -17,6 +17,7 @@ import {
 import {
     arrayMove, SortableContext, sortableKeyboardCoordinates, horizontalListSortingStrategy, useSortable,
 } from '@dnd-kit/sortable';
+import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
 
 const SortableWalletCard = ({ w, isSelected, onClick }) => {
@@ -38,7 +39,7 @@ const SortableWalletCard = ({ w, isSelected, onClick }) => {
             onClick={onClick}
             {...attributes} 
             {...listeners}
-            className={`min-w-[140px] flex-shrink-0 snap-start rounded-2xl p-4 border cursor-grab active:cursor-grabbing touch-none transition-all ${isDragging ? 'scale-105 shadow-xl border-emerald-500' : isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
+            className={`min-w-[140px] flex-shrink-0 rounded-2xl p-4 border cursor-grab active:cursor-grabbing touch-none transition-all ${isDragging ? 'scale-105 shadow-xl border-emerald-500' : isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
         >
             <div className="flex items-center justify-between mb-2">
                 <span className="text-lg">{w.icon}</span>
@@ -325,10 +326,10 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                 </label>
             </div>
 
-            <div className="flex overflow-x-auto gap-3 pb-2 pt-2 px-1 snap-x hide-scrollbar">
+            <div className="flex overflow-x-auto gap-3 pb-2 pt-2 px-1 hide-scrollbar">
 
                 {/* Các ví cụ thể */}
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToHorizontalAxis]} onDragEnd={handleDragEnd}>
                     <SortableContext items={walletBalances.map(w => w.id)} strategy={horizontalListSortingStrategy}>
                         {walletBalances.map((w, i) => {
                             const isSelected = selectedWalletIds.length === 0 || selectedWalletIds.includes(w.id);
@@ -353,7 +354,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                 {/* Thêm ví mới */}
                 <div 
                     onClick={() => setIsWalletModalOpen(true)}
-                    className="min-w-[140px] flex-shrink-0 snap-start rounded-2xl p-4 border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all flex flex-col items-center justify-center text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                    className="min-w-[140px] flex-shrink-0 rounded-2xl p-4 border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all flex flex-col items-center justify-center text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
                 >
                     <Plus className="w-8 h-8 mb-2" />
                     <p className="text-sm font-bold">Thêm ví</p>
