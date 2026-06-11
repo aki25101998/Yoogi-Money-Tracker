@@ -44,6 +44,7 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
     // Filter State
     const [filterOwner, setFilterOwner] = useState('all');
     const [filterDate, setFilterDate] = useState('');
+    const [hideCompleted, setHideCompleted] = useState(false);
 
     // Refs
     const fileInputRef = useRef(null);
@@ -62,11 +63,17 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         if (filterDate) {
             const [y, m] = filterDate.split('-').map(Number);
             const selectedDate = new Date(y, m - 1);
+            const currentYM = getYearMonth(selectedDate);
+            
             result = result.filter(item => {
                 const start = new Date(item.startDate);
                 const startMonth = new Date(start.getFullYear(), start.getMonth());
                 const monthsDiff = (selectedDate.getFullYear() - startMonth.getFullYear()) * 12 + (selectedDate.getMonth() - startMonth.getMonth());
-                return monthsDiff >= 0 && monthsDiff < item.term;
+                
+                const validPaidCount = (item.paidMonths || []).filter(pm => pm <= currentYM).length;
+                const isFinished = validPaidCount >= item.term;
+
+                return monthsDiff >= 0 && (monthsDiff < item.term || !isFinished);
             });
         }
         return result;
@@ -98,19 +105,32 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
     }, [filteredItems, activeReferenceDate]);
 
     const totalStats = useMemo(() => {
-        return filteredItems.reduce((acc, item) => {
-            const stats = calculateItemStats(item, activeReferenceDate);
-            const currentYM = getYearMonth(activeReferenceDate);
-            const isPaid = item.paidMonths?.includes(currentYM);
-            if (!stats.isFinished) {
-                if (!isPaid) {
-                    acc.monthlyTotal += item.monthlyPayment;
-                }
-                acc.remainingTotal += stats.remainingAmount;
+        const currentYM = getYearMonth(activeReferenceDate);
+        let monthlyTotal = 0;
+        let remainingTotal = 0;
+
+        // Calculate global remaining total based on ALL items and CURRENT date
+        // so it doesn't jump around when user changes the month filter
+        const itemsForRemaining = items.filter(item => filterOwner === 'all' || (item.owner || 'Tôi') === filterOwner);
+        const today = new Date();
+        itemsForRemaining.forEach(item => {
+            const currentStats = calculateItemStats(item, today);
+            if (!currentStats.isFinished) {
+                remainingTotal += currentStats.remainingAmount;
             }
-            return acc;
-        }, { monthlyTotal: 0, remainingTotal: 0 });
-    }, [filteredItems, activeReferenceDate]);
+        });
+
+        // Calculate monthly total for the currently viewed month
+        filteredItems.forEach(item => {
+            const statsAtRef = calculateItemStats(item, activeReferenceDate);
+            const isPaid = item.paidMonths?.includes(currentYM);
+            if (!statsAtRef.isFinished && !isPaid) {
+                monthlyTotal += item.monthlyPayment;
+            }
+        });
+
+        return { monthlyTotal, remainingTotal };
+    }, [filteredItems, items, filterOwner, activeReferenceDate]);
 
     // --- Handlers ---
     const handleOpenAdd = () => { setEditingItem(null); setIsAddEditModalOpen(true); };
@@ -336,16 +356,33 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         <>
             {/* Toolbar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                <div className="relative group">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 transition-colors group-hover:bg-slate-50 dark:group-hover:bg-slate-700">
-                        <Filter className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="whitespace-nowrap">Người trả:</span>
-                        <span className="font-bold text-indigo-600 dark:text-indigo-400 truncate max-w-[100px]">{filterOwner === 'all' ? 'Tất cả' : filterOwner}</span>
-                        <ChevronDown className="w-3 h-3 text-slate-400" />
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="relative group">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 transition-colors group-hover:bg-slate-50 dark:group-hover:bg-slate-700">
+                            <Filter className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="whitespace-nowrap">Người trả:</span>
+                            <span className="font-bold text-indigo-600 dark:text-indigo-400 truncate max-w-[100px]">{filterOwner === 'all' ? 'Tất cả' : filterOwner}</span>
+                            <ChevronDown className="w-3 h-3 text-slate-400" />
+                        </div>
+                        <select value={filterOwner} onChange={(e) => setFilterOwner(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            {uniqueOwners.map(owner => <option key={owner} value={owner}>{owner === 'all' ? 'Tất cả' : owner}</option>)}
+                        </select>
                     </div>
-                    <select value={filterOwner} onChange={(e) => setFilterOwner(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                        {uniqueOwners.map(owner => <option key={owner} value={owner}>{owner === 'all' ? 'Tất cả' : owner}</option>)}
-                    </select>
+
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-600 dark:text-slate-300 hover:text-indigo-600 transition-colors select-none">
+                        <div className="relative flex items-center">
+                            <input 
+                                type="checkbox" 
+                                checked={hideCompleted}
+                                onChange={(e) => setHideCompleted(e.target.checked)}
+                                className="peer sr-only"
+                            />
+                            <div className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 peer-checked:bg-indigo-600 peer-checked:border-indigo-600 transition-colors flex items-center justify-center bg-white dark:bg-slate-800 peer-checked:dark:bg-indigo-600">
+                                <Check className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" />
+                            </div>
+                        </div>
+                        <span className="font-medium">Ẩn đã xong</span>
+                    </label>
                 </div>
 
                 <div className="flex gap-2 ml-auto items-center">
@@ -410,9 +447,9 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
             )}
 
             {/* Items Lists */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div className={`grid grid-cols-1 ${hideCompleted ? '' : 'lg:grid-cols-2'} gap-6 items-start`}>
                 {renderInstallmentList(inProgressItems, "Đang chờ thanh toán", "Tất cả đã được thanh toán cho tháng này!", "bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700")}
-                {renderInstallmentList(completedItems, "Đã hoàn thành", "Chưa có mục nào hoàn thành.", "bg-slate-50/50 dark:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700")}
+                {!hideCompleted && renderInstallmentList(completedItems, "Đã hoàn thành", "Chưa có mục nào hoàn thành.", "bg-slate-50/50 dark:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700")}
             </div>
 
             {/* Modals */}
