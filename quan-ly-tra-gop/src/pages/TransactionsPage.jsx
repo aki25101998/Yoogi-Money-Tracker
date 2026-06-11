@@ -4,11 +4,11 @@ import { formatCurrency } from '../utils/formatters';
 import { deleteTransaction, updateTransaction } from '../utils/firebaseHelpers';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import TransactionModal from '../components/modals/TransactionModal';
+import DateRangeSelector from '../components/DateRangeSelector';
 
 const TransactionsPage = ({ user, transactions, categories, wallets }) => {
     // --- Filters ---
-    const [timeFilter, setTimeFilter] = useState('month'); // today, week, month, year, custom
-    const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
+    const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
 
     // --- Modal State ---
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,44 +17,17 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // --- Date Helpers ---
-    const getStartOfWeek = (d) => {
-        const date = new Date(d);
-        const day = date.getDay();
-        const diff = date.getDate() - day + (day === 0 ? -6 : 1); 
-        return new Date(date.setDate(diff)).setHours(0,0,0,0);
-    };
-
     // --- Filter Logic ---
     const filteredTransactions = useMemo(() => {
-        const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
-        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const currentYear = `${now.getFullYear()}`;
-        const startOfWeek = getStartOfWeek(now);
-
         return transactions.filter(t => {
             if (!t.date) return false;
-            const tDate = new Date(t.date);
+            
+            if (dateRange.start && t.date < dateRange.start) return false;
+            if (dateRange.end && t.date > dateRange.end) return false;
 
-            switch (timeFilter) {
-                case 'today':
-                    return t.date === todayStr;
-                case 'week':
-                    return tDate.getTime() >= startOfWeek && tDate.getTime() <= now.getTime();
-                case 'month':
-                    return t.date.startsWith(currentMonth);
-                case 'year':
-                    return t.date.startsWith(currentYear);
-                case 'custom':
-                    if (customDateRange.start && t.date < customDateRange.start) return false;
-                    if (customDateRange.end && t.date > customDateRange.end) return false;
-                    return true;
-                default:
-                    return true;
-            }
+            return true;
         });
-    }, [transactions, timeFilter, customDateRange]);
+    }, [transactions, dateRange]);
 
     // Group by Date for better UI
     const groupedTransactions = useMemo(() => {
@@ -135,39 +108,12 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
 
                     {/* Filter Controls */}
                     <div className="flex flex-wrap items-center gap-2">
-                        {['today', 'week', 'month', 'year', 'custom'].map(filter => (
-                            <button
-                                key={filter}
-                                onClick={() => setTimeFilter(filter)}
-                                className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
-                                    timeFilter === filter 
-                                        ? 'bg-indigo-600 text-white shadow-md' 
-                                        : 'bg-slate-50 dark:bg-slate-900 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
-                                }`}
-                            >
-                                {filter === 'today' && 'Hôm nay'}
-                                {filter === 'week' && 'Tuần này'}
-                                {filter === 'month' && 'Tháng này'}
-                                {filter === 'year' && 'Năm nay'}
-                                {filter === 'custom' && 'Tùy chỉnh'}
-                            </button>
-                        ))}
+                        <DateRangeSelector 
+                            initialMode="month" 
+                            onChange={(range) => setDateRange(range)} 
+                        />
                     </div>
                 </div>
-
-                {/* Custom Date Range Picker */}
-                {timeFilter === 'custom' && (
-                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Từ:</span>
-                            <input type="date" value={customDateRange.start} onChange={e => setCustomDateRange({...customDateRange, start: e.target.value})} className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:border-indigo-500" />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Đến:</span>
-                            <input type="date" value={customDateRange.end} onChange={e => setCustomDateRange({...customDateRange, end: e.target.value})} className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:border-indigo-500" />
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Summary Banner */}

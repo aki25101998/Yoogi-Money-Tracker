@@ -10,6 +10,7 @@ import { categorizeTransaction } from '../utils/aiCategorizer';
 import { addTransaction, incrementMemoryUsage, updateWalletOrder, addWallet } from '../utils/firebaseHelpers';
 import TransactionModal from '../components/modals/TransactionModal';
 import WalletModal from '../components/modals/WalletModal';
+import DateRangeSelector from '../components/DateRangeSelector';
 
 import {
     DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -66,6 +67,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+    const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -101,18 +103,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
         }
     };
 
-    const [timeFilter, setTimeFilter] = useState('month'); 
-    const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
-
     const [chartType, setChartType] = useState('expense'); // 'expense' or 'income'
-
-    // --- Date Helpers ---
-    const getStartOfWeek = (d) => {
-        const date = new Date(d);
-        const day = date.getDay();
-        const diff = date.getDate() - day + (day === 0 ? -6 : 1); 
-        return new Date(date.setDate(diff)).setHours(0,0,0,0);
-    };
 
     // --- Calculations ---
     const walletBalances = useMemo(() => {
@@ -137,28 +128,16 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     }, [walletBalances, selectedWalletIds]);
 
     const filteredTransactions = useMemo(() => {
-        const todayStr = now.toISOString().split('T')[0];
-        const currentYear = `${now.getFullYear()}`;
-        const startOfWeek = getStartOfWeek(now);
-
         return transactions.filter(t => {
             if (!t.date) return false;
             if (selectedWalletIds.length > 0 && !selectedWalletIds.includes(t.walletId)) return false;
-            const tDate = new Date(t.date);
 
-            switch (timeFilter) {
-                case 'today': return t.date === todayStr;
-                case 'week': return tDate.getTime() >= startOfWeek && tDate.getTime() <= now.getTime();
-                case 'month': return t.date.startsWith(currentMonth);
-                case 'year': return t.date.startsWith(currentYear);
-                case 'custom':
-                    if (customDateRange.start && t.date < customDateRange.start) return false;
-                    if (customDateRange.end && t.date > customDateRange.end) return false;
-                    return true;
-                default: return true;
-            }
+            if (dateRange.start && t.date < dateRange.start) return false;
+            if (dateRange.end && t.date > dateRange.end) return false;
+
+            return true;
         });
-    }, [transactions, timeFilter, customDateRange, currentMonth, now]);
+    }, [transactions, dateRange, selectedWalletIds]);
 
     const summaryStats = useMemo(() => {
         const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
@@ -371,30 +350,12 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
 
             {/* 3. Time Filter & Net Change Card */}
             <div>
-                <div className="relative inline-block mb-3">
-                    <select
-                        value={timeFilter}
-                        onChange={(e) => setTimeFilter(e.target.value)}
-                        className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-bold py-2 pl-4 pr-10 rounded-full focus:outline-none focus:ring-2 focus:ring-cyan-500/20 shadow-sm cursor-pointer"
-                    >
-                        <option value="today">Hôm nay</option>
-                        <option value="week">Tuần này</option>
-                        <option value="month">Tháng này</option>
-                        <option value="year">Năm nay</option>
-                        <option value="custom">Tùy chỉnh</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
-                        <ChevronDown className="w-4 h-4" />
-                    </div>
+                <div className="mb-4">
+                    <DateRangeSelector 
+                        initialMode="month" 
+                        onChange={(range) => setDateRange(range)} 
+                    />
                 </div>
-
-                {timeFilter === 'custom' && (
-                    <div className="mb-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap gap-2 text-sm">
-                        <input type="date" value={customDateRange.start} onChange={e => setCustomDateRange({...customDateRange, start: e.target.value})} className="px-2 py-1 border rounded" />
-                        <span className="self-center">-</span>
-                        <input type="date" value={customDateRange.end} onChange={e => setCustomDateRange({...customDateRange, end: e.target.value})} className="px-2 py-1 border rounded" />
-                    </div>
-                )}
 
                 {/* Net Change Card - Themed like the image */}
                 <div className="bg-gradient-to-br from-cyan-100 to-teal-50 dark:from-cyan-900/30 dark:to-teal-900/20 rounded-[28px] p-6 shadow-sm border border-white/50 dark:border-cyan-800/30">
