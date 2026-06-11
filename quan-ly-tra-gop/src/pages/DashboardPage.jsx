@@ -7,8 +7,48 @@ import {
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
 import { categorizeTransaction } from '../utils/aiCategorizer';
-import { addTransaction, incrementMemoryUsage } from '../utils/firebaseHelpers';
+import { addTransaction, incrementMemoryUsage, updateWalletOrder, addWallet } from '../utils/firebaseHelpers';
 import TransactionModal from '../components/modals/TransactionModal';
+import WalletModal from '../components/modals/WalletModal';
+
+import {
+    DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+    arrayMove, SortableContext, sortableKeyboardCoordinates, horizontalListSortingStrategy, useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+const SortableWalletCard = ({ w, isSelected, onClick }) => {
+    const {
+        attributes, listeners, setNodeRef, transform, transition, isDragging,
+    } = useSortable({ id: w.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : 1,
+        opacity: isDragging ? 0.8 : 1,
+    };
+
+    return (
+        <div 
+            ref={setNodeRef}
+            style={style}
+            onClick={onClick}
+            {...attributes} 
+            {...listeners}
+            className={`min-w-[140px] flex-shrink-0 snap-start rounded-2xl p-4 border cursor-grab active:cursor-grabbing touch-none transition-all ${isDragging ? 'scale-105 shadow-xl border-emerald-500' : isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
+        >
+            <div className="flex items-center justify-between mb-2">
+                <span className="text-lg">{w.icon}</span>
+                {isSelected ? <Check className="w-4 h-4 text-emerald-500" /> : null}
+            </div>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate mb-1">{w.name}</p>
+            <p className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(w.balance)}</p>
+        </div>
+    );
+};
 
 const COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#2dd4bf', '#fb923c', '#94a3b8'];
 
@@ -24,6 +64,41 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
+    const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    const handleDragEnd = async (event) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            const oldIndex = walletBalances.findIndex(w => w.id === active.id);
+            const newIndex = walletBalances.findIndex(w => w.id === over.id);
+            const newWallets = arrayMove(walletBalances, oldIndex, newIndex);
+            try {
+                await updateWalletOrder(user.uid, newWallets.map(w => w.id));
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    };
+
+    const handleSaveWallet = async (formData) => {
+        if (!user) return;
+        try {
+            await addWallet(user.uid, {
+                name: formData.name,
+                icon: formData.icon,
+                isDefault: false,
+                order: walletBalances.length,
+            });
+            setIsWalletModalOpen(false);
+        } catch (err) {
+            alert('Lỗi: ' + err.message);
+        }
+    };
 
     const [timeFilter, setTimeFilter] = useState('month'); 
     const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
@@ -253,31 +328,36 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
             <div className="flex overflow-x-auto gap-3 pb-2 pt-2 px-1 snap-x hide-scrollbar">
 
                 {/* Các ví cụ thể */}
-                {walletBalances.map((w, i) => {
-                    const isSelected = selectedWalletIds.length === 0 || selectedWalletIds.includes(w.id);
-                    return (
-                        <div 
-                            key={i} 
-                            onClick={() => {
-                                if (selectedWalletIds.includes(w.id)) {
-                                    // Deselect
-                                    setSelectedWalletIds(selectedWalletIds.filter(id => id !== w.id));
-                                } else {
-                                    // Select
-                                    setSelectedWalletIds([...selectedWalletIds, w.id]);
-                                }
-                            }}
-                            className={`min-w-[140px] flex-shrink-0 snap-start rounded-2xl p-4 border cursor-pointer transition-all ${isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
-                        >
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-lg">{w.icon}</span>
-                                {isSelected ? <Check className="w-4 h-4 text-emerald-500" /> : null}
-                            </div>
-                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate mb-1">{w.name}</p>
-                            <p className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(w.balance)}</p>
-                        </div>
-                    );
-                })}
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={walletBalances.map(w => w.id)} strategy={horizontalListSortingStrategy}>
+                        {walletBalances.map((w, i) => {
+                            const isSelected = selectedWalletIds.length === 0 || selectedWalletIds.includes(w.id);
+                            return (
+                                <SortableWalletCard 
+                                    key={w.id} 
+                                    w={w} 
+                                    isSelected={isSelected} 
+                                    onClick={() => {
+                                        if (selectedWalletIds.includes(w.id)) {
+                                            setSelectedWalletIds(selectedWalletIds.filter(id => id !== w.id));
+                                        } else {
+                                            setSelectedWalletIds([...selectedWalletIds, w.id]);
+                                        }
+                                    }} 
+                                />
+                            );
+                        })}
+                    </SortableContext>
+                </DndContext>
+
+                {/* Thêm ví mới */}
+                <div 
+                    onClick={() => setIsWalletModalOpen(true)}
+                    className="min-w-[140px] flex-shrink-0 snap-start rounded-2xl p-4 border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all flex flex-col items-center justify-center text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                >
+                    <Plus className="w-8 h-8 mb-2" />
+                    <p className="text-sm font-bold">Thêm ví</p>
+                </div>
             </div>
 
             {/* 3. Time Filter & Net Change Card */}
@@ -477,6 +557,13 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                 wallets={wallets}
                 initialData={editingTransaction}
                 defaultWalletId={selectedWalletIds.length === 1 ? selectedWalletIds[0] : null}
+            />
+
+            <WalletModal
+                isOpen={isWalletModalOpen}
+                onClose={() => setIsWalletModalOpen(false)}
+                mode="add"
+                onSave={handleSaveWallet}
             />
         </div>
     );

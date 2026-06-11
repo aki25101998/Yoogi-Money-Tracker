@@ -293,6 +293,15 @@ export const subscribeWallets = (userId, callback) => {
             id: doc.id,
             ...doc.data(),
         }));
+        // Sort by order ascending, fallback to createdAt or id
+        wallets.sort((a, b) => {
+            if (a.order !== undefined && b.order !== undefined) {
+                return a.order - b.order;
+            }
+            if (a.order !== undefined) return -1;
+            if (b.order !== undefined) return 1;
+            return (a.createdAt || a.id).localeCompare(b.createdAt || b.id);
+        });
         callback(wallets);
     });
 };
@@ -310,6 +319,15 @@ export const updateWallet = async (userId, walletId, updates) => {
         ...updates,
         updatedAt: new Date().toISOString(),
     });
+};
+
+export const updateWalletOrder = async (userId, orderedWalletIds) => {
+    const batch = writeBatch(db);
+    orderedWalletIds.forEach((id, index) => {
+        const docRef = getDocRef(userId, 'wallets', id);
+        batch.update(docRef, { order: index, updatedAt: new Date().toISOString() });
+    });
+    await batch.commit();
 };
 
 export const deleteWallet = async (userId, walletId) => {

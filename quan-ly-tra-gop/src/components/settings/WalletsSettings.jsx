@@ -1,45 +1,94 @@
 import React, { useState } from 'react';
-import { Wallet, Plus, Pencil, Trash2, X, AlertTriangle } from 'lucide-react';
-import { addWallet, updateWallet, deleteWallet } from '../../utils/firebaseHelpers';
+import { Wallet, Plus, Pencil, Trash2, AlertTriangle, GripVertical } from 'lucide-react';
+import { addWallet, updateWallet, deleteWallet, updateWalletOrder } from '../../utils/firebaseHelpers';
 import ConfirmModal from '../modals/ConfirmModal';
+import WalletModal from '../modals/WalletModal';
+
+import {
+    DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+    arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+const SortableWalletItem = ({ wallet, onEdit, onDelete, onSetDefault }) => {
+    const {
+        attributes, listeners, setNodeRef, transform, transition, isDragging,
+    } = useSortable({ id: wallet.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : 1,
+        opacity: isDragging ? 0.8 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className={`bg-white dark:bg-slate-800 border ${isDragging ? 'border-emerald-500 shadow-md' : 'border-slate-200 dark:border-slate-700'} p-4 rounded-xl flex items-center justify-between shadow-sm relative group`}>
+            <div className="flex items-center gap-3">
+                <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-slate-300 hover:text-slate-500 touch-none">
+                    <GripVertical className="w-5 h-5" />
+                </div>
+                <div className="text-2xl">{wallet.icon || '💵'}</div>
+                <div>
+                    <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-slate-800 dark:text-white">{wallet.name}</h4>
+                        {wallet.isDefault && (
+                            <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-bold">Mặc định</span>
+                        )}
+                    </div>
+                    {!wallet.isDefault && (
+                        <button onClick={() => onSetDefault(wallet.id)} className="text-xs text-slate-400 hover:text-emerald-500 mt-1">
+                            Đặt làm mặc định
+                        </button>
+                    )}
+                </div>
+            </div>
+            <div className="flex gap-2">
+                <button onClick={() => onEdit(wallet)} className="p-2 text-slate-400 hover:text-emerald-500 bg-slate-50 hover:bg-emerald-50 dark:bg-slate-900 dark:hover:bg-emerald-900/30 rounded-lg transition-colors">
+                    <Pencil className="w-4 h-4" />
+                </button>
+                <button onClick={() => onDelete(wallet.id)} className="p-2 text-slate-400 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 dark:bg-slate-900 dark:hover:bg-rose-900/30 rounded-lg transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+};
 
 const WalletsSettings = ({ user, wallets }) => {
     const [editModal, setEditModal] = useState({ isOpen: false, mode: 'add', data: null });
-    const [formName, setFormName] = useState('');
-    const [formIcon, setFormIcon] = useState('💵');
-
     const [confirmState, setConfirmState] = useState({ isOpen: false, data: null });
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const EMOJI_PICKS = ['💵', '💳', '🏦', '📱', '💰', '💼', '🐖'];
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
 
     const openAdd = () => {
         setEditModal({ isOpen: true, mode: 'add', data: null });
-        setFormName('');
-        setFormIcon('💵');
     };
 
     const openEdit = (wallet) => {
         setEditModal({ isOpen: true, mode: 'edit', data: wallet });
-        setFormName(wallet.name);
-        setFormIcon(wallet.icon || '💵');
     };
 
-    const handleSave = async (e) => {
-        e.preventDefault();
-        if (!user || !formName.trim()) return;
-
+    const handleSave = async (formData) => {
+        if (!user) return;
         try {
             if (editModal.mode === 'add') {
                 await addWallet(user.uid, {
-                    name: formName.trim(),
-                    icon: formIcon,
+                    name: formData.name,
+                    icon: formData.icon,
                     isDefault: false,
+                    order: wallets.length, // Put at the end
                 });
             } else {
                 await updateWallet(user.uid, editModal.data.id, {
-                    name: formName.trim(),
-                    icon: formIcon,
+                    name: formData.name,
+                    icon: formData.icon,
                 });
             }
         } catch (err) {
@@ -63,7 +112,6 @@ const WalletsSettings = ({ user, wallets }) => {
     const setAsDefault = async (walletId) => {
         if (!user) return;
         try {
-            // Find current default and unset it
             const currentDefault = wallets.find(w => w.isDefault);
             if (currentDefault && currentDefault.id !== walletId) {
                 await updateWallet(user.uid, currentDefault.id, { isDefault: false });
@@ -71,6 +119,20 @@ const WalletsSettings = ({ user, wallets }) => {
             await updateWallet(user.uid, walletId, { isDefault: true });
         } catch (err) {
             alert('Lỗi: ' + err.message);
+        }
+    };
+
+    const handleDragEnd = async (event) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            const oldIndex = wallets.findIndex(w => w.id === active.id);
+            const newIndex = wallets.findIndex(w => w.id === over.id);
+            const newWallets = arrayMove(wallets, oldIndex, newIndex);
+            try {
+                await updateWalletOrder(user.uid, newWallets.map(w => w.id));
+            } catch (error) {
+                alert('Lỗi cập nhật vị trí: ' + error.message);
+            }
         }
     };
 
@@ -89,85 +151,33 @@ const WalletsSettings = ({ user, wallets }) => {
                 </button>
             </div>
 
-            <div className="grid gap-3">
-                {wallets.length === 0 ? (
-                    <div className="text-center p-6 text-slate-400">Chưa có ví nào</div>
-                ) : (
-                    wallets.map(wallet => (
-                        <div key={wallet.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-xl flex items-center justify-between shadow-sm">
-                            <div className="flex items-center gap-3">
-                                <div className="text-2xl">{wallet.icon || '💵'}</div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h4 className="font-bold text-slate-800 dark:text-white">{wallet.name}</h4>
-                                        {wallet.isDefault && (
-                                            <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-bold">Mặc định</span>
-                                        )}
-                                    </div>
-                                    {!wallet.isDefault && (
-                                        <button onClick={() => setAsDefault(wallet.id)} className="text-xs text-slate-400 hover:text-emerald-500 mt-1">
-                                            Đặt làm mặc định
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => openEdit(wallet)} className="p-2 text-slate-400 hover:text-emerald-500 bg-slate-50 hover:bg-emerald-50 dark:bg-slate-900 dark:hover:bg-emerald-900/30 rounded-lg transition-colors">
-                                    <Pencil className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => setConfirmState({ isOpen: true, data: wallet.id })} className="p-2 text-slate-400 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 dark:bg-slate-900 dark:hover:bg-rose-900/30 rounded-lg transition-colors">
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
-
-            {/* Modal Add/Edit */}
-            {editModal.isOpen && (
-                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md">
-                        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
-                            <h3 className="font-bold text-lg text-slate-800 dark:text-white">
-                                {editModal.mode === 'add' ? 'Thêm Ví mới' : 'Sửa Ví'}
-                            </h3>
-                            <button onClick={() => setEditModal({ isOpen: false })}><X className="w-6 h-6 text-slate-400 hover:text-slate-600" /></button>
-                        </div>
-                        <form onSubmit={handleSave} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Biểu tượng</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {EMOJI_PICKS.map(emoji => (
-                                        <button
-                                            key={emoji}
-                                            type="button"
-                                            onClick={() => setFormIcon(emoji)}
-                                            className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all ${formIcon === emoji ? 'bg-emerald-100 dark:bg-emerald-900/30 ring-2 ring-emerald-500 scale-110' : 'bg-slate-50 dark:bg-slate-900 hover:bg-slate-100'}`}
-                                        >
-                                            {emoji}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Tên ví</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formName}
-                                    onChange={(e) => setFormName(e.target.value)}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none"
-                                    placeholder="Vd: Tiền mặt, Thẻ ATM..."
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={wallets.map(w => w.id)} strategy={verticalListSortingStrategy}>
+                    <div className="grid gap-3">
+                        {wallets.length === 0 ? (
+                            <div className="text-center p-6 text-slate-400">Chưa có ví nào</div>
+                        ) : (
+                            wallets.map(wallet => (
+                                <SortableWalletItem 
+                                    key={wallet.id} 
+                                    wallet={wallet} 
+                                    onEdit={openEdit} 
+                                    onDelete={(id) => setConfirmState({ isOpen: true, data: id })} 
+                                    onSetDefault={setAsDefault} 
                                 />
-                            </div>
-                            <button type="submit" className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl mt-2">
-                                Lưu
-                            </button>
-                        </form>
+                            ))
+                        )}
                     </div>
-                </div>
-            )}
+                </SortableContext>
+            </DndContext>
+
+            <WalletModal 
+                isOpen={editModal.isOpen}
+                onClose={() => setEditModal({ isOpen: false })}
+                mode={editModal.mode}
+                initialData={editModal.data}
+                onSave={handleSave}
+            />
 
             <ConfirmModal
                 isOpen={confirmState.isOpen}
