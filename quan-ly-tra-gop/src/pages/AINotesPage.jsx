@@ -114,7 +114,7 @@ const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
                     <div>
                         <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                             <Brain className="w-6 h-6 text-purple-500" />
-                            AI Ghi chú
+                            Ví ngữ cảnh
                         </h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                             Bộ nhớ học của AI — giúp AI phân loại giao dịch chính xác hơn
@@ -124,7 +124,7 @@ const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
                         onClick={openAdd}
                         className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-200 dark:shadow-none transition-all hover:-translate-y-0.5"
                     >
-                        <Plus className="w-4 h-4" /> Ghi chú giùm AI
+                        <Plus className="w-4 h-4" /> Thêm ngữ cảnh
                     </button>
                 </div>
             )}
@@ -134,7 +134,7 @@ const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
                         onClick={openAdd}
                         className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-bold shadow-sm transition-all"
                     >
-                        <Plus className="w-4 h-4" /> Ghi chú giùm AI
+                        <Plus className="w-4 h-4" /> Thêm ngữ cảnh
                     </button>
                 </div>
             )}
@@ -239,7 +239,7 @@ const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md">
                         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
                             <h3 className="font-bold text-lg text-slate-800 dark:text-white">
-                                {editModal.mode === 'add' ? 'Ghi chú cho AI' : 'Sửa ghi chú'}
+                                {editModal.mode === 'add' ? 'Thêm ngữ cảnh mới' : 'Sửa ngữ cảnh'}
                             </h3>
                             <button onClick={closeModal}><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
                         </div>
@@ -308,7 +308,7 @@ const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
                 isOpen={confirmState.isOpen}
                 onClose={() => setConfirmState({ isOpen: false, data: null })}
                 onConfirm={handleDelete}
-                title="Xóa ghi chú AI?"
+                title="Xóa ngữ cảnh AI?"
                 description="AI sẽ không còn dùng rule này để phân loại nữa."
                 confirmText="Xóa"
                 confirmVariant="danger"

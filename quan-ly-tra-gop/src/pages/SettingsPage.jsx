@@ -12,7 +12,7 @@ const SettingsPage = ({ user, categories, aiMemories, wallets, payers }) => {
     const tabs = [
         { id: 'wallets', label: 'Ví tiền', icon: Wallet },
         { id: 'categories', label: 'Danh mục', icon: FolderTree },
-        { id: 'ai', label: 'AI Ghi chú', icon: Brain },
+        { id: 'ai', label: 'Ví ngữ cảnh', icon: Brain },
         { id: 'payers', label: 'Người trả', icon: Users },
     ];
 

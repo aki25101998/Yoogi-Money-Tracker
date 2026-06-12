@@ -12,6 +12,8 @@ import TransactionModal from '../components/modals/TransactionModal';
 import WalletModal from '../components/modals/WalletModal';
 import ReorderWalletsModal from '../components/modals/ReorderWalletsModal';
 import DateRangeSelector from '../components/DateRangeSelector';
+import AIChatModal from '../components/chat/AIChatModal';
+import { Bot, PenSquare } from 'lucide-react';
 
 import {
     DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors,
@@ -89,9 +91,10 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
 
     // --- State ---
     const [selectedWalletIds, setSelectedWalletIds] = useState([]);
-    const [aiInput, setAiInput] = useState('');
-    const [isAIProcessing, setIsAIProcessing] = useState(false);
-    const [aiStatus, setAiStatus] = useState(null);
+    
+    // UI States
+    const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+    const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
@@ -230,44 +233,6 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     const recentTransactions = useMemo(() => filteredTransactions.slice(0, 5), [filteredTransactions]);
 
     // --- Handlers ---
-    const handleAISubmit = async () => {
-        if (!aiInput.trim() || !user) return;
-        setIsAIProcessing(true);
-        setAiStatus(null);
-
-        try {
-            const defaultWallet = wallets?.find(w => w.isDefault)?.id || wallets?.[0]?.id || '';
-            const activeWalletId = selectedWalletIds.length === 1 ? selectedWalletIds[0] : defaultWallet;
-            const result = await categorizeTransaction(aiInput, categories, aiMemories);
-
-            await addTransaction(user.uid, {
-                type: result.type,
-                amount: result.amount,
-                description: result.description,
-                categoryId: result.categoryId,
-                subcategoryId: result.subcategoryId,
-                date: result.date,
-                walletId: activeWalletId,
-                aiCategorized: result.aiCategorized,
-            });
-
-            if (result.memoryId) {
-                await incrementMemoryUsage(user.uid, result.memoryId);
-            }
-
-            const cat = categories.find(c => c.id === result.categoryId);
-            setAiStatus({
-                type: 'success',
-                message: `✅ Đã thêm: ${result.description} — ${formatCurrency(result.amount)} → ${cat ? cat.name : '❓'}`,
-            });
-            setAiInput('');
-        } catch (error) {
-            setAiStatus({ type: 'error', message: `❌ ${error.message}` });
-        } finally {
-            setIsAIProcessing(false);
-            setTimeout(() => setAiStatus(null), 5000);
-        }
-    };
 
     const handleSaveTransaction = async (formData) => {
         if (!user) return;
@@ -333,34 +298,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
 
     return (
         <div className="space-y-6 pb-20 relative min-h-screen">
-            
-            {/* 1. AI Input Bar (Compact) */}
-            <div className="bg-white dark:bg-slate-800 rounded-full p-2 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-5 h-5 text-emerald-500" />
-                </div>
-                <input
-                    type="text"
-                    value={aiInput}
-                    onChange={(e) => setAiInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAISubmit()}
-                    placeholder="Nhập nhanh: ăn sáng 50k..."
-                    className="flex-1 bg-transparent border-none focus:outline-none text-sm text-slate-700 dark:text-slate-200"
-                    disabled={isAIProcessing}
-                />
-                <button
-                    onClick={handleAISubmit}
-                    disabled={isAIProcessing || !aiInput.trim()}
-                    className="w-10 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center disabled:opacity-50 transition-colors"
-                >
-                    {isAIProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-5 h-5" />}
-                </button>
-            </div>
-            {aiStatus && (
-                <div className={`px-4 py-2 rounded-xl text-xs font-medium text-center ${aiStatus.type === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                    {aiStatus.message}
-                </div>
-            )}
+            {/* 1. Dashboard Header - (Old AI Bar removed) */}
 
             {/* 2. Total Balance & Wallets */}
             <div className="text-center pt-2">
@@ -657,15 +595,50 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                 </div>
             </div>
 
-            {/* Floating Action Button (FAB) */}
+            {/* Floating Action Button (FAB) Menu */}
+            {isFabMenuOpen && (
+                <div className="fixed inset-0 z-30 flex" onClick={() => setIsFabMenuOpen(false)}>
+                    <div className="absolute bottom-36 right-6 md:bottom-24 md:right-8 flex flex-col gap-3 items-end">
+                        <button 
+                            onClick={() => { setIsFabMenuOpen(false); setEditingTransaction(null); setIsModalOpen(true); }}
+                            className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Nhập thủ công</span>
+                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                                <PenSquare className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                            </div>
+                        </button>
+                        <button 
+                            onClick={() => { setIsFabMenuOpen(false); setIsAIChatOpen(true); }}
+                            className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 transition-colors"
+                        >
+                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Nhập bằng AI</span>
+                            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                                <Bot className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <button
-                onClick={() => { setEditingTransaction(null); setIsModalOpen(true); }}
-                className="fixed bottom-20 right-6 md:bottom-6 md:right-8 w-14 h-14 bg-slate-800 dark:bg-cyan-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-slate-400/30 dark:shadow-none hover:scale-105 active:scale-95 transition-all z-40"
+                onClick={() => setIsFabMenuOpen(!isFabMenuOpen)}
+                className={`fixed bottom-20 right-6 md:bottom-6 md:right-8 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-lg transition-all z-40 ${isFabMenuOpen ? 'bg-slate-600 rotate-45 scale-90' : 'bg-slate-800 dark:bg-cyan-600 hover:scale-105 active:scale-95'}`}
             >
                 <Plus className="w-6 h-6" />
             </button>
 
             {/* Modals */}
+            <AIChatModal 
+                isOpen={isAIChatOpen}
+                onClose={() => setIsAIChatOpen(false)}
+                user={user}
+                categories={categories}
+                aiMemories={aiMemories}
+                wallets={wallets}
+                selectedWalletId={selectedWalletIds.length === 1 ? selectedWalletIds[0] : null}
+            />
+
             <TransactionModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
