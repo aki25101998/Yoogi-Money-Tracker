@@ -106,14 +106,23 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         let monthlyTotal = 0;
         let remainingTotal = 0;
 
-        // Calculate global remaining total based on ALL items and CURRENT date
-        // so it doesn't jump around when user changes the month filter
+        // Calculate global remaining total based on ALL items
+        // It uses absolute total payments made, ignoring the calendar month
         const today = new Date();
         filteredItems.forEach(item => {
-            const currentStats = calculateItemStats(item, today);
-            if (!currentStats.isFinished) {
-                remainingTotal += currentStats.remainingAmount;
+            let effectiveMonths = 0;
+            if (Array.isArray(item.paidMonths)) {
+                effectiveMonths = Math.min(item.paidMonths.length, item.term);
+            } else {
+                // Fallback for old data without paidMonths array
+                const start = new Date(item.startDate);
+                let monthsPassed = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
+                if (today < start) monthsPassed = 0;
+                effectiveMonths = Math.min(monthsPassed, item.term);
             }
+            
+            const paidAmount = effectiveMonths * item.monthlyPayment;
+            remainingTotal += (item.totalPayable - paidAmount);
         });
 
         // Calculate monthly total for the currently viewed month (unpaid items only)
