@@ -1,9 +1,9 @@
 import React from 'react';
-import { Pencil, Trash2, User } from 'lucide-react';
+import { Pencil, Trash2, User, AlertCircle } from 'lucide-react';
 import Card from './ui/Card';
 import Badge from './ui/Badge';
 import { formatCurrency } from '../utils/formatters';
-import { calculateItemStats } from '../utils/calculations';
+import { calculateItemStats, monthDiff } from '../utils/calculations';
 
 const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, isReadOnly }) => {
     const stats = calculateItemStats(item, referenceDate);
@@ -11,14 +11,25 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
     const cannotTickMore = !isPaid && paidCount >= item.term;
     const isDisabled = isReadOnly || cannotTickMore;
 
+    // Calculate missed payments
+    const now = new Date();
+    const start = new Date(item.startDate);
+    const monthsPassedTotal = monthDiff(start, now);
+    const monthsShouldHavePaid = Math.min(monthsPassedTotal, item.term);
+    const missedCount = monthsShouldHavePaid - paidCount;
+    const showMissedWarning = missedCount > 0 && paidCount < item.term;
+
     return (
         <Card className={`overflow-hidden transition-all duration-200 group border-slate-200 dark:border-slate-700 ${isPaid ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : 'bg-white dark:bg-slate-800'}`}>
             <div className="p-4 sm:p-5">
                 <div className="flex justify-between items-start mb-4">
                     <div>
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-slate-200 dark:border-slate-600">
                                 <User className="w-3 h-3" /> {item.owner || 'Tôi'}
+                            </div>
+                            <div className="flex items-center gap-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-indigo-200 dark:border-indigo-800">
+                                Kỳ T{referenceDate.getMonth() + 1}/{referenceDate.getFullYear()}
                             </div>
                             {stats.isFinished ? (
                                 <Badge type="success">Hoàn tất</Badge>
@@ -97,6 +108,18 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                         <span>{stats.effectiveMonths}/{item.term} kỳ</span>
                     </div>
                 </div>
+
+                {showMissedWarning && (
+                    <div className="mt-3 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 p-2.5 rounded-lg border border-amber-200 dark:border-amber-800">
+                        <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                            <p className="text-xs font-bold text-amber-700 dark:text-amber-400">Cảnh báo trễ hạn</p>
+                            <p className="text-[11px] text-amber-600 dark:text-amber-500 mt-0.5">
+                                Bạn đang thiếu tick đã trả cho <span className="font-bold">{missedCount} kỳ</span> trong quá khứ. Hãy kiểm tra lại lịch sử!
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
         </Card>
     );
