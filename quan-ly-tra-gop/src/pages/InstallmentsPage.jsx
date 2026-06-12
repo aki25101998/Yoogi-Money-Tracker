@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 
 import { db, APP_ID } from '../config/firebase';
+import { addPayer } from '../utils/firebaseHelpers';
 import { formatCurrency } from '../utils/formatters';
 import { calculateLoan, calculateItemStats, getYearMonth } from '../utils/calculations';
 
@@ -397,6 +398,20 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         }
     };
 
+    const handleQuickAddPayer = async () => {
+        const name = window.prompt('Nhập tên người trả mới:');
+        if (name && name.trim()) {
+            try {
+                await addPayer(user.uid, { name: name.trim() });
+                setFilterOwner(name.trim());
+                return name.trim();
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+        return null;
+    };
+
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400">
@@ -410,16 +425,25 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         <>
             {/* Toolbar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                <div className="relative group">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 transition-colors group-hover:bg-slate-50 dark:group-hover:bg-slate-700">
-                        <Filter className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="whitespace-nowrap">Người trả:</span>
-                        <span className="font-bold text-indigo-600 dark:text-indigo-400 truncate max-w-[100px]">{filterOwner === 'all' ? 'Tất cả' : filterOwner}</span>
-                        <ChevronDown className="w-3 h-3 text-slate-400" />
+                <div className="flex gap-2">
+                    <div className="relative group">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 transition-colors group-hover:bg-slate-50 dark:group-hover:bg-slate-700">
+                            <Filter className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="whitespace-nowrap">Người trả:</span>
+                            <span className="font-bold text-indigo-600 dark:text-indigo-400 truncate max-w-[100px]">{filterOwner === 'all' ? 'Tất cả' : filterOwner}</span>
+                            <ChevronDown className="w-3 h-3 text-slate-400" />
+                        </div>
+                        <select value={filterOwner} onChange={(e) => setFilterOwner(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            {uniqueOwners.map(owner => <option key={owner} value={owner}>{owner === 'all' ? 'Tất cả' : owner}</option>)}
+                        </select>
                     </div>
-                    <select value={filterOwner} onChange={(e) => setFilterOwner(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                        {uniqueOwners.map(owner => <option key={owner} value={owner}>{owner === 'all' ? 'Tất cả' : owner}</option>)}
-                    </select>
+                    <button 
+                        onClick={handleQuickAddPayer} 
+                        className="flex items-center justify-center px-2 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-colors"
+                        title="Thêm người trả mới"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                    </button>
                 </div>
 
                 <div className="flex gap-2 ml-auto items-center">
@@ -667,6 +691,7 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                 onSave={handleSaveItem}
                 editingItem={editingItem}
                 uniqueOwners={payers}
+                onAddPayer={handleQuickAddPayer}
             />
             <ConfirmModal
                 isOpen={confirmModalState.isOpen}

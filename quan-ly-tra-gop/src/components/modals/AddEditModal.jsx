@@ -7,7 +7,8 @@ const AddEditModal = ({
     onClose,
     onSave,
     editingItem,
-    uniqueOwners
+    uniqueOwners,
+    onAddPayer
 }) => {
     const [formData, setFormData] = useState({
         name: '',
@@ -149,17 +150,34 @@ const AddEditModal = ({
 
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Người trả</label>
-                        <select
-                            required
-                            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-indigo-500 focus:outline-none"
-                            value={formData.owner}
-                            onChange={e => setFormData({ ...formData, owner: e.target.value })}
-                        >
-                            <option value="">Chọn người trả...</option>
-                            {uniqueOwners && uniqueOwners.map(o => (
-                                <option key={o.id} value={o.name}>{o.name}</option>
-                            ))}
-                        </select>
+                        <div className="flex gap-2">
+                            <select
+                                required
+                                className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-indigo-500 focus:outline-none"
+                                value={formData.owner}
+                                onChange={e => setFormData({ ...formData, owner: e.target.value })}
+                            >
+                                <option value="">Chọn người trả...</option>
+                                {uniqueOwners && uniqueOwners.map(o => (
+                                    <option key={o.id} value={o.name}>{o.name}</option>
+                                ))}
+                            </select>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    if (onAddPayer) {
+                                        const newPayer = await onAddPayer();
+                                        if (newPayer) {
+                                            setFormData({ ...formData, owner: newPayer });
+                                        }
+                                    }
+                                }}
+                                className="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-colors flex items-center justify-center"
+                                title="Thêm người trả mới"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Tên món đồ</label>
