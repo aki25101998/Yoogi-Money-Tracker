@@ -538,8 +538,15 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                     </div>
                     
                     <div className="space-y-4">
-                        <h2 className="text-sm font-semibold text-emerald-500 border-l-4 border-emerald-500 pl-2 tracking-wider flex justify-between items-center">
-                            <span>Đã hoàn thành ({completedItems.length})</span>
+                        <h2 className="text-sm font-semibold text-emerald-500 border-l-4 border-emerald-500 pl-2 tracking-wider flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                                <span>Đã hoàn thành ({completedItems.length})</span>
+                                {completedItems.length > 0 && (
+                                    <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded text-xs font-bold">
+                                        {formatCurrency(completedItems.reduce((sum, item) => sum + item.monthlyPayment, 0))}
+                                    </span>
+                                )}
+                            </div>
                             <div className="flex items-center gap-1">
                                 <input type="checkbox" id="hideCompleted" checked={hideCompleted} onChange={(e) => setHideCompleted(e.target.checked)} className="rounded border-slate-300 text-emerald-500 focus:ring-emerald-500 dark:bg-slate-700 dark:border-slate-600 dark:checked:bg-emerald-500" />
                                 <label htmlFor="hideCompleted" className="text-xs font-normal text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-300">Ẩn danh sách</label>
