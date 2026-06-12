@@ -55,30 +55,6 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         return ['all', ...(payers?.map(p => p.name) || [])];
     }, [payers]);
 
-    const filteredItems = useMemo(() => {
-        let result = items;
-        if (filterOwner !== 'all') {
-            result = result.filter(item => (item.owner || 'Tôi') === filterOwner);
-        }
-        if (filterDate) {
-            const [y, m] = filterDate.split('-').map(Number);
-            const selectedDate = new Date(y, m - 1);
-            const currentYM = getYearMonth(selectedDate);
-            
-            result = result.filter(item => {
-                const start = new Date(item.startDate);
-                const startMonth = new Date(start.getFullYear(), start.getMonth());
-                const monthsDiff = (selectedDate.getFullYear() - startMonth.getFullYear()) * 12 + (selectedDate.getMonth() - startMonth.getMonth());
-                
-                const validPaidCount = (item.paidMonths || []).filter(pm => pm <= currentYM).length;
-                const isFinished = validPaidCount >= item.term;
-
-                return monthsDiff >= 0 && (monthsDiff < item.term || !isFinished);
-            });
-        }
-        return result;
-    }, [items, filterOwner, filterDate]);
-
     const activeReferenceDate = useMemo(() => {
         if (filterDate) {
             const [y, m] = filterDate.split('-').map(Number);
@@ -87,50 +63,66 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         return new Date();
     }, [filterDate]);
 
+    const filteredItems = useMemo(() => {
+        let result = items;
+        if (filterOwner !== 'all') {
+            result = result.filter(item => (item.owner || 'Tôi') === filterOwner);
+        }
+        return result;
+    }, [items, filterOwner]);
+
     const { inProgressItems, completedItems } = useMemo(() => {
         const targetDate = activeReferenceDate;
         const targetMonthStr = getYearMonth(targetDate);
         const inProgress = [];
         const completed = [];
+        
         filteredItems.forEach(item => {
-            const isPaid = item.paidMonths?.includes(targetMonthStr);
-            const stats = calculateItemStats(item, targetDate);
-            if (isPaid || stats.isFinished) {
+            const startStr = getYearMonth(new Date(item.startDate));
+            
+            // Ignore items that haven't started yet relative to the viewed month
+            if (startStr > targetMonthStr) return;
+
+            // Check how many payments were made BEFORE the currently viewed month
+            const paidBeforeTargetMonth = (item.paidMonths || []).filter(pm => pm < targetMonthStr).length;
+            
+            // If the item was already fully paid off before this month started, hide it completely
+            if (paidBeforeTargetMonth >= item.term) return;
+
+            // Did we pay it IN the currently viewed month?
+            const isPaidThisMonth = item.paidMonths?.includes(targetMonthStr);
+
+            if (isPaidThisMonth) {
                 completed.push(item);
             } else {
                 inProgress.push(item);
             }
         });
+        
         return { inProgressItems: inProgress, completedItems: completed };
     }, [filteredItems, activeReferenceDate]);
 
     const totalStats = useMemo(() => {
-        const currentYM = getYearMonth(activeReferenceDate);
         let monthlyTotal = 0;
         let remainingTotal = 0;
 
         // Calculate global remaining total based on ALL items and CURRENT date
         // so it doesn't jump around when user changes the month filter
-        const itemsForRemaining = items.filter(item => filterOwner === 'all' || (item.owner || 'Tôi') === filterOwner);
         const today = new Date();
-        itemsForRemaining.forEach(item => {
+        filteredItems.forEach(item => {
             const currentStats = calculateItemStats(item, today);
             if (!currentStats.isFinished) {
                 remainingTotal += currentStats.remainingAmount;
             }
         });
 
-        // Calculate monthly total for the currently viewed month
-        filteredItems.forEach(item => {
-            const statsAtRef = calculateItemStats(item, activeReferenceDate);
-            const isPaid = item.paidMonths?.includes(currentYM);
-            if (!statsAtRef.isFinished && !isPaid) {
-                monthlyTotal += item.monthlyPayment;
-            }
+        // Calculate monthly total for the currently viewed month (unpaid items only)
+        inProgressItems.forEach(item => {
+            monthlyTotal += item.monthlyPayment;
         });
 
         return { monthlyTotal, remainingTotal };
-    }, [filteredItems, items, filterOwner, activeReferenceDate]);
+    }, [filteredItems, inProgressItems]);
 
     // --- Handlers ---
     const handleOpenAdd = () => { setEditingItem(null); setIsAddEditModalOpen(true); };
