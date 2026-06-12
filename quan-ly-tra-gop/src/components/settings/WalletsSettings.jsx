@@ -63,7 +63,7 @@ const WalletsSettings = ({ user, wallets }) => {
     const [isDeleting, setIsDeleting] = useState(false);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(PointerSensor, { activationConstraint: { delay: 1500, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -82,6 +82,7 @@ const WalletsSettings = ({ user, wallets }) => {
                 await addWallet(user.uid, {
                     name: formData.name,
                     icon: formData.icon,
+                    initialBalance: formData.initialBalance,
                     isDefault: false,
                     order: wallets.length, // Put at the end
                 });
@@ -89,6 +90,7 @@ const WalletsSettings = ({ user, wallets }) => {
                 await updateWallet(user.uid, editModal.data.id, {
                     name: formData.name,
                     icon: formData.icon,
+                    initialBalance: formData.initialBalance,
                 });
             }
         } catch (err) {

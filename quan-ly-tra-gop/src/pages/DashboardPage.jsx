@@ -21,7 +21,7 @@ import {
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
 
-const SortableWalletCard = ({ w, isSelected, onClick }) => {
+const SortableWalletCard = ({ w, isSelected, onClick, onClickEdit }) => {
     const {
         attributes, listeners, setNodeRef, transform, transition, isDragging,
     } = useSortable({ id: w.id });
@@ -43,7 +43,16 @@ const SortableWalletCard = ({ w, isSelected, onClick }) => {
             className={`min-w-[140px] flex-shrink-0 rounded-2xl p-4 border cursor-grab active:cursor-grabbing touch-none transition-all ${isDragging ? 'scale-105 shadow-xl border-emerald-500' : isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
         >
             <div className="flex items-center justify-between mb-2">
-                <span className="text-lg">{w.icon}</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-lg">{w.icon}</span>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onClickEdit(w); }}
+                        className="p-1 text-slate-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors"
+                        title="Sửa ví"
+                    >
+                        <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                </div>
                 {isSelected ? <Check className="w-4 h-4 text-emerald-500" /> : null}
             </div>
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate mb-1">{w.name}</p>
@@ -69,8 +78,11 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
     const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
 
+    const [walletModalMode, setWalletModalMode] = useState('add');
+    const [editingWallet, setEditingWallet] = useState(null);
+
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(PointerSensor, { activationConstraint: { delay: 1500, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -91,12 +103,22 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     const handleSaveWallet = async (formData) => {
         if (!user) return;
         try {
-            await addWallet(user.uid, {
-                name: formData.name,
-                icon: formData.icon,
-                isDefault: false,
-                order: walletBalances.length,
-            });
+            if (walletModalMode === 'edit' && editingWallet) {
+                const { updateWallet } = await import('../utils/firebaseHelpers');
+                await updateWallet(user.uid, editingWallet.id, {
+                    name: formData.name,
+                    icon: formData.icon,
+                    initialBalance: formData.initialBalance,
+                });
+            } else {
+                await addWallet(user.uid, {
+                    name: formData.name,
+                    icon: formData.icon,
+                    initialBalance: formData.initialBalance,
+                    isDefault: false,
+                    order: walletBalances.length,
+                });
+            }
             setIsWalletModalOpen(false);
         } catch (err) {
             alert('Lỗi: ' + err.message);
@@ -109,7 +131,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     // --- Calculations ---
     const walletBalances = useMemo(() => {
         const balances = {};
-        wallets?.forEach(w => { balances[w.id] = { id: w.id, name: w.name, icon: w.icon, balance: 0 }; });
+        wallets?.forEach(w => { balances[w.id] = { ...w, balance: w.initialBalance || 0 }; });
         
         transactions.forEach(t => {
             if (!t.walletId || !balances[t.walletId]) return;
@@ -344,6 +366,11 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                                             setSelectedWalletIds([...selectedWalletIds, w.id]);
                                         }
                                     }} 
+                                    onClickEdit={(wData) => {
+                                        setWalletModalMode('edit');
+                                        setEditingWallet(wData);
+                                        setIsWalletModalOpen(true);
+                                    }}
                                 />
                             );
                         })}
@@ -352,7 +379,11 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
 
                 {/* Thêm ví mới */}
                 <div 
-                    onClick={() => setIsWalletModalOpen(true)}
+                    onClick={() => {
+                        setWalletModalMode('add');
+                        setEditingWallet(null);
+                        setIsWalletModalOpen(true);
+                    }}
                     className="min-w-[140px] flex-shrink-0 rounded-2xl p-4 border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all flex flex-col items-center justify-center text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
                 >
                     <Plus className="w-8 h-8 mb-2" />
@@ -584,7 +615,8 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
             <WalletModal
                 isOpen={isWalletModalOpen}
                 onClose={() => setIsWalletModalOpen(false)}
-                mode="add"
+                mode={walletModalMode}
+                initialData={editingWallet}
                 onSave={handleSaveWallet}
             />
         </div>

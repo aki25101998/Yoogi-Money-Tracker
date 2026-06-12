@@ -7,15 +7,18 @@ const EMOJI_PICKS = ['💵', '💳', '🏦', '📱', '💰', '💼', '🐖'];
 const WalletModal = ({ isOpen, onClose, mode = 'add', initialData = null, onSave }) => {
     const [formName, setFormName] = useState('');
     const [formIcon, setFormIcon] = useState('💵');
+    const [initialBalance, setInitialBalance] = useState('');
 
     useEffect(() => {
         if (isOpen) {
             if (mode === 'edit' && initialData) {
                 setFormName(initialData.name || '');
                 setFormIcon(initialData.icon || '💵');
+                setInitialBalance(initialData.initialBalance || 0);
             } else {
                 setFormName('');
                 setFormIcon('💵');
+                setInitialBalance('');
             }
         }
     }, [isOpen, mode, initialData]);
@@ -25,7 +28,11 @@ const WalletModal = ({ isOpen, onClose, mode = 'add', initialData = null, onSave
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!formName.trim()) return;
-        onSave({ name: formName.trim(), icon: formIcon });
+        onSave({ 
+            name: formName.trim(), 
+            icon: formIcon,
+            initialBalance: Number(initialBalance) || 0
+        });
     };
 
     return createPortal(
@@ -64,6 +71,16 @@ const WalletModal = ({ isOpen, onClose, mode = 'add', initialData = null, onSave
                             onChange={(e) => setFormName(e.target.value)}
                             className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none"
                             placeholder="Vd: Tiền mặt, Thẻ ATM..."
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Số dư ban đầu</label>
+                        <input
+                            type="number"
+                            value={initialBalance}
+                            onChange={(e) => setInitialBalance(e.target.value)}
+                            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none"
+                            placeholder="Vd: 500000"
                         />
                     </div>
                     <button type="submit" className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl mt-2">
