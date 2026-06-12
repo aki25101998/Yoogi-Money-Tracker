@@ -13,7 +13,7 @@ import WalletModal from '../components/modals/WalletModal';
 import DateRangeSelector from '../components/DateRangeSelector';
 
 import {
-    DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+    DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
 import {
     arrayMove, SortableContext, sortableKeyboardCoordinates, horizontalListSortingStrategy, useSortable,
@@ -79,7 +79,8 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     const [editingWallet, setEditingWallet] = useState(null);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { delay: 500, tolerance: 5 } }),
+        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 500, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -344,7 +345,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                 </label>
             </div>
 
-            <div className="flex overflow-x-auto gap-3 pb-2 pt-2 px-1 hide-scrollbar">
+            <div className="flex overflow-x-auto gap-3 pb-2 pt-2 px-1 no-scrollbar">
 
                 {/* Các ví cụ thể */}
                 <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToHorizontalAxis]} onDragEnd={handleDragEnd}>

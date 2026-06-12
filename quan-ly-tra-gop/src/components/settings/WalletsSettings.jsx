@@ -5,7 +5,7 @@ import ConfirmModal from '../modals/ConfirmModal';
 import WalletModal from '../modals/WalletModal';
 
 import {
-    DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+    DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
 import {
     arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable,
@@ -63,7 +63,8 @@ const WalletsSettings = ({ user, wallets }) => {
     const [isDeleting, setIsDeleting] = useState(false);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { delay: 500, tolerance: 5 } }),
+        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 500, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
