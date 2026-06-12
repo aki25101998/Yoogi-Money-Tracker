@@ -100,7 +100,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm sticky top-0 z-20">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
                             <Filter className="w-5 h-5 text-indigo-500" />
                             Lịch sử Giao dịch
                         </h2>
@@ -170,7 +170,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                             {/* Info */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-0.5">
-                                                    <p className="font-bold text-slate-800 dark:text-white truncate text-base">{txn.description}</p>
+                                                    <p className="font-bold text-slate-800 dark:text-white truncate text-sm">{txn.description}</p>
                                                     {txn.aiCategorized && (
                                                         <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider flex-shrink-0">
                                                             AI
@@ -185,7 +185,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                             {/* Amount & Actions */}
                                             <div className="flex items-center gap-4">
                                                 <div className="text-right">
-                                                    <p className={`font-bold text-lg whitespace-nowrap flex items-center justify-end gap-1 ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                                    <p className={`font-bold text-base whitespace-nowrap flex items-center justify-end gap-1 ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                                         {isIncome ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
                                                         {formatCurrency(txn.amount)}
                                                     </p>
