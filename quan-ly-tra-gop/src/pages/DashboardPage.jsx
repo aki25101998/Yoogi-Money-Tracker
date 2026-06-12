@@ -43,17 +43,14 @@ const SortableWalletCard = ({ w, isSelected, onClick, onClickEdit }) => {
             className={`min-w-[140px] flex-shrink-0 rounded-2xl p-4 border cursor-grab active:cursor-grabbing touch-none transition-all ${isDragging ? 'scale-105 shadow-xl border-emerald-500' : isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
         >
             <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                    <span className="text-lg">{w.icon}</span>
-                    <button 
-                        onClick={(e) => { e.stopPropagation(); onClickEdit(w); }}
-                        className="p-1 text-slate-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors"
-                        title="Sửa ví"
-                    >
-                        <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                </div>
-                {isSelected ? <Check className="w-4 h-4 text-emerald-500" /> : null}
+                <span className="text-lg">{w.icon}</span>
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onClickEdit(w); }}
+                    className="p-1 text-slate-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors"
+                    title="Sửa ví"
+                >
+                    <Pencil className="w-3.5 h-3.5" />
+                </button>
             </div>
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate mb-1">{w.name}</p>
             <p className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(w.balance)}</p>
