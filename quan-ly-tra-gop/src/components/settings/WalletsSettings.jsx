@@ -63,7 +63,7 @@ const WalletsSettings = ({ user, wallets }) => {
     const [isDeleting, setIsDeleting] = useState(false);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { delay: 1500, tolerance: 5 } }),
+        useSensor(PointerSensor, { activationConstraint: { delay: 500, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 

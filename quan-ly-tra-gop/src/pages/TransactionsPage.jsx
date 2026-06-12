@@ -117,17 +117,17 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
             </div>
 
             {/* Summary Banner */}
-            <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 text-center shadow-sm">
-                    <p className="text-xs font-bold text-slate-400 uppercase mb-1">Thu nhập</p>
+            <div className="flex flex-col sm:grid sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center sm:block sm:text-center">
+                    <p className="text-xs font-bold text-slate-400 uppercase sm:mb-1">Thu nhập</p>
                     <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">+{formatCurrency(summaryStats.income)}</p>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 text-center shadow-sm">
-                    <p className="text-xs font-bold text-slate-400 uppercase mb-1">Chi tiêu</p>
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center sm:block sm:text-center">
+                    <p className="text-xs font-bold text-slate-400 uppercase sm:mb-1">Chi tiêu</p>
                     <p className="text-lg font-bold text-rose-600 dark:text-rose-400">-{formatCurrency(summaryStats.expense)}</p>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 text-center shadow-sm">
-                    <p className="text-xs font-bold text-slate-400 uppercase mb-1">Cân đối</p>
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center sm:block sm:text-center">
+                    <p className="text-xs font-bold text-slate-400 uppercase sm:mb-1">Cân đối</p>
                     <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(summaryStats.balance)}</p>
                 </div>
             </div>

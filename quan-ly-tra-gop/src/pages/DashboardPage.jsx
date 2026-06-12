@@ -40,7 +40,7 @@ const SortableWalletCard = ({ w, isSelected, onClick, onClickEdit }) => {
             onClick={onClick}
             {...attributes} 
             {...listeners}
-            className={`min-w-[140px] flex-shrink-0 rounded-2xl p-4 border cursor-grab active:cursor-grabbing touch-none transition-all ${isDragging ? 'scale-105 shadow-xl border-emerald-500' : isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
+            className={`min-w-[140px] flex-shrink-0 rounded-2xl p-4 border cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'scale-105 shadow-xl border-emerald-500' : isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
         >
             <div className="flex items-center justify-between mb-2">
                 <span className="text-lg">{w.icon}</span>
@@ -79,7 +79,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     const [editingWallet, setEditingWallet] = useState(null);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { delay: 1500, tolerance: 5 } }),
+        useSensor(PointerSensor, { activationConstraint: { delay: 500, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -410,17 +410,17 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 text-center">
-                            <p className="text-rose-500 text-xs font-bold uppercase mb-1">Chi phí</p>
-                            <p className="text-rose-600 dark:text-rose-400 font-bold flex items-center justify-center gap-1">
+                    <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3 sm:gap-4">
+                        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 flex justify-between items-center sm:block sm:text-center">
+                            <p className="text-rose-500 text-xs font-bold uppercase sm:mb-1">Chi phí</p>
+                            <p className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1">
                                 <ArrowDownRight className="w-4 h-4" />
                                 {formatCurrency(summaryStats.expense)}
                             </p>
                         </div>
-                        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 text-center">
-                            <p className="text-emerald-500 text-xs font-bold uppercase mb-1">Thu nhập</p>
-                            <p className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center gap-1">
+                        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 flex justify-between items-center sm:block sm:text-center">
+                            <p className="text-emerald-500 text-xs font-bold uppercase sm:mb-1">Thu nhập</p>
+                            <p className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                                 <ArrowUpRight className="w-4 h-4" />
                                 {formatCurrency(summaryStats.income)}
                             </p>
