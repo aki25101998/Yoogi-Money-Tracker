@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, Plus } from 'lucide-react';
+import { X, Sparkles, Plus, ChevronDown } from 'lucide-react';
 import { parseLoanInfo } from '../../utils/aiService';
 
 const AddEditModal = ({
@@ -151,17 +151,22 @@ const AddEditModal = ({
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Người trả</label>
                         <div className="flex gap-2">
-                            <select
-                                required
-                                className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-indigo-500 focus:outline-none"
-                                value={formData.owner}
-                                onChange={e => setFormData({ ...formData, owner: e.target.value })}
-                            >
-                                <option value="">Chọn người trả...</option>
-                                {uniqueOwners && uniqueOwners.map(o => (
-                                    <option key={o.id} value={o.name}>{o.name}</option>
-                                ))}
-                            </select>
+                            <div className="relative flex-1">
+                                <select
+                                    required
+                                    className="w-full h-full px-4 py-2 pr-10 appearance-none border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-indigo-500 focus:outline-none cursor-pointer"
+                                    value={formData.owner}
+                                    onChange={e => setFormData({ ...formData, owner: e.target.value })}
+                                >
+                                    <option value="">Chọn người trả...</option>
+                                    {uniqueOwners && uniqueOwners.map(o => (
+                                        <option key={o.id} value={o.name}>{o.name}</option>
+                                    ))}
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                                    <ChevronDown className="w-4 h-4" />
+                                </div>
+                            </div>
                             <button
                                 type="button"
                                 onClick={async () => {
