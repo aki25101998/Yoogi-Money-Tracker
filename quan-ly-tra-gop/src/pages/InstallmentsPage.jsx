@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import {
-    Plus, CreditCard, Calendar, TrendingUp,
+    Plus, CreditCard, Calendar, TrendingUp, Target,
     Loader2, Filter, FileJson, Upload,
     Sparkles, X, AlertTriangle,
     RotateCcw, ChevronUp, ChevronDown, Check
@@ -117,6 +117,8 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
     const totalStats = useMemo(() => {
         let monthlyTotal = 0;
         let remainingTotal = 0;
+        let projectedRemainingTotal = 0;
+        const targetDate = activeReferenceDate;
 
         // Calculate global remaining total based on ALL items
         // It uses absolute total payments made, ignoring the calendar month
@@ -135,6 +137,16 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
             
             const paidAmount = effectiveMonths * item.monthlyPayment;
             remainingTotal += (item.totalPayable - paidAmount);
+
+            // Calculate Projected Remaining Debt based strictly on schedule
+            const start = new Date(item.startDate);
+            const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
+            let monthsDiff = (target.getFullYear() - start.getFullYear()) * 12 + (target.getMonth() - start.getMonth());
+            if (monthsDiff < 0) monthsDiff = 0;
+            
+            const projectedPayments = Math.min(monthsDiff, item.term);
+            const projectedPaidAmount = projectedPayments * item.monthlyPayment;
+            projectedRemainingTotal += (item.totalPayable - projectedPaidAmount);
         });
 
         // Calculate monthly total for the currently viewed month (unpaid items only)
@@ -142,8 +154,8 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
             monthlyTotal += item.monthlyPayment;
         });
 
-        return { monthlyTotal, remainingTotal };
-    }, [filteredItems, inProgressItems]);
+        return { monthlyTotal, remainingTotal, projectedRemainingTotal };
+    }, [filteredItems, inProgressItems, activeReferenceDate]);
 
     // --- Handlers ---
     const handleOpenAdd = () => { setEditingItem(null); setIsAddEditModalOpen(true); };
@@ -430,7 +442,7 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 <Card className="p-5 bg-gradient-to-br from-indigo-600 to-violet-600 border-none text-white relative overflow-hidden shadow-lg">
                     <div className="relative z-10 flex items-start justify-between">
                         <div>
@@ -443,7 +455,18 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                 <Card className="p-5 relative overflow-hidden border-slate-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800 transition-colors">
                     <div className="flex items-start justify-between relative z-10">
                         <div>
-                            <p className="text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-bold mb-1">Tổng dư nợ còn lại</p>
+                            <p className="text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-bold mb-1">
+                                Dư nợ dự kiến T{activeReferenceDate.getMonth() + 1}/{activeReferenceDate.getFullYear()}
+                            </p>
+                            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{formatCurrency(totalStats.projectedRemainingTotal)}</h2>
+                        </div>
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-800"><Target className="w-6 h-6 text-emerald-500 dark:text-emerald-400" /></div>
+                    </div>
+                </Card>
+                <Card className="p-5 relative overflow-hidden border-slate-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800 transition-colors">
+                    <div className="flex items-start justify-between relative z-10">
+                        <div>
+                            <p className="text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-bold mb-1">Tổng nợ thực tế hiện tại</p>
                             <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{formatCurrency(totalStats.remainingTotal)}</h2>
                         </div>
                         <div className="bg-slate-100 dark:bg-slate-700 p-2.5 rounded-xl"><TrendingUp className="w-6 h-6 text-slate-500 dark:text-slate-300" /></div>
