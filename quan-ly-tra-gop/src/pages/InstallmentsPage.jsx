@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
     Plus, CreditCard, Calendar, TrendingUp, Target,
     Loader2, Filter, FileJson, Upload,
@@ -55,6 +55,23 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
     const uniqueOwners = useMemo(() => {
         return ['all', ...(payers?.map(p => p.name) || [])];
     }, [payers]);
+
+    // Auto-fix data hook: Remove over-ticked months
+    useEffect(() => {
+        if (!user || items.length === 0) return;
+        items.forEach(async (item) => {
+            if (Array.isArray(item.paidMonths) && item.paidMonths.length > item.term) {
+                const newPaidMonths = item.paidMonths.slice(0, item.term);
+                try {
+                    const docRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', item.id);
+                    await updateDoc(docRef, { paidMonths: newPaidMonths });
+                    console.log(`Auto-fixed item ${item.name}: ${item.paidMonths.length} -> ${item.term}`);
+                } catch (e) {
+                    console.error("Auto-fix error:", e);
+                }
+            }
+        });
+    }, [items, user]);
 
     const activeReferenceDate = useMemo(() => {
         if (filterDate) {
@@ -582,7 +599,11 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                                     
                                     {/* Group Items */}
                                     <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
-                                        {group.items.map(txn => (
+                                        {group.items.map(txn => {
+                                            const paidCount = Array.isArray(txn.item.paidMonths) ? Math.min(txn.item.paidMonths.length, txn.item.term) : 0;
+                                            const remaining = Math.max(0, txn.item.term - paidCount);
+                                            const progress = Math.round((paidCount / txn.item.term) * 100);
+                                            return (
                                             <div 
                                                 key={txn.id} 
                                                 className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer"
@@ -596,9 +617,13 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                                                 {/* Info */}
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-bold text-slate-800 dark:text-white truncate text-base">{txn.itemName}</p>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                                        Người trả: {txn.owner}
-                                                    </p>
+                                                    <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                                        <span>Người trả: {txn.owner}</span>
+                                                        <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></span>
+                                                        <span className="font-medium text-indigo-600 dark:text-indigo-400">Đã trả: {paidCount}/{txn.item.term} kỳ ({progress}%)</span>
+                                                        <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></span>
+                                                        <span className="font-medium text-rose-500">Còn lại: {remaining} kỳ</span>
+                                                    </div>
                                                 </div>
 
                                                 {/* Amount & Actions */}
@@ -619,7 +644,7 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                                                     </div>
                                                 </div>
                                             </div>
-                                        ))}
+                                        )})}
                                     </div>
                                 </div>
                             );

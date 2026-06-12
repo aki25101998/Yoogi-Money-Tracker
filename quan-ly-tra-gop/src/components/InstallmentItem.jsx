@@ -7,6 +7,9 @@ import { calculateItemStats } from '../utils/calculations';
 
 const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, isReadOnly }) => {
     const stats = calculateItemStats(item, referenceDate);
+    const paidCount = Array.isArray(item.paidMonths) ? item.paidMonths.length : stats.effectiveMonths;
+    const cannotTickMore = !isPaid && paidCount >= item.term;
+    const isDisabled = isReadOnly || cannotTickMore;
 
     return (
         <Card className={`overflow-hidden transition-all duration-200 group border-slate-200 dark:border-slate-700 ${isPaid ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : 'bg-white dark:bg-slate-800'}`}>
@@ -48,10 +51,11 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                     <div className="flex-1 flex justify-end items-center">
                         <button
                             onClick={() => onTogglePaid && onTogglePaid(item)}
-                            disabled={isReadOnly}
+                            disabled={isDisabled}
+                            title={cannotTickMore ? "Đã đạt số kỳ tối đa" : ""}
                             className={`
                                 flex items-center gap-2 px-3 py-2 rounded-lg font-bold text-sm transition-all
-                                ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}
+                                ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}
                                 ${isPaid
                                     ? 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
                                     : 'bg-white text-slate-600 border border-slate-300 shadow-sm hover:border-indigo-300 hover:text-indigo-600 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:border-indigo-500'
