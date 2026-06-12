@@ -477,11 +477,152 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                 </div>
             )}
 
-            {/* Items Lists */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                {renderInstallmentList(inProgressItems, "Đang chờ thanh toán", "Tất cả đã được thanh toán cho tháng này!", "bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700")}
-                {renderInstallmentList(completedItems, "Đã hoàn thành", "Chưa có mục nào hoàn thành.", "bg-slate-50/50 dark:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700", true)}
+            {/* Tab Navigation */}
+            <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto hide-scrollbar">
+                <button 
+                    onClick={() => setActiveTab('list')}
+                    className={`pb-4 px-6 font-bold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'list' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                >
+                    Danh sách trả góp
+                </button>
+                <button 
+                    onClick={() => setActiveTab('history')}
+                    className={`pb-4 px-6 font-bold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'history' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                >
+                    Lịch sử thanh toán
+                </button>
             </div>
+
+            {/* Main Content Area */}
+            {activeTab === 'list' ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                        <h2 className="text-sm font-semibold text-indigo-400 border-l-4 border-indigo-400 pl-2 tracking-wider flex items-center justify-between">
+                            <span>Đang chờ thanh toán ({inProgressItems.length})</span>
+                        </h2>
+                        {inProgressItems.map(item => (
+                            <InstallmentItem
+                                key={item.id}
+                                item={item}
+                                onEdit={() => { setEditingItem(item); setIsAddEditModalOpen(true); }}
+                                onDelete={confirmDelete}
+                                referenceDate={activeReferenceDate}
+                                isPaid={false}
+                                onTogglePaid={handleTogglePaid}
+                                isReadOnly={false}
+                            />
+                        ))}
+                        {inProgressItems.length === 0 && (
+                            <div className="text-center py-10 bg-slate-100/50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center">
+                                <Sparkles className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-2" />
+                                <p className="text-slate-400 dark:text-slate-500 text-sm">Không có khoản nào đang chờ</p>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div className="space-y-4">
+                        <h2 className="text-sm font-semibold text-emerald-500 border-l-4 border-emerald-500 pl-2 tracking-wider flex justify-between items-center">
+                            <span>Đã hoàn thành ({completedItems.length})</span>
+                            <div className="flex items-center gap-1">
+                                <input type="checkbox" id="hideCompleted" checked={hideCompleted} onChange={(e) => setHideCompleted(e.target.checked)} className="rounded border-slate-300 text-emerald-500 focus:ring-emerald-500 dark:bg-slate-700 dark:border-slate-600 dark:checked:bg-emerald-500" />
+                                <label htmlFor="hideCompleted" className="text-xs font-normal text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-300">Ẩn danh sách</label>
+                            </div>
+                        </h2>
+                        {completedItems.length === 0 ? (
+                            <div className="text-center py-10 bg-slate-100/50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center">
+                                <p className="text-slate-400 dark:text-slate-500 text-sm">Chưa có mục nào hoàn thành.</p>
+                            </div>
+                        ) : hideCompleted ? (
+                            <div className="text-center py-6 bg-slate-100/50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex-1 flex items-center justify-center">
+                                <p className="text-slate-400 dark:text-slate-500 font-medium text-xs">Đã ẩn {completedItems.length} khoản vay hoàn thành.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {completedItems.map(item => {
+                                    const targetMonthStr = getYearMonth(activeReferenceDate);
+                                    const isPaid = item.paidMonths?.includes(targetMonthStr);
+                                    return (
+                                        <InstallmentItem
+                                            key={item.id}
+                                            item={item}
+                                            onEdit={() => { setEditingItem(item); setIsAddEditModalOpen(true); }}
+                                            onDelete={confirmDelete}
+                                            referenceDate={activeReferenceDate}
+                                            isPaid={isPaid}
+                                            onTogglePaid={handleTogglePaid}
+                                            isReadOnly={false}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-6">
+                    {paymentHistoryGroups.length === 0 ? (
+                        <div className="text-center py-20 text-slate-400 dark:text-slate-500">
+                            <Calendar className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                            <p>Chưa có lịch sử thanh toán nào.</p>
+                        </div>
+                    ) : (
+                        paymentHistoryGroups.map(group => {
+                            const [y, m] = group.month.split('-');
+                            return (
+                                <div key={group.month} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                                    {/* Group Header */}
+                                    <div className="bg-slate-50 dark:bg-slate-900/50 px-5 py-3 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                                        <h3 className="font-bold text-slate-700 dark:text-slate-300">
+                                            Kỳ tháng {m}/{y}
+                                        </h3>
+                                        <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                                            {formatCurrency(group.total)}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Group Items */}
+                                    <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
+                                        {group.items.map(txn => (
+                                            <div key={txn.id} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group">
+                                                {/* Icon */}
+                                                <div className="w-10 h-10 rounded-full flex flex-shrink-0 items-center justify-center text-xl bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-sm">
+                                                    💳
+                                                </div>
+                                                
+                                                {/* Info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-bold text-slate-800 dark:text-white truncate text-base">{txn.itemName}</p>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                                        Người trả: {txn.owner}
+                                                    </p>
+                                                </div>
+
+                                                {/* Amount & Actions */}
+                                                <div className="flex items-center gap-4">
+                                                    <div className="text-right">
+                                                        <p className="font-bold text-lg whitespace-nowrap text-emerald-600 dark:text-emerald-400">
+                                                            {formatCurrency(txn.amount)}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button 
+                                                            onClick={() => handleTogglePaidSpecific(txn.item, txn.month)}
+                                                            title="Hoàn tác (Đánh dấu chưa trả)"
+                                                            className="p-2 text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/30 rounded-lg transition-colors shadow-sm border border-slate-200 dark:border-slate-700"
+                                                        >
+                                                            <RotateCcw className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            )}
 
             {/* Modals */}
             <AddEditModal
