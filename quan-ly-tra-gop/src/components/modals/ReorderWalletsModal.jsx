@@ -27,8 +27,8 @@ const SortableReorderItem = ({ wallet }) => {
                 <div className="text-xl">{wallet.icon || '💵'}</div>
                 <h4 className="font-bold text-sm text-slate-800 dark:text-white">{wallet.name}</h4>
             </div>
-            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1.5 text-slate-400 hover:text-slate-600 touch-none">
-                <GripVertical className="w-4 h-4" />
+            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-3 -mr-2 text-slate-400 hover:text-slate-600 touch-none">
+                <GripVertical className="w-5 h-5" />
             </div>
         </div>
     );
@@ -45,7 +45,7 @@ const ReorderWalletsModal = ({ isOpen, onClose, wallets, onSave }) => {
 
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-        useSensor(TouchSensor, { activationConstraint: { delay: 100, tolerance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { distance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
