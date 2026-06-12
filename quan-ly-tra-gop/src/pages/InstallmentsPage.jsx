@@ -583,7 +583,11 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                                     {/* Group Items */}
                                     <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
                                         {group.items.map(txn => (
-                                            <div key={txn.id} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group">
+                                            <div 
+                                                key={txn.id} 
+                                                className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer"
+                                                onClick={() => { setEditingItem(txn.item); setIsAddEditModalOpen(true); }}
+                                            >
                                                 {/* Icon */}
                                                 <div className="w-10 h-10 rounded-full flex flex-shrink-0 items-center justify-center text-xl bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-sm">
                                                     💳
@@ -606,7 +610,7 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                                                     </div>
                                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button 
-                                                            onClick={() => handleTogglePaidSpecific(txn.item, txn.month)}
+                                                            onClick={(e) => { e.stopPropagation(); handleTogglePaidSpecific(txn.item, txn.month); }}
                                                             title="Hoàn tác (Đánh dấu chưa trả)"
                                                             className="p-2 text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/30 rounded-lg transition-colors shadow-sm border border-slate-200 dark:border-slate-700"
                                                         >
