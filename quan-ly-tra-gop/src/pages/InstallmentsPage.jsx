@@ -74,22 +74,34 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
     const { inProgressItems, completedItems } = useMemo(() => {
         const targetDate = activeReferenceDate;
         const targetMonthStr = getYearMonth(targetDate);
+        const currentYM = getYearMonth(new Date());
         const inProgress = [];
         const completed = [];
         
         filteredItems.forEach(item => {
-            const startStr = getYearMonth(new Date(item.startDate));
+            const start = new Date(item.startDate);
+            const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
+            const monthsDiff = (target.getFullYear() - start.getFullYear()) * 12 + (target.getMonth() - start.getMonth());
             
-            // Ignore items that haven't started yet relative to the viewed month
-            if (startStr > targetMonthStr) return;
+            // 1. Ignore items that haven't started yet relative to the viewed month
+            if (monthsDiff < 0) return;
 
-            // Check how many payments were made BEFORE the currently viewed month
+            // 2. Check how many payments were made BEFORE the currently viewed month
             const paidBeforeTargetMonth = (item.paidMonths || []).filter(pm => pm < targetMonthStr).length;
             
             // If the item was already fully paid off before this month started, hide it completely
             if (paidBeforeTargetMonth >= item.term) return;
 
-            // Did we pay it IN the currently viewed month?
+            // 3. For items whose scheduled term has completely passed:
+            if (monthsDiff >= item.term) {
+                // If viewing a future month (projection), strictly follow the schedule and hide it.
+                if (targetMonthStr > currentYM) return;
+                
+                // If viewing current/past month, we keep it visible as an OVERDUE payment 
+                // so the user doesn't forget to pay it.
+            }
+
+            // 4. Did we pay it IN the currently viewed month?
             const isPaidThisMonth = item.paidMonths?.includes(targetMonthStr);
 
             if (isPaidThisMonth) {
