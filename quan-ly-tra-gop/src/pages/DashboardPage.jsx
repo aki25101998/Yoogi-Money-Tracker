@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     Wallet, ArrowUpRight, ArrowDownRight, CreditCard,
     PieChart as PieChartIcon, Sparkles, Loader2, Plus, Pencil,
@@ -10,6 +10,7 @@ import { categorizeTransaction } from '../utils/aiCategorizer';
 import { addTransaction, incrementMemoryUsage, updateWalletOrder, addWallet } from '../utils/firebaseHelpers';
 import TransactionModal from '../components/modals/TransactionModal';
 import WalletModal from '../components/modals/WalletModal';
+import ReorderWalletsModal from '../components/modals/ReorderWalletsModal';
 import DateRangeSelector from '../components/DateRangeSelector';
 
 import {
@@ -21,7 +22,7 @@ import {
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
 
-const SortableWalletCard = ({ w, isSelected, onClick, onClickEdit }) => {
+const SortableWalletCard = ({ w, isSelected, onClick, onClickEdit, onLongPress }) => {
     const {
         attributes, listeners, setNodeRef, transform, transition, isDragging,
     } = useSortable({ id: w.id });
@@ -33,6 +34,27 @@ const SortableWalletCard = ({ w, isSelected, onClick, onClickEdit }) => {
         opacity: isDragging ? 0.8 : 1,
     };
 
+    const [startLongPress, setStartLongPress] = useState(false);
+    useEffect(() => {
+        let timerId;
+        if (startLongPress) {
+            timerId = setTimeout(() => {
+                setStartLongPress(false);
+                if (onLongPress) onLongPress();
+            }, 500);
+        } else {
+            clearTimeout(timerId);
+        }
+        return () => clearTimeout(timerId);
+    }, [startLongPress, onLongPress]);
+
+    const longPressProps = {
+        onTouchStart: () => setStartLongPress(true),
+        onTouchEnd: () => setStartLongPress(false),
+        onTouchMove: () => setStartLongPress(false),
+        onTouchCancel: () => setStartLongPress(false),
+    };
+
     return (
         <div 
             ref={setNodeRef}
@@ -40,6 +62,7 @@ const SortableWalletCard = ({ w, isSelected, onClick, onClickEdit }) => {
             onClick={onClick}
             {...attributes} 
             {...listeners}
+            {...longPressProps}
             className={`min-w-[140px] flex-shrink-0 rounded-2xl p-4 border cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'scale-105 shadow-xl border-emerald-500' : isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
         >
             <div className="flex items-center justify-between mb-2">
@@ -78,9 +101,10 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
     const [walletModalMode, setWalletModalMode] = useState('add');
     const [editingWallet, setEditingWallet] = useState(null);
 
+    const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
+
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-        useSensor(TouchSensor, { activationConstraint: { delay: 500, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -369,6 +393,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                                         setEditingWallet(wData);
                                         setIsWalletModalOpen(true);
                                     }}
+                                    onLongPress={() => setIsReorderModalOpen(true)}
                                 />
                             );
                         })}
@@ -616,6 +641,20 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                 mode={walletModalMode}
                 initialData={editingWallet}
                 onSave={handleSaveWallet}
+            />
+
+            <ReorderWalletsModal
+                isOpen={isReorderModalOpen}
+                onClose={() => setIsReorderModalOpen(false)}
+                wallets={walletBalances}
+                onSave={async (newOrderIds) => {
+                    try {
+                        await updateWalletOrder(user.uid, newOrderIds);
+                        setIsReorderModalOpen(false);
+                    } catch (e) {
+                        alert("Lỗi: " + e.message);
+                    }
+                }}
             />
         </div>
     );
