@@ -45,6 +45,7 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
     const [filterOwner, setFilterOwner] = useState('all');
     const [filterDate, setFilterDate] = useState('');
     const [hideCompleted, setHideCompleted] = useState(false);
+    const [activeTab, setActiveTab] = useState('list'); // 'list' | 'history'
 
     // Refs
     const fileInputRef = useRef(null);
@@ -62,6 +63,35 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         }
         return new Date();
     }, [filterDate]);
+
+    const paymentHistoryGroups = useMemo(() => {
+        const history = [];
+        items.forEach(item => {
+            if (Array.isArray(item.paidMonths)) {
+                item.paidMonths.forEach(month => {
+                    history.push({
+                        id: `${item.id}-${month}`,
+                        item: item,
+                        itemName: item.name,
+                        owner: item.owner,
+                        month: month,
+                        amount: item.monthlyPayment
+                    });
+                });
+            }
+        });
+        
+        const groups = {};
+        history.forEach(txn => {
+            if (!groups[txn.month]) {
+                groups[txn.month] = { month: txn.month, total: 0, items: [] };
+            }
+            groups[txn.month].items.push(txn);
+            groups[txn.month].total += txn.amount;
+        });
+        
+        return Object.values(groups).sort((a, b) => b.month.localeCompare(a.month));
+    }, [items]);
 
     const filteredItems = useMemo(() => {
         let result = items;
@@ -213,6 +243,18 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         }
     };
 
+    const handleTogglePaidSpecific = async (item, targetMonthStr) => {
+        if (!user) return;
+        const currentPaidMonths = item.paidMonths || [];
+        const newPaidMonths = currentPaidMonths.filter(m => m !== targetMonthStr);
+        try {
+            const docRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', item.id);
+            await updateDoc(docRef, { paidMonths: newPaidMonths });
+        } catch (err) {
+            alert("Lỗi cập nhật trạng thái: " + err.message);
+        }
+    };
+
     const confirmDelete = (id) => {
         setConfirmModalState({
             isOpen: true, type: 'delete', data: id,
@@ -337,65 +379,6 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
             setIsAnalyzing(false);
         }
     };
-
-    const renderInstallmentList = (listItems, title, isEmptyMessage, bgClass = "", isCompletedSection = false) => (
-        <div className={`space-y-4 p-4 rounded-xl flex flex-col h-full ${bgClass}`}>
-            <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-slate-700 dark:text-slate-300 text-sm uppercase tracking-wider pl-1 border-l-4 border-indigo-500 hover:text-indigo-600 transition-colors cursor-default">
-                    {title} ({listItems.length})
-                </h3>
-                {isCompletedSection && (
-                    <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors select-none">
-                        <div className="relative flex items-center">
-                            <input 
-                                type="checkbox" 
-                                checked={hideCompleted}
-                                onChange={(e) => setHideCompleted(e.target.checked)}
-                                className="peer sr-only"
-                            />
-                            <div className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 peer-checked:bg-indigo-600 peer-checked:border-indigo-600 transition-colors flex items-center justify-center bg-white dark:bg-slate-800 peer-checked:dark:bg-indigo-600">
-                                <Check className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" />
-                            </div>
-                        </div>
-                        <span className="font-medium">Ẩn danh sách</span>
-                    </label>
-                )}
-            </div>
-            
-            {(!isCompletedSection || !hideCompleted) && (
-                listItems.length === 0 ? (
-                    <div className="text-center py-10 bg-white/50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 transition-all group hover:border-indigo-300 dark:hover:border-indigo-700">
-                        <p className="text-slate-400 dark:text-slate-500 font-medium text-xs group-hover:text-indigo-500 transition-colors">{isEmptyMessage}</p>
-                    </div>
-                ) : (
-                    <div className="grid gap-4">
-                        {listItems.map((item) => {
-                            const targetMonthStr = getYearMonth(activeReferenceDate);
-                            const isPaid = item.paidMonths?.includes(targetMonthStr);
-                            return (
-                                <InstallmentItem
-                                    key={item.id}
-                                    item={item}
-                                    onEdit={handleOpenEdit}
-                                    onDelete={confirmDelete}
-                                    referenceDate={activeReferenceDate}
-                                    isPaid={isPaid}
-                                    onTogglePaid={handleTogglePaid}
-                                    isReadOnly={false}
-                                />
-                            );
-                        })}
-                    </div>
-                )
-            )}
-            
-            {isCompletedSection && hideCompleted && listItems.length > 0 && (
-                <div className="text-center py-6 bg-slate-100/50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex-1 flex items-center justify-center">
-                    <p className="text-slate-400 dark:text-slate-500 font-medium text-xs">Đã ẩn {listItems.length} khoản vay hoàn thành.</p>
-                </div>
-            )}
-        </div>
-    );
 
     if (isLoading) {
         return (
