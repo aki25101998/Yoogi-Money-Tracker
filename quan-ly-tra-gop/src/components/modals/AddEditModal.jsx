@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, Plus } from 'lucide-react';
 import { parseLoanInfo } from '../../utils/aiService';
 
 const AddEditModal = ({
