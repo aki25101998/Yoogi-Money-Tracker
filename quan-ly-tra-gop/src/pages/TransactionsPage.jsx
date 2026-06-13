@@ -9,6 +9,7 @@ import DateRangeSelector from '../components/DateRangeSelector';
 const TransactionsPage = ({ user, transactions, categories, wallets }) => {
     // --- Filters ---
     const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
+    const [selectedWalletId, setSelectedWalletId] = useState('all');
 
     // --- Modal State ---
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,10 +25,12 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
             
             if (dateRange.start && t.date < dateRange.start) return false;
             if (dateRange.end && t.date > dateRange.end) return false;
+            
+            if (selectedWalletId !== 'all' && t.walletId !== selectedWalletId) return false;
 
             return true;
         });
-    }, [transactions, dateRange]);
+    }, [transactions, dateRange, selectedWalletId]);
 
     // Group by Date for better UI
     const groupedTransactions = useMemo(() => {
@@ -108,6 +111,18 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
 
                     {/* Filter Controls */}
                     <div className="flex flex-wrap items-center gap-2">
+                        <select
+                            value={selectedWalletId}
+                            onChange={(e) => setSelectedWalletId(e.target.value)}
+                            className="px-3 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
+                        >
+                            <option value="all">🏦 Tất cả ví</option>
+                            {wallets?.map(w => (
+                                <option key={w.id} value={w.id}>
+                                    {w.icon} {w.name}
+                                </option>
+                            ))}
+                        </select>
                         <DateRangeSelector 
                             initialMode="month" 
                             onChange={(range) => setDateRange(range)} 
