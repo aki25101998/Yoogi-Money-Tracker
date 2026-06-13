@@ -585,7 +585,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{cat?.name || 'Chưa phân loại'}</p>
-                                        <p className="text-xs text-slate-400 truncate">{txn.description}</p>
+                                        <p className="text-sm text-slate-400 truncate">{txn.description}</p>
                                     </div>
                                     <span className={`text-sm font-bold ${isIncome ? 'text-emerald-500' : 'text-rose-500'}`}>
                                         {isIncome ? '+' : '-'}{formatCurrency(txn.amount)}
