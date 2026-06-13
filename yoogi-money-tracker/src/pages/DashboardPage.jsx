@@ -392,16 +392,16 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
 
                     <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3 sm:gap-4">
                         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 flex justify-between items-center sm:block sm:text-center">
-                            <p className="text-rose-500 text-xs font-bold uppercase sm:mb-1">Chi phí</p>
-                            <p className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1">
-                                <ArrowDownRight className="w-4 h-4" />
+                            <p className="text-rose-500 text-sm font-black uppercase tracking-wider sm:mb-1 drop-shadow-sm">Chi phí</p>
+                            <p className="text-rose-600 dark:text-rose-400 text-lg font-black flex items-center justify-center gap-1">
+                                <ArrowDownRight className="w-5 h-5" />
                                 {formatCurrency(summaryStats.expense)}
                             </p>
                         </div>
                         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 flex justify-between items-center sm:block sm:text-center">
-                            <p className="text-emerald-500 text-xs font-bold uppercase sm:mb-1">Thu nhập</p>
-                            <p className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                                <ArrowUpRight className="w-4 h-4" />
+                            <p className="text-emerald-500 text-sm font-black uppercase tracking-wider sm:mb-1 drop-shadow-sm">Thu nhập</p>
+                            <p className="text-emerald-600 dark:text-emerald-400 text-lg font-black flex items-center justify-center gap-1">
+                                <ArrowUpRight className="w-5 h-5" />
                                 {formatCurrency(summaryStats.income)}
                             </p>
                         </div>
