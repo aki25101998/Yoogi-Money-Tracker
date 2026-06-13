@@ -86,38 +86,42 @@ const AddRecurringTransactionModal = ({ isOpen, onClose, categories }) => {
                             />
                         </div>
 
-                        {/* Category */}
-                        <div className="relative">
-                            <span className="absolute top-2 left-4 text-[10px] text-slate-400 font-medium">Danh mục cha</span>
-                            <select
-                                required
-                                value={form.categoryId}
-                                onChange={e => setForm({ ...form, categoryId: e.target.value, subcategoryId: '' })}
-                                className="w-full pl-4 pr-10 pt-6 pb-2 appearance-none border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none cursor-pointer"
-                            >
-                                <option value="" disabled>Chọn danh mục cha</option>
-                                {getCategoriesByType(form.type).map(c => (
-                                    <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                                ))}
-                            </select>
-                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        </div>
+                        {/* Category & Subcategory Group */}
+                        <div className="pt-2">
+                            <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Phân loại danh mục</h4>
+                            <div className="space-y-3">
+                                {/* Category */}
+                                <div className="relative">
+                                    <select
+                                        required
+                                        value={form.categoryId}
+                                        onChange={e => setForm({ ...form, categoryId: e.target.value, subcategoryId: '' })}
+                                        className="w-full pl-4 pr-10 py-3 appearance-none border border-slate-700/50 bg-[#161c2d] text-slate-200 rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none cursor-pointer shadow-sm"
+                                    >
+                                        <option value="" disabled>Chọn danh mục cha</option>
+                                        {getCategoriesByType(form.type).map(c => (
+                                            <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
 
-                        {/* Subcategory */}
-                        <div className="relative">
-                            <span className="absolute top-2 left-4 text-[10px] text-slate-400 font-medium">Danh mục con (tùy chọn)</span>
-                            <select
-                                value={form.subcategoryId}
-                                onChange={e => setForm({ ...form, subcategoryId: e.target.value })}
-                                className="w-full pl-4 pr-10 pt-6 pb-2 appearance-none border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none cursor-pointer"
-                                disabled={!form.categoryId || getSubcategories(form.categoryId).length === 0}
-                            >
-                                <option value="">-</option>
-                                {getSubcategories(form.categoryId).map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
-                            </select>
-                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                {/* Subcategory */}
+                                <div className="relative">
+                                    <select
+                                        value={form.subcategoryId}
+                                        onChange={e => setForm({ ...form, subcategoryId: e.target.value })}
+                                        className="w-full pl-4 pr-10 py-3 appearance-none border border-slate-700/50 bg-[#161c2d] text-slate-200 rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none cursor-pointer shadow-sm"
+                                        disabled={!form.categoryId || getSubcategories(form.categoryId).length === 0}
+                                    >
+                                        <option value="">Danh mục con (tùy chọn)</option>
+                                        {getSubcategories(form.categoryId).map(s => (
+                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
+                            </div>
                         </div>
 
                         {/* Date */}
