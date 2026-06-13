@@ -392,7 +392,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                         className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
                     >
                         <Bot className="w-4 h-4" />
-                        <span>Ví ngữ cảnh của Rolly</span>
+                        <span>Ví ngữ cảnh của Yoogi</span>
                     </button>
                 </div>
             </div>

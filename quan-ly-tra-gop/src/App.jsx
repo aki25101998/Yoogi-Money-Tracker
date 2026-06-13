@@ -190,7 +190,7 @@ export default function App() {
                     </div>
 
                     <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white mb-2">
-                        Sổ Quỹ Cá Nhân
+                        Yoogi Money Tracker
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 mb-1 text-sm">
                         Personal Finance Manager
