@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
     Plus, CreditCard, Calendar, TrendingUp, Target,
     Loader2, Filter, FileJson, Upload,
-    Sparkles, X, AlertTriangle,
+    Sparkles, X, AlertTriangle, Trash2,
     RotateCcw, ChevronUp, ChevronDown, Check
 } from 'lucide-react';
 import {
