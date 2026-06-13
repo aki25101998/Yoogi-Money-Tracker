@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ArrowRightLeft, PiggyBank, Receipt, Check } from 'lucide-react';
+import { X, ArrowRightLeft, Check } from 'lucide-react';
 
 const TransferFundsModal = ({ isOpen, onClose, wallets, onSave }) => {
-    const [transferType, setTransferType] = useState('transfer'); // transfer, savings, debt
     const [fromWallet, setFromWallet] = useState('');
     const [toWallet, setToWallet] = useState('');
     const [description, setDescription] = useState('');
@@ -22,7 +21,7 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         onSave({
-            transferType,
+            transferType: 'transfer',
             fromWallet,
             toWallet,
             description,
@@ -46,31 +45,6 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 pt-2 space-y-6">
-                    {/* Types */}
-                    <div className="flex gap-2 justify-center">
-                        <button
-                            type="button"
-                            onClick={() => setTransferType('transfer')}
-                            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all ${transferType === 'transfer' ? 'bg-teal-500 text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}
-                        >
-                            <ArrowRightLeft className="w-4 h-4" /> Chuyển khoản
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setTransferType('savings')}
-                            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all ${transferType === 'savings' ? 'bg-teal-500 text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}
-                        >
-                            <PiggyBank className="w-4 h-4" /> Tiết kiệm
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setTransferType('debt')}
-                            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all ${transferType === 'debt' ? 'bg-teal-500 text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}
-                        >
-                            <Receipt className="w-4 h-4" /> Món nợ
-                        </button>
-                    </div>
-
                     <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 space-y-4">
                         {/* From Wallet */}
                         <div>
