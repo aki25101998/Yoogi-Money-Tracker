@@ -479,6 +479,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
             <RecurringTransactionsModal 
                 isOpen={isRecurringModalOpen} 
                 onClose={() => setIsRecurringModalOpen(false)} 
+                categories={categories}
             />
         </div>
         </>
