@@ -11,6 +11,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
     const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
     const [selectedWalletId, setSelectedWalletId] = useState('all');
     const [selectedCategoryId, setSelectedCategoryId] = useState('all');
+    const [selectedSubcategoryId, setSelectedSubcategoryId] = useState('all');
 
     // --- Modal State ---
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,18 +30,12 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
             
             if (selectedWalletId !== 'all' && t.walletId !== selectedWalletId) return false;
 
-            if (selectedCategoryId !== 'all') {
-                if (selectedCategoryId.includes('|')) {
-                    const [pId, sId] = selectedCategoryId.split('|');
-                    if (t.categoryId !== pId || t.subcategoryId !== sId) return false;
-                } else {
-                    if (t.categoryId !== selectedCategoryId) return false;
-                }
-            }
+            if (selectedCategoryId !== 'all' && t.categoryId !== selectedCategoryId) return false;
+            if (selectedSubcategoryId !== 'all' && t.subcategoryId !== selectedSubcategoryId) return false;
 
             return true;
         });
-    }, [transactions, dateRange, selectedWalletId, selectedCategoryId]);
+    }, [transactions, dateRange, selectedWalletId, selectedCategoryId, selectedSubcategoryId]);
 
     // Group by Date for better UI
     const groupedTransactions = useMemo(() => {
@@ -133,23 +128,34 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                 </option>
                             ))}
                         </select>
-                        <select
-                            value={selectedCategoryId}
-                            onChange={(e) => setSelectedCategoryId(e.target.value)}
-                            className="px-3 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer max-w-[220px] truncate"
-                        >
-                            <option value="all">📂 Tất cả danh mục</option>
-                            {categories?.map(c => (
-                                <optgroup key={c.id} label={`${c.icon} ${c.name}`}>
-                                    <option value={c.id}>Tất cả {c.name}</option>
-                                    {c.subcategories?.map(sub => (
-                                        <option key={sub.id} value={`${c.id}|${sub.id}`}>
-                                            -- {sub.name}
-                                        </option>
+                        <div className="flex flex-wrap gap-2">
+                            <select
+                                value={selectedCategoryId}
+                                onChange={(e) => {
+                                    setSelectedCategoryId(e.target.value);
+                                    setSelectedSubcategoryId('all');
+                                }}
+                                className="px-3 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer min-w-[160px] max-w-[200px] truncate"
+                            >
+                                <option value="all">📂 Tất cả danh mục</option>
+                                {categories?.map(c => (
+                                    <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                                ))}
+                            </select>
+
+                            {selectedCategoryId !== 'all' && categories?.find(c => c.id === selectedCategoryId)?.subcategories?.length > 0 && (
+                                <select
+                                    value={selectedSubcategoryId}
+                                    onChange={(e) => setSelectedSubcategoryId(e.target.value)}
+                                    className="px-3 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer min-w-[140px] max-w-[180px] truncate"
+                                >
+                                    <option value="all">Tất cả mục con</option>
+                                    {categories?.find(c => c.id === selectedCategoryId)?.subcategories?.map(sub => (
+                                        <option key={sub.id} value={sub.id}>{sub.name}</option>
                                     ))}
-                                </optgroup>
-                            ))}
-                        </select>
+                                </select>
+                            )}
+                        </div>
                         <DateRangeSelector 
                             initialMode="month" 
                             onChange={(range) => setDateRange(range)} 
