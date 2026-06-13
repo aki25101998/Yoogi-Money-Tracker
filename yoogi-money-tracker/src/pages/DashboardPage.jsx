@@ -312,19 +312,21 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
             {/* 1. Dashboard Header - (Old AI Bar removed) */}
 
             {/* 2. Total Balance & Wallets */}
-            <div className="relative rounded-[32px] mb-6 shadow-sm border border-slate-200/50 dark:border-slate-800 overflow-hidden mt-2">
-                {/* Decorative glowing orbs behind the glass */}
-                <div className="absolute -top-10 -right-10 w-48 h-48 bg-emerald-400/30 dark:bg-emerald-500/30 rounded-full blur-3xl pointer-events-none"></div>
-                <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-cyan-400/30 dark:bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="relative bg-gradient-to-br from-emerald-400 to-teal-600 dark:from-slate-950 dark:to-slate-900 rounded-[32px] p-8 mb-6 shadow-[0_8px_30px_rgb(16,185,129,0.3)] dark:shadow-2xl border border-emerald-300/50 dark:border-slate-800 overflow-hidden mt-2">
+                {/* Glassmorphism shine overlay */}
+                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/30 dark:from-white/10 to-transparent opacity-60 dark:opacity-30 pointer-events-none"></div>
+                
+                {/* Decorative glowing orbs */}
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/20 dark:bg-emerald-500/30 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-teal-800/20 dark:bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
-                {/* The Glass Layer */}
-                <div className="relative z-10 bg-white/70 dark:bg-slate-950/80 backdrop-blur-2xl p-8 flex flex-col items-center text-center border-t border-l border-white/60 dark:border-slate-800/50">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/60 dark:bg-slate-800/50 border border-white/50 dark:border-slate-700/50 mb-3 shadow-sm backdrop-blur-md">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest">Tổng số dư</span>
+                <div className="relative z-10 flex flex-col items-center text-center">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 dark:bg-slate-800/50 border border-white/30 dark:border-slate-700/50 mb-3 backdrop-blur-md shadow-sm">
+                        <Sparkles className="w-3.5 h-3.5 text-white dark:text-emerald-400" />
+                        <span className="text-xs font-bold text-white dark:text-slate-300 uppercase tracking-widest">Tổng số dư</span>
                     </div>
                     
-                    <h1 className="text-4xl md:text-5xl font-medium text-slate-800 dark:text-white tracking-tight pb-1">
+                    <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-md pb-1">
                         {formatCurrency(totalBalance)}
                     </h1>
                 </div>
