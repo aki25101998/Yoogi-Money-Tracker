@@ -10,6 +10,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
     // --- Filters ---
     const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
     const [selectedWalletId, setSelectedWalletId] = useState('all');
+    const [selectedCategoryId, setSelectedCategoryId] = useState('all');
 
     // --- Modal State ---
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,9 +29,18 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
             
             if (selectedWalletId !== 'all' && t.walletId !== selectedWalletId) return false;
 
+            if (selectedCategoryId !== 'all') {
+                if (selectedCategoryId.includes('|')) {
+                    const [pId, sId] = selectedCategoryId.split('|');
+                    if (t.categoryId !== pId || t.subcategoryId !== sId) return false;
+                } else {
+                    if (t.categoryId !== selectedCategoryId) return false;
+                }
+            }
+
             return true;
         });
-    }, [transactions, dateRange, selectedWalletId]);
+    }, [transactions, dateRange, selectedWalletId, selectedCategoryId]);
 
     // Group by Date for better UI
     const groupedTransactions = useMemo(() => {
@@ -123,6 +133,23 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                 </option>
                             ))}
                         </select>
+                        <select
+                            value={selectedCategoryId}
+                            onChange={(e) => setSelectedCategoryId(e.target.value)}
+                            className="px-3 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer max-w-[220px] truncate"
+                        >
+                            <option value="all">📂 Tất cả danh mục</option>
+                            {categories?.map(c => (
+                                <optgroup key={c.id} label={`${c.icon} ${c.name}`}>
+                                    <option value={c.id}>Tất cả {c.name}</option>
+                                    {c.subcategories?.map(sub => (
+                                        <option key={sub.id} value={`${c.id}|${sub.id}`}>
+                                            -- {sub.name}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                            ))}
+                        </select>
                         <DateRangeSelector 
                             initialMode="month" 
                             onChange={(range) => setDateRange(range)} 
@@ -185,7 +212,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                             {/* Info */}
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-slate-800 dark:text-white truncate mb-0.5">
-                                                    {wallet?.name || 'Chưa phân ví'} • {cat?.name || '❓ Chưa phân loại'}
+                                                    {wallet?.name || 'Chưa phân ví'} • {cat?.name || '❓ Chưa phân loại'} {txn.subcategoryId && cat?.subcategories?.find(s => s.id === txn.subcategoryId) ? `> ${cat.subcategories.find(s => s.id === txn.subcategoryId).name}` : ''}
                                                 </p>
                                                 <div className="flex items-center gap-2">
                                                     <p className="font-medium text-slate-500 dark:text-slate-400 truncate text-sm">{txn.description}</p>
