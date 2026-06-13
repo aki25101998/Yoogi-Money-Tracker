@@ -33,6 +33,22 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
         if (savedHistory) {
             try {
                 const parsed = JSON.parse(savedHistory);
+                
+                // Fix bad transaction IDs from previous bug
+                parsed.forEach(m => {
+                    if (m.transaction && m.transaction.id && typeof m.transaction.id === 'object') {
+                        const obj = m.transaction.id;
+                        if (obj.id) {
+                            m.transaction.id = obj.id;
+                        } else if (obj._key?.path?.segments) {
+                            const segs = obj._key.path.segments;
+                            m.transaction.id = segs[segs.length - 1];
+                        } else {
+                            m.transaction.id = null;
+                        }
+                    }
+                });
+
                 // Filter messages younger than 48h
                 const now = Date.now();
                 const filtered = parsed.filter(m => (now - m.timestamp) < 48 * 60 * 60 * 1000);
@@ -116,7 +132,11 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
     };
 
     const handleCategoryChange = async (msgId, transactionId, newCategoryId, originalInput) => {
-        if (!user || !transactionId) return;
+        if (!user) return;
+        if (!transactionId || typeof transactionId !== 'string') {
+            alert('Không thể cập nhật giao dịch này do dữ liệu cũ bị lỗi. Vui lòng nhập lại giao dịch mới.');
+            return;
+        }
 
         const cat = categories.find(c => c.id === newCategoryId);
         const hasSub = cat?.subcategories?.length > 0;
@@ -146,7 +166,11 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
     };
 
     const handleSubcategoryChange = async (msgId, transactionId, categoryId, newSubcategoryId, originalInput) => {
-        if (!user || !transactionId) return;
+        if (!user) return;
+        if (!transactionId || typeof transactionId !== 'string') {
+            alert('Không thể cập nhật giao dịch này do dữ liệu cũ bị lỗi. Vui lòng nhập lại giao dịch mới.');
+            return;
+        }
 
         try {
             await updateTransaction(user.uid, transactionId, { subcategoryId: newSubcategoryId });
