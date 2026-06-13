@@ -14,6 +14,7 @@ import ReorderWalletsModal from '../components/modals/ReorderWalletsModal';
 import DateRangeSelector from '../components/DateRangeSelector';
 import AIChatModal from '../components/chat/AIChatModal';
 import AIContextModal from '../components/modals/AIContextModal';
+import CategoryTransactionsModal from '../components/modals/CategoryTransactionsModal';
 import { Bot, PenSquare } from 'lucide-react';
 
 import {
@@ -110,6 +111,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
 
     const [chartType, setChartType] = useState('expense'); // 'expense' or 'income'
     const [activeSegment, setActiveSegment] = useState(null);
+    const [selectedCategoryForModal, setSelectedCategoryForModal] = useState(null);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -218,7 +220,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
             const cat = categories.find(c => c.id === t.categoryId);
             const catName = cat ? cat.name : 'Chưa phân loại';
             const catIcon = cat ? cat.icon : '❓';
-            if (!catMap[catName]) catMap[catName] = { name: catName, icon: catIcon, value: 0 };
+            if (!catMap[catName]) catMap[catName] = { id: cat?.id || null, name: catName, icon: catIcon, value: 0 };
             catMap[catName].value += (t.amount || 0);
         });
 
@@ -231,6 +233,13 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
             }))
             .slice(0, 8); 
     }, [filteredTransactions, categories, chartType]);
+
+    const categoryTransactions = useMemo(() => {
+        if (!selectedCategoryForModal) return [];
+        return filteredTransactions.filter(t => t.type === chartType && (
+            selectedCategoryForModal.id ? t.categoryId === selectedCategoryForModal.id : !t.categoryId
+        )).sort((a, b) => new Date(b.date) - new Date(a.date));
+    }, [filteredTransactions, selectedCategoryForModal, chartType]);
 
     const recentTransactions = useMemo(() => filteredTransactions.slice(0, 5), [filteredTransactions]);
 
@@ -548,15 +557,19 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
                         {/* Progress Bars List */}
                         <div className="space-y-4">
                             {pieChartData.map((item, idx) => (
-                                <div key={idx} className="relative">
+                                <div 
+                                    key={idx} 
+                                    className="relative cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-2 -mx-2 rounded-xl transition-colors group"
+                                    onClick={() => setSelectedCategoryForModal({ id: item.id, name: item.name, icon: item.icon })}
+                                >
                                     <div className="flex justify-between items-center mb-1 relative z-10">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm shadow-inner">
+                                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm shadow-inner group-hover:bg-white dark:group-hover:bg-slate-600 transition-colors">
                                                 {item.icon}
                                             </div>
-                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{item.name}</span>
+                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{item.name}</span>
                                         </div>
-                                        <span className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(item.value)}</span>
+                                        <span className="text-sm font-bold text-slate-800 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{formatCurrency(item.value)}</span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                                         <div 
@@ -568,7 +581,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
                                         />
                                     </div>
                                     <div className="text-right mt-1">
-                                        <span className="text-[10px] font-bold text-slate-400">{item.percent.toFixed(1)}%</span>
+                                        <span className="text-[11px] sm:text-xs font-bold text-slate-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{item.percent.toFixed(1)}%</span>
                                     </div>
                                 </div>
                             ))}
@@ -693,6 +706,19 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
                     } catch (e) {
                         alert("Lỗi: " + e.message);
                     }
+                }}
+            />
+
+            <CategoryTransactionsModal
+                isOpen={!!selectedCategoryForModal}
+                onClose={() => setSelectedCategoryForModal(null)}
+                category={selectedCategoryForModal}
+                transactions={categoryTransactions}
+                categories={categories}
+                onEditTransaction={(txn) => {
+                    setSelectedCategoryForModal(null);
+                    setEditingTransaction(txn);
+                    setIsModalOpen(true);
                 }}
             />
         </div>
