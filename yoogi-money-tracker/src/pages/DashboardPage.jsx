@@ -303,11 +303,24 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
             {/* 1. Dashboard Header - (Old AI Bar removed) */}
 
             {/* 2. Total Balance & Wallets */}
-            <div className="text-center pt-2">
-                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1">Tổng số dư</p>
-                <h1 className="text-4xl font-bold text-slate-800 dark:text-white tracking-tight">
-                    {formatCurrency(totalBalance)}
-                </h1>
+            <div className="relative bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 rounded-[32px] p-8 mb-6 shadow-2xl border border-slate-700/50 overflow-hidden mt-2">
+                {/* Glassmorphism shine */}
+                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/10 to-transparent opacity-30 pointer-events-none"></div>
+                
+                {/* Decorative glowing orbs */}
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/30 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div className="relative z-10 flex flex-col items-center text-center">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700/50 mb-3 backdrop-blur-md shadow-sm">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">Tổng số dư</span>
+                    </div>
+                    
+                    <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-100 to-slate-400 tracking-tight drop-shadow-md">
+                        {formatCurrency(totalBalance)}
+                    </h1>
+                </div>
             </div>
 
             <div className="px-1 mb-2 flex items-center">
