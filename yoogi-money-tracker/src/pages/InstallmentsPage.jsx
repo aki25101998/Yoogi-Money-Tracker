@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 
 import { db, APP_ID } from '../config/firebase';
-import { addPayer } from '../utils/firebaseHelpers';
+import { addPayer, deletePayer } from '../utils/firebaseHelpers';
 import { formatCurrency } from '../utils/formatters';
 import { calculateLoan, calculateItemStats, getYearMonth } from '../utils/calculations';
 
@@ -298,6 +298,44 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         setConfirmModalState({ ...confirmModalState, isOpen: false });
     };
 
+    const confirmDeletePayer = (ownerName) => {
+        const payerObj = payers?.find(p => p.name === ownerName);
+        if (!payerObj) return;
+
+        setConfirmModalState({
+            isOpen: true,
+            type: 'delete_payer',
+            data: { payerId: payerObj.id, ownerName },
+            title: 'Xóa người trả này?',
+            description: `Bạn có chắc muốn xóa "${ownerName}" không? TOÀN BỘ các khoản trả góp của người này cũng sẽ bị XÓA VĨNH VIỄN. Hành động này không thể hoàn tác.`,
+            confirmVariant: 'danger',
+            icon: AlertTriangle,
+            iconColorClass: "text-rose-600",
+            iconBgClass: "bg-rose-100"
+        });
+    };
+
+    const executeDeletePayer = async () => {
+        const { payerId, ownerName } = confirmModalState.data;
+        if (!payerId) return;
+        setIsProcessing(true);
+        if (user) {
+            try {
+                await deletePayer(user.uid, payerId);
+                const itemsToDelete = items.filter(item => item.owner === ownerName);
+                for (const item of itemsToDelete) {
+                    await deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', item.id));
+                }
+                setFilterOwner('all');
+            } catch (err) {
+                console.error(err);
+                alert("Lỗi khi xóa người trả: " + err.message);
+            }
+        }
+        setIsProcessing(false);
+        setConfirmModalState({ ...confirmModalState, isOpen: false });
+    };
+
     const handleExportJSON = () => {
         const dataStr = JSON.stringify(items, null, 2);
         const blob = new Blob([dataStr], { type: "application/json" });
@@ -370,6 +408,7 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
     const handleConfirmAction = () => {
         if (confirmModalState.type === 'delete') executeDelete();
         else if (confirmModalState.type === 'import') executeImport();
+        else if (confirmModalState.type === 'delete_payer') executeDeletePayer();
     };
 
     const handleAnalyzeFinances = async () => {
@@ -426,16 +465,27 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
             {/* Toolbar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="flex gap-2">
-                    <div className="relative group">
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 transition-colors group-hover:bg-slate-50 dark:group-hover:bg-slate-700">
-                            <Filter className="w-3.5 h-3.5 text-slate-400" />
-                            <span className="whitespace-nowrap">Người trả:</span>
-                            <span className="font-bold text-indigo-600 dark:text-indigo-400 truncate max-w-[100px]">{filterOwner === 'all' ? 'Tất cả' : filterOwner}</span>
-                            <ChevronDown className="w-3 h-3 text-slate-400" />
+                    <div className="relative flex items-center">
+                        <div className="relative group">
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 transition-colors group-hover:bg-slate-50 dark:group-hover:bg-slate-700">
+                                <Filter className="w-3.5 h-3.5 text-slate-400" />
+                                <span className="whitespace-nowrap">Người trả:</span>
+                                <span className="font-bold text-indigo-600 dark:text-indigo-400 truncate max-w-[100px]">{filterOwner === 'all' ? 'Tất cả' : filterOwner}</span>
+                                <ChevronDown className="w-3 h-3 text-slate-400" />
+                            </div>
+                            <select value={filterOwner} onChange={(e) => setFilterOwner(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                {uniqueOwners.map(owner => <option key={owner} value={owner}>{owner === 'all' ? 'Tất cả' : owner}</option>)}
+                            </select>
                         </div>
-                        <select value={filterOwner} onChange={(e) => setFilterOwner(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                            {uniqueOwners.map(owner => <option key={owner} value={owner}>{owner === 'all' ? 'Tất cả' : owner}</option>)}
-                        </select>
+                        {filterOwner !== 'all' && filterOwner !== 'Tôi' && (
+                            <button 
+                                onClick={() => confirmDeletePayer(filterOwner)}
+                                className="ml-2 z-20 flex items-center justify-center p-1.5 text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/30 border border-slate-200 dark:border-slate-600 rounded-lg transition-colors shadow-sm"
+                                title="Xóa người trả"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                        )}
                     </div>
                     <button 
                         onClick={handleQuickAddPayer} 
