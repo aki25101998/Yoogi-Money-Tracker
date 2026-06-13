@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Bot, User, Loader2, Pencil, Trash2, CheckCircle2, ChevronRight, ChevronDown, Settings } from 'lucide-react';
+import { X, Send, Bot, User, Loader2, Pencil, Trash2, CheckCircle2, ChevronRight, ChevronDown, Settings, CalendarClock, ArrowRightLeft } from 'lucide-react';
 import { categorizeTransaction } from '../../utils/aiCategorizer';
 import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransaction } from '../../utils/firebaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
+import { APP_ID, db } from '../../config/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import ContextWalletModal from '../modals/ContextWalletModal';
+import TransferFundsModal from '../modals/TransferFundsModal';
+import RecurringTransactionsModal from '../modals/RecurringTransactionsModal';
 
 const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, selectedWalletId, onOpenContextWallet }) => {
     const [messages, setMessages] = useState([]);
@@ -10,6 +15,10 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
     const [isTyping, setIsTyping] = useState(false);
     const [activeWallet, setActiveWallet] = useState(null);
     const messagesEndRef = useRef(null);
+    
+    const [isContextWalletOpen, setIsContextWalletOpen] = useState(false);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+    const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
 
     // Initialize active wallet
     useEffect(() => {
@@ -77,7 +86,53 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
     }, [messages, user, activeWallet]);
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+    };
+
+    const handleTransferSave = async (transferData) => {
+        try {
+            const expenseData = {
+                type: 'expense',
+                amount: transferData.amount,
+                description: transferData.description || 'Chuyển tiền',
+                categoryId: 'transfer',
+                subcategoryId: '',
+                date: transferData.date,
+                walletId: transferData.fromWallet,
+                isTransfer: true,
+                transferTo: transferData.toWallet,
+                createdAt: new Date().toISOString()
+            };
+
+            const incomeData = {
+                type: 'income',
+                amount: transferData.amount,
+                description: transferData.description || 'Nhận tiền chuyển khoản',
+                categoryId: 'transfer',
+                subcategoryId: '',
+                date: transferData.date,
+                walletId: transferData.toWallet,
+                isTransfer: true,
+                transferFrom: transferData.fromWallet,
+                createdAt: new Date().toISOString()
+            };
+
+            await addDoc(collection(db, `artifacts/${APP_ID}/users/${user.uid}/transactions`), expenseData);
+            await addDoc(collection(db, `artifacts/${APP_ID}/users/${user.uid}/transactions`), incomeData);
+
+            const aiMsg = {
+                id: Date.now().toString(),
+                type: 'bot',
+                text: `Đã ghi nhận lệnh chuyển ${formatCurrency(transferData.amount)} từ ví này sang ví khác.`,
+                timestamp: Date.now()
+            };
+            setMessages(prev => [...prev, aiMsg]);
+            
+        } catch (error) {
+            console.error("Error saving transfer:", error);
+        }
     };
 
     const handleSend = async () => {
@@ -368,8 +423,23 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
+            {/* Action Buttons & Input Area */}
             <div className="bg-white dark:bg-slate-800 p-4 border-t border-slate-200 dark:border-slate-700 flex flex-col gap-3">
+                <div className="flex gap-2 px-1">
+                    <button 
+                        onClick={() => setIsTransferModalOpen(true)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-4 rounded-full border border-teal-200 dark:border-teal-800 text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 hover:bg-teal-100 dark:hover:bg-teal-900/40 text-sm font-medium transition-colors"
+                    >
+                        <ArrowRightLeft className="w-4 h-4" /> Di chuyển quỹ
+                    </button>
+                    <button 
+                        onClick={() => setIsRecurringModalOpen(true)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-4 rounded-full border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-sm font-medium transition-colors"
+                    >
+                        <CalendarClock className="w-4 h-4" /> Giao dịch định kỳ
+                    </button>
+                </div>
+
                 <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 rounded-full p-1.5 border border-slate-200 dark:border-slate-700 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition-all">
                     <input
                         type="text"
@@ -399,6 +469,18 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                     </button>
                 </div>
             </div>
+
+            <TransferFundsModal 
+                isOpen={isTransferModalOpen} 
+                onClose={() => setIsTransferModalOpen(false)} 
+                wallets={wallets} 
+                onSave={handleTransferSave}
+            />
+
+            <RecurringTransactionsModal 
+                isOpen={isRecurringModalOpen} 
+                onClose={() => setIsRecurringModalOpen(false)} 
+            />
         </div>
         </>
     );
