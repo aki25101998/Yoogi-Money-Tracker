@@ -102,7 +102,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                     <div>
                         <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
                             <Filter className="w-5 h-5 text-indigo-500" />
-                            Lịch sử Giao dịch
+                            Lịch sử giao dịch
                         </h2>
                     </div>
 
