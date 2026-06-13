@@ -138,9 +138,16 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                 className="px-3 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer min-w-[160px] max-w-[200px] truncate"
                             >
                                 <option value="all">📂 Tất cả danh mục</option>
-                                {categories?.map(c => (
-                                    <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                                ))}
+                                <optgroup label="Chi tiêu">
+                                    {categories?.filter(c => c.type === 'expense').map(c => (
+                                        <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                                    ))}
+                                </optgroup>
+                                <optgroup label="Thu nhập">
+                                    {categories?.filter(c => c.type === 'income').map(c => (
+                                        <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                                    ))}
+                                </optgroup>
                             </select>
 
                             {selectedCategoryId !== 'all' && categories?.find(c => c.id === selectedCategoryId)?.subcategories?.length > 0 && (
