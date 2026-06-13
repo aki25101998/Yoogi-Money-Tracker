@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Loader2 } from 'lucide-react';
 
 const ConfirmModal = ({
@@ -23,7 +24,7 @@ const ConfirmModal = ({
         danger: "bg-rose-600 hover:bg-rose-700 text-white"
     };
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-6 text-center animate-in fade-in zoom-in-95 duration-200">
                 {Icon && (
@@ -55,7 +56,8 @@ const ConfirmModal = ({
                     </div>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

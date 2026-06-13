@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
     Brain, Plus, Pencil, Trash2, X, AlertTriangle,
     Sparkles, User as UserIcon, Zap, ChevronDown
@@ -234,7 +235,7 @@ const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
             </div>
 
             {/* Add/Edit Modal */}
-            {editModal.isOpen && (
+            {editModal.isOpen && createPortal(
                 <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md">
                         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
@@ -309,7 +310,8 @@ const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
                             </button>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Delete Confirm */}
