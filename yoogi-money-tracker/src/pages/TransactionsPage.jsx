@@ -149,18 +149,16 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                 </optgroup>
                             </select>
 
-                            {selectedCategoryId !== 'all' && categories?.find(c => c.id === selectedCategoryId)?.subcategories?.length > 0 && (
-                                <select
-                                    value={selectedSubcategoryId}
-                                    onChange={(e) => setSelectedSubcategoryId(e.target.value)}
-                                    className="px-3 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer min-w-[140px] max-w-[180px] truncate"
-                                >
-                                    <option value="all">Tất cả mục con</option>
-                                    {categories?.find(c => c.id === selectedCategoryId)?.subcategories?.map(sub => (
-                                        <option key={sub.id} value={sub.id}>{sub.name}</option>
-                                    ))}
-                                </select>
-                            )}
+                            <select
+                                value={selectedSubcategoryId}
+                                onChange={(e) => setSelectedSubcategoryId(e.target.value)}
+                                className="px-3 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer min-w-[140px] max-w-[180px] truncate"
+                            >
+                                <option value="all">Tất cả mục con</option>
+                                {selectedCategoryId !== 'all' && categories?.find(c => c.id === selectedCategoryId)?.subcategories?.map(sub => (
+                                    <option key={sub.id} value={sub.id}>{sub.name}</option>
+                                ))}
+                            </select>
                         </div>
                         <DateRangeSelector 
                             initialMode="month" 
