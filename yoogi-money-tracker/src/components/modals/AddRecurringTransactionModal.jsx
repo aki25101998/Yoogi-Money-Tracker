@@ -88,14 +88,14 @@ const AddRecurringTransactionModal = ({ isOpen, onClose, categories }) => {
 
                         {/* Category */}
                         <div className="relative">
-                            <span className="absolute top-2 left-4 text-[10px] text-slate-400 font-medium">Loại</span>
+                            <span className="absolute top-2 left-4 text-[10px] text-slate-400 font-medium">Danh mục cha</span>
                             <select
                                 required
                                 value={form.categoryId}
                                 onChange={e => setForm({ ...form, categoryId: e.target.value, subcategoryId: '' })}
                                 className="w-full pl-4 pr-10 pt-6 pb-2 appearance-none border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none cursor-pointer"
                             >
-                                <option value="" disabled>Chọn loại</option>
+                                <option value="" disabled>Chọn danh mục cha</option>
                                 {getCategoriesByType(form.type).map(c => (
                                     <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
                                 ))}
@@ -105,7 +105,7 @@ const AddRecurringTransactionModal = ({ isOpen, onClose, categories }) => {
 
                         {/* Subcategory */}
                         <div className="relative">
-                            <span className="absolute top-2 left-4 text-[10px] text-slate-400 font-medium">Danh mục phụ (tùy chọn)</span>
+                            <span className="absolute top-2 left-4 text-[10px] text-slate-400 font-medium">Danh mục con (tùy chọn)</span>
                             <select
                                 value={form.subcategoryId}
                                 onChange={e => setForm({ ...form, subcategoryId: e.target.value })}
