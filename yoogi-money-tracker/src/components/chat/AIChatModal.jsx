@@ -5,7 +5,6 @@ import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransa
 import { formatCurrency } from '../../utils/formatters';
 import { APP_ID, db } from '../../config/firebase';
 import { collection, addDoc } from 'firebase/firestore';
-import ContextWalletModal from '../modals/ContextWalletModal';
 import TransferFundsModal from '../modals/TransferFundsModal';
 import RecurringTransactionsModal from '../modals/RecurringTransactionsModal';
 

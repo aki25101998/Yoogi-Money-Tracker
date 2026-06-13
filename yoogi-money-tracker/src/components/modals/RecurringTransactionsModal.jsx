@@ -40,7 +40,8 @@ const RecurringTransactionsModal = ({ isOpen, onClose }) => {
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

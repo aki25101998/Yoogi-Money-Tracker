@@ -159,7 +159,8 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave }) => {
                     </button>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
