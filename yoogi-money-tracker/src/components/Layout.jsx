@@ -36,7 +36,7 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
                     {!sidebarCollapsed && (
                         <div className="overflow-hidden">
                             <h1 className="text-sm font-bold text-slate-800 dark:text-white whitespace-nowrap">Yoogi Money Tracker</h1>
-                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Personal Finance</span>
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">Personal Finance</span>
                         </div>
                     )}
                 </div>

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Filter, Calendar, Pencil, Trash2, AlertTriangle, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { Filter, Calendar, Pencil, Trash2, AlertTriangle, ArrowDownRight, ArrowUpRight, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 import { deleteTransaction, updateTransaction } from '../utils/firebaseHelpers';
 import ConfirmModal from '../components/modals/ConfirmModal';
@@ -115,10 +115,11 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
             {/* Filter Bar */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm sticky top-0 z-20">
                 <div className="flex flex-wrap items-center justify-center gap-2">
-                    <select
+                    <div className="relative group">
+                        <select
                             value={selectedWalletId}
                             onChange={(e) => setSelectedWalletId(e.target.value)}
-                            className="px-3 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
+                            className="appearance-none pl-4 pr-10 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
                         >
                             <option value="all">🏦 Tất cả ví</option>
                             {wallets?.map(w => (
@@ -127,14 +128,17 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                 </option>
                             ))}
                         </select>
-                        <div className="flex flex-wrap gap-2">
+                        <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <div className="relative group">
                             <select
                                 value={selectedCategoryId}
                                 onChange={(e) => {
                                     setSelectedCategoryId(e.target.value);
                                     setSelectedSubcategoryId('all');
                                 }}
-                                className="px-3 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer min-w-[160px] max-w-[200px] truncate"
+                                className="appearance-none pl-4 pr-10 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer min-w-[160px] max-w-[200px] truncate"
                             >
                                 <option value="all">📂 Tất cả danh mục</option>
                                 <optgroup label="Chi tiêu">
@@ -148,17 +152,22 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                     ))}
                                 </optgroup>
                             </select>
+                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        </div>
 
+                        <div className="relative group">
                             <select
                                 value={selectedSubcategoryId}
                                 onChange={(e) => setSelectedSubcategoryId(e.target.value)}
-                                className="px-3 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer min-w-[140px] max-w-[180px] truncate"
+                                className="appearance-none pl-4 pr-10 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer min-w-[140px] max-w-[180px] truncate"
                             >
                                 <option value="all">Tất cả mục con</option>
                                 {selectedCategoryId !== 'all' && categories?.find(c => c.id === selectedCategoryId)?.subcategories?.map(sub => (
                                     <option key={sub.id} value={sub.id}>{sub.name}</option>
                                 ))}
                             </select>
+                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        </div>
                         </div>
                         <DateRangeSelector 
                             initialMode="month" 
