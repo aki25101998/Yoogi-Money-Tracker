@@ -305,7 +305,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                                                 <div className="relative">
                                                     <select 
                                                         value={msg.transaction.categoryId || ''}
-                                                        onChange={(e) => handleCategoryChange(msg.id, msg.transaction.id, e.target.value, msg.transaction.originalInput)}
+                                                        onChange={(e) => handleCategoryChange(msg.id, msg.transaction.id, e.target.value, msg.transaction.description)}
                                                         className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-3 pr-10 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer"
                                                     >
                                                         <option value="">Chọn danh mục...</option>
@@ -327,7 +327,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                                                     <div className="relative">
                                                         <select
                                                             value={msg.transaction.subcategoryId || ''}
-                                                            onChange={(e) => handleSubcategoryChange(msg.id, msg.transaction.id, msg.transaction.categoryId, e.target.value, msg.transaction.originalInput)}
+                                                            onChange={(e) => handleSubcategoryChange(msg.id, msg.transaction.id, msg.transaction.categoryId, e.target.value, msg.transaction.description)}
                                                             className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-3 pr-10 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer"
                                                         >
                                                             <option value="">Chọn danh mục con...</option>
