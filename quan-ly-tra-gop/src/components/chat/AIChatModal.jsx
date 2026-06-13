@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Bot, User, Loader2, Pencil, Trash2, CheckCircle2, ChevronRight, Settings } from 'lucide-react';
+import { X, Send, Bot, User, Loader2, Pencil, Trash2, CheckCircle2, ChevronRight, ChevronDown, Settings } from 'lucide-react';
 import { categorizeTransaction } from '../../utils/aiCategorizer';
 import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransaction } from '../../utils/firebaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
@@ -200,12 +200,6 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
 
     return (
         <>
-            {/* Backdrop */}
-            <div 
-                className="fixed inset-0 bg-slate-900/20 dark:bg-slate-900/60 backdrop-blur-sm z-40 transition-opacity" 
-                onClick={onClose}
-            ></div>
-            
             {/* Chat Modal */}
             <div className="fixed inset-y-0 right-0 z-50 flex flex-col w-full md:w-[400px] lg:w-[450px] bg-slate-50 dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 animate-in slide-in-from-right duration-300">
                 {/* Header */}
@@ -308,35 +302,41 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                                         <div className="border-t border-slate-100 dark:border-slate-700 pt-3 flex flex-col gap-2">
                                             <label className="text-[10px] uppercase font-bold text-slate-400">Phân loại danh mục</label>
                                             <div className="flex flex-col gap-2">
-                                                <select 
-                                                    value={msg.transaction.categoryId || ''}
-                                                    onChange={(e) => handleCategoryChange(msg.id, msg.transaction.id, e.target.value, msg.transaction.originalInput)}
-                                                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-                                                >
-                                                    <option value="">Chọn danh mục...</option>
-                                                    <optgroup label="Chi tiêu">
-                                                        {categories.filter(c => c.type === 'expense').map(c => (
-                                                            <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                                                        ))}
-                                                    </optgroup>
-                                                    <optgroup label="Thu nhập">
-                                                        {categories.filter(c => c.type === 'income').map(c => (
-                                                            <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                                                        ))}
-                                                    </optgroup>
-                                                </select>
+                                                <div className="relative">
+                                                    <select 
+                                                        value={msg.transaction.categoryId || ''}
+                                                        onChange={(e) => handleCategoryChange(msg.id, msg.transaction.id, e.target.value, msg.transaction.originalInput)}
+                                                        className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-3 pr-10 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                                                    >
+                                                        <option value="">Chọn danh mục...</option>
+                                                        <optgroup label="Chi tiêu">
+                                                            {categories.filter(c => c.type === 'expense').map(c => (
+                                                                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                                                            ))}
+                                                        </optgroup>
+                                                        <optgroup label="Thu nhập">
+                                                            {categories.filter(c => c.type === 'income').map(c => (
+                                                                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                                                            ))}
+                                                        </optgroup>
+                                                    </select>
+                                                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                                </div>
 
                                                 {categories.find(c => c.id === msg.transaction.categoryId)?.subcategories?.length > 0 && (
-                                                    <select
-                                                        value={msg.transaction.subcategoryId || ''}
-                                                        onChange={(e) => handleSubcategoryChange(msg.id, msg.transaction.id, msg.transaction.categoryId, e.target.value, msg.transaction.originalInput)}
-                                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-                                                    >
-                                                        <option value="">Chọn danh mục con...</option>
-                                                        {categories.find(c => c.id === msg.transaction.categoryId).subcategories.map(s => (
-                                                            <option key={s.id} value={s.id}>{s.name}</option>
-                                                        ))}
-                                                    </select>
+                                                    <div className="relative">
+                                                        <select
+                                                            value={msg.transaction.subcategoryId || ''}
+                                                            onChange={(e) => handleSubcategoryChange(msg.id, msg.transaction.id, msg.transaction.categoryId, e.target.value, msg.transaction.originalInput)}
+                                                            className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-3 pr-10 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                                                        >
+                                                            <option value="">Chọn danh mục con...</option>
+                                                            {categories.find(c => c.id === msg.transaction.categoryId).subcategories.map(s => (
+                                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                                            ))}
+                                                        </select>
+                                                        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
