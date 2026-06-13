@@ -245,19 +245,6 @@ const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
                         </div>
                         <form onSubmit={handleSave} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Từ khóa</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formKeyword}
-                                    onChange={(e) => setFormKeyword(e.target.value)}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-purple-500 focus:outline-none"
-                                    placeholder="Vd: ăn sáng, grab, shopee..."
-                                />
-                                <p className="text-xs text-slate-400 mt-1">Khi giao dịch chứa từ khóa này, AI sẽ tự phân loại</p>
-                            </div>
-
-                            <div>
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Danh mục</label>
                                 <select
                                     required
@@ -279,10 +266,11 @@ const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
                                 </select>
                             </div>
 
-                            {formCategoryId && (
+                            {formCategoryId && getSubcategories(formCategoryId).length > 0 && (
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Danh mục con</label>
                                     <select
+                                        required
                                         value={formSubcategoryId}
                                         onChange={(e) => setFormSubcategoryId(e.target.value)}
                                         className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-purple-500 focus:outline-none"
@@ -292,6 +280,21 @@ const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
                                             <option key={s.id} value={s.id}>{s.name}</option>
                                         ))}
                                     </select>
+                                </div>
+                            )}
+
+                            {formCategoryId && (getSubcategories(formCategoryId).length === 0 || formSubcategoryId) && (
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Từ khóa</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formKeyword}
+                                        onChange={(e) => setFormKeyword(e.target.value)}
+                                        className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-purple-500 focus:outline-none"
+                                        placeholder="Vd: ăn sáng, grab, shopee..."
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">Khi giao dịch chứa từ khóa này, AI sẽ tự phân loại</p>
                                 </div>
                             )}
 

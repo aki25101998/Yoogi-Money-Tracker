@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Bot, User, Loader2, Pencil, Trash2, CheckCircle2, ChevronRight, Settings } from 'lucide-react';
 import { categorizeTransaction } from '../../utils/aiCategorizer';
-import { addTransaction, incrementMemoryUsage, addAIMemory, updateTransaction } from '../../utils/firebaseHelpers';
+import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransaction } from '../../utils/firebaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
 
 const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, selectedWalletId }) => {
@@ -87,7 +87,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                 aiCategorized: result.aiCategorized,
             };
 
-            const docId = await addTransaction(user.uid, transactionData);
+            const docRef = await addTransaction(user.uid, transactionData);
 
             if (result.memoryId) {
                 await incrementMemoryUsage(user.uid, result.memoryId);
@@ -97,7 +97,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                 id: (Date.now() + 1).toString(),
                 type: 'bot',
                 text: 'Tuyệt vời! Đã ghi nhận giao dịch của bạn.',
-                transaction: { ...transactionData, id: docId, originalInput: userMsgText },
+                transaction: { ...transactionData, id: docRef.id, originalInput: userMsgText },
                 timestamp: Date.now()
             };
 
@@ -115,28 +115,52 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
         }
     };
 
-    const handleTransactionUpdate = async (msgId, transactionId, newCategoryId, originalInput) => {
+    const handleCategoryChange = async (msgId, transactionId, newCategoryId, originalInput) => {
         if (!user || !transactionId) return;
 
-        try {
-            await updateTransaction(user.uid, transactionId, { categoryId: newCategoryId });
-            
-            // Auto-learn logic
-            // Add rule to Ví ngữ cảnh
-            await addAIMemory(user.uid, {
-                keyword: originalInput.toLowerCase(),
-                categoryId: newCategoryId,
-                subcategoryId: '', // Keep simple for now
-                source: 'auto'
-            });
+        const cat = categories.find(c => c.id === newCategoryId);
+        const hasSub = cat?.subcategories?.length > 0;
 
-            // Update local message state
+        try {
+            await updateTransaction(user.uid, transactionId, { categoryId: newCategoryId, subcategoryId: '' });
+            
+            if (!hasSub) {
+                await learnFromCorrection(user.uid, originalInput, newCategoryId, '');
+            }
+
             setMessages(prev => prev.map(m => {
                 if (m.id === msgId && m.transaction) {
                     return {
                         ...m,
-                        text: '✅ Đã cập nhật danh mục và AI đã học ghi chú này!',
-                        transaction: { ...m.transaction, categoryId: newCategoryId }
+                        text: hasSub ? 'Vui lòng chọn thêm danh mục con để AI học phân loại chính xác.' : '✅ Đã cập nhật danh mục và AI đã học ghi chú này!',
+                        transaction: { ...m.transaction, categoryId: newCategoryId, subcategoryId: '' }
+                    };
+                }
+                return m;
+            }));
+
+        } catch (error) {
+            console.error('Update failed', error);
+            alert('Lỗi cập nhật: ' + error.message);
+        }
+    };
+
+    const handleSubcategoryChange = async (msgId, transactionId, categoryId, newSubcategoryId, originalInput) => {
+        if (!user || !transactionId) return;
+
+        try {
+            await updateTransaction(user.uid, transactionId, { subcategoryId: newSubcategoryId });
+            
+            if (newSubcategoryId) {
+                await learnFromCorrection(user.uid, originalInput, categoryId, newSubcategoryId);
+            }
+
+            setMessages(prev => prev.map(m => {
+                if (m.id === msgId && m.transaction) {
+                    return {
+                        ...m,
+                        text: newSubcategoryId ? '✅ Đã cập nhật danh mục và AI đã học ghi chú này!' : 'Vui lòng chọn danh mục con.',
+                        transaction: { ...m.transaction, subcategoryId: newSubcategoryId }
                     };
                 }
                 return m;
@@ -259,23 +283,38 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                                         {/* Category Selection / Edit */}
                                         <div className="border-t border-slate-100 dark:border-slate-700 pt-3 flex flex-col gap-2">
                                             <label className="text-[10px] uppercase font-bold text-slate-400">Phân loại danh mục</label>
-                                            <select 
-                                                value={msg.transaction.categoryId}
-                                                onChange={(e) => handleTransactionUpdate(msg.id, msg.transaction.id, e.target.value, msg.transaction.originalInput)}
-                                                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-                                            >
-                                                <option value="">Chọn danh mục...</option>
-                                                <optgroup label="Chi tiêu">
-                                                    {categories.filter(c => c.type === 'expense').map(c => (
-                                                        <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                                                    ))}
-                                                </optgroup>
-                                                <optgroup label="Thu nhập">
-                                                    {categories.filter(c => c.type === 'income').map(c => (
-                                                        <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                                                    ))}
-                                                </optgroup>
-                                            </select>
+                                            <div className="flex flex-col gap-2">
+                                                <select 
+                                                    value={msg.transaction.categoryId || ''}
+                                                    onChange={(e) => handleCategoryChange(msg.id, msg.transaction.id, e.target.value, msg.transaction.originalInput)}
+                                                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
+                                                >
+                                                    <option value="">Chọn danh mục...</option>
+                                                    <optgroup label="Chi tiêu">
+                                                        {categories.filter(c => c.type === 'expense').map(c => (
+                                                            <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                    <optgroup label="Thu nhập">
+                                                        {categories.filter(c => c.type === 'income').map(c => (
+                                                            <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                </select>
+
+                                                {categories.find(c => c.id === msg.transaction.categoryId)?.subcategories?.length > 0 && (
+                                                    <select
+                                                        value={msg.transaction.subcategoryId || ''}
+                                                        onChange={(e) => handleSubcategoryChange(msg.id, msg.transaction.id, msg.transaction.categoryId, e.target.value, msg.transaction.originalInput)}
+                                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 border-l-2 border-l-emerald-500 ml-2 w-[calc(100%-0.5rem)]"
+                                                    >
+                                                        <option value="">Chọn danh mục con...</option>
+                                                        {categories.find(c => c.id === msg.transaction.categoryId).subcategories.map(s => (
+                                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                                        ))}
+                                                    </select>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
