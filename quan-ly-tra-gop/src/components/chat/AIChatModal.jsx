@@ -11,43 +11,54 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
     const [activeWallet, setActiveWallet] = useState(null);
     const messagesEndRef = useRef(null);
 
-    // Initialize or load chat history
+    // Initialize active wallet
     useEffect(() => {
         if (!isOpen) return;
-        
-        // Set default wallet
         if (selectedWalletId) {
             setActiveWallet(wallets.find(w => w.id === selectedWalletId));
-        } else {
+        } else if (!activeWallet) {
             setActiveWallet(wallets.find(w => w.isDefault) || wallets[0]);
         }
+    }, [isOpen, wallets, selectedWalletId]);
 
-        // Load 24h history
-        const historyKey = `ai_chat_history_${user?.uid}`;
+    // Load chat history when active wallet changes
+    useEffect(() => {
+        if (!isOpen || !activeWallet || !user) return;
+        
+        const historyKey = `ai_chat_history_${user.uid}_${activeWallet.id}`;
         const savedHistory = localStorage.getItem(historyKey);
+        
+        const welcomeMessage = { id: 'welcome', type: 'bot', text: 'Xin chào! 👋 Hãy bắt đầu thêm giao dịch của bạn tại đây nhé!', timestamp: Date.now() };
+
         if (savedHistory) {
             try {
                 const parsed = JSON.parse(savedHistory);
-                // Filter messages younger than 24h
+                // Filter messages younger than 48h
                 const now = Date.now();
-                const filtered = parsed.filter(m => (now - m.timestamp) < 24 * 60 * 60 * 1000);
-                setMessages(filtered.length > 0 ? filtered : [{ id: 'welcome', type: 'bot', text: 'Xin chào! 👋 Hãy nhập giao dịch của bạn tại đây nhé (vd: cf 20k).', timestamp: Date.now() }]);
+                const filtered = parsed.filter(m => (now - m.timestamp) < 48 * 60 * 60 * 1000);
+                
+                const userMessages = filtered.filter(m => m.type === 'user');
+                if (userMessages.length > 0) {
+                    setMessages(filtered);
+                } else {
+                    setMessages([welcomeMessage]);
+                }
             } catch (e) {
-                setMessages([{ id: 'welcome', type: 'bot', text: 'Xin chào! 👋 Hãy nhập giao dịch của bạn tại đây nhé (vd: cf 20k).', timestamp: Date.now() }]);
+                setMessages([welcomeMessage]);
             }
         } else {
-            setMessages([{ id: 'welcome', type: 'bot', text: 'Xin chào! 👋 Hãy nhập giao dịch của bạn tại đây nhé (vd: cf 20k).', timestamp: Date.now() }]);
+            setMessages([welcomeMessage]);
         }
-    }, [isOpen, user, wallets, selectedWalletId]);
+    }, [isOpen, activeWallet, user]);
 
     // Save history when messages change
     useEffect(() => {
-        if (messages.length > 0 && user) {
-            const historyKey = `ai_chat_history_${user.uid}`;
+        if (messages.length > 0 && user && activeWallet) {
+            const historyKey = `ai_chat_history_${user.uid}_${activeWallet.id}`;
             localStorage.setItem(historyKey, JSON.stringify(messages));
         }
         scrollToBottom();
-    }, [messages, user]);
+    }, [messages, user, activeWallet]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -140,46 +151,64 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col bg-slate-50 dark:bg-slate-900 animate-in slide-in-from-bottom-full duration-300">
-            {/* Header */}
-            <div className="bg-white dark:bg-slate-800 px-4 py-3 shadow-sm border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
-                <button onClick={onClose} className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
-                    <X className="w-6 h-6" />
-                </button>
-                <div className="flex-1 flex flex-col items-center">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
-                            <Bot className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                        </div>
-                        <div>
-                            <h2 className="text-sm font-bold text-slate-800 dark:text-white leading-tight">AI Trợ Lý</h2>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400">Tự động xóa lịch sử sau 24h</p>
-                        </div>
-                    </div>
-                </div>
-                {/* Wallet Selector in header */}
-                <div className="relative group">
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-full text-xs font-bold text-slate-700 dark:text-slate-300">
-                        <span className="truncate max-w-[80px]">{activeWallet?.name || 'Chọn ví'}</span>
-                        <ChevronRight className="w-3 h-3 rotate-90" />
+        <>
+            {/* Backdrop */}
+            <div 
+                className="fixed inset-0 bg-slate-900/20 dark:bg-slate-900/60 backdrop-blur-sm z-40 transition-opacity" 
+                onClick={onClose}
+            ></div>
+            
+            {/* Chat Modal */}
+            <div className="fixed inset-y-0 right-0 z-50 flex flex-col w-full md:w-[400px] lg:w-[450px] bg-slate-50 dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 animate-in slide-in-from-right duration-300">
+                {/* Header */}
+                <div className="bg-white dark:bg-slate-800 px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <button onClick={onClose} className="p-2 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+                        <ChevronRight className="w-6 h-6" />
                     </button>
-                    {/* Simple dropdown */}
-                    <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-xl py-1 hidden group-hover:block z-50">
-                        {wallets?.map(w => (
-                            <button
-                                key={w.id}
-                                onClick={() => setActiveWallet(w)}
-                                className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 ${activeWallet?.id === w.id ? 'text-emerald-600 font-bold' : 'text-slate-700 dark:text-slate-300'}`}
-                            >
-                                <span>{w.icon}</span> {w.name}
-                            </button>
-                        ))}
-                    </div>
+                    <button className="p-2 -mr-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+                        <Settings className="w-5 h-5" />
+                    </button>
                 </div>
-            </div>
 
-            {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                {/* Chat Area */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                    {/* Bot Intro Area */}
+                    <div className="flex flex-col items-center justify-center pt-2 pb-6 gap-1">
+                        <div className="relative mb-2">
+                            <div className="w-20 h-20 bg-gradient-to-tr from-emerald-100 to-teal-50 dark:from-emerald-900/40 dark:to-teal-900/20 rounded-full flex items-center justify-center shadow-sm">
+                                <Bot className="w-12 h-12 text-emerald-500" />
+                            </div>
+                            <div className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full flex items-center justify-center">
+                                <CheckCircle2 className="w-3 h-3 text-white" />
+                            </div>
+                        </div>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Cuộc trò chuyện kéo dài 48 giờ</p>
+                        
+                        {/* Wallet Selector in Middle */}
+                        <div className="relative group">
+                            <button className="flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-full text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                <span className="mr-1">{activeWallet?.icon}</span>
+                                <span className="truncate max-w-[150px]">{activeWallet?.name || 'Chọn ví'}</span>
+                                <ChevronRight className="w-4 h-4 rotate-90 ml-1" />
+                            </button>
+                            {/* Dropdown with pt-2 to prevent closing gap */}
+                            <div className="absolute left-1/2 -translate-x-1/2 top-full pt-2 z-50 hidden group-hover:block w-56">
+                                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-2xl py-2 overflow-hidden">
+                                    {wallets?.map(w => (
+                                        <button
+                                            key={w.id}
+                                            onClick={() => setActiveWallet(w)}
+                                            className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${activeWallet?.id === w.id ? 'text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-900/20' : 'text-slate-700 dark:text-slate-300'}`}
+                                        >
+                                            <span className="text-xl">{w.icon}</span> 
+                                            <span className="flex-1 truncate">{w.name}</span>
+                                            {activeWallet?.id === w.id && <CheckCircle2 className="w-4 h-4" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 {messages.map(msg => (
                     <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[85%] flex gap-2 ${msg.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -275,26 +304,35 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
             </div>
 
             {/* Input Area */}
-            <div className="bg-white dark:bg-slate-800 p-4 border-t border-slate-200 dark:border-slate-700">
-                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 rounded-full p-1 border border-slate-200 dark:border-slate-700">
+            <div className="bg-white dark:bg-slate-800 p-4 border-t border-slate-200 dark:border-slate-700 flex flex-col gap-3">
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 rounded-full p-1.5 border border-slate-200 dark:border-slate-700 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition-all">
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                        placeholder="Nhập: ăn tối 100k..."
-                        className="flex-1 bg-transparent px-4 py-2 focus:outline-none text-slate-800 dark:text-slate-100"
+                        placeholder="Nhập: ăn tối 100k, cf 20k..."
+                        className="flex-1 bg-transparent px-4 py-2 focus:outline-none text-slate-800 dark:text-slate-100 text-sm"
                     />
                     <button
                         onClick={handleSend}
                         disabled={!input.trim() || isTyping}
-                        className="w-10 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white flex items-center justify-center transition-colors"
+                        className="w-10 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white flex items-center justify-center transition-colors shrink-0"
                     >
-                        <Send className="w-4 h-4 ml-1" />
+                        <Send className="w-4 h-4 ml-0.5" />
+                    </button>
+                </div>
+                
+                {/* Context Wallet Link at Bottom */}
+                <div className="flex justify-center">
+                    <button className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+                        <Bot className="w-4 h-4" />
+                        <span>Ví ngữ cảnh của Rolly</span>
                     </button>
                 </div>
             </div>
         </div>
+        </>
     );
 };
 
