@@ -184,17 +184,12 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                             
                                             {/* Info */}
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-0.5">
-                                                    <p className="font-bold text-slate-800 dark:text-white truncate text-sm">{txn.description}</p>
-                                                    {txn.aiCategorized && (
-                                                        <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider flex-shrink-0">
-                                                            AI
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate mb-0.5">
                                                     {wallet?.icon} {wallet?.name || 'Chưa phân ví'} • {cat?.name || '❓ Chưa phân loại'}
                                                 </p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-bold text-slate-800 dark:text-white truncate text-sm">{txn.description}</p>
+                                                </div>
                                             </div>
 
                                             {/* Amount & Actions */}
