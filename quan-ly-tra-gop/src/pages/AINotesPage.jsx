@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     Brain, Plus, Pencil, Trash2, X, AlertTriangle,
-    Sparkles, User as UserIcon, Zap
+    Sparkles, User as UserIcon, Zap, ChevronDown
 } from 'lucide-react';
 import {
     addAIMemory, updateAIMemory, deleteAIMemory
@@ -246,40 +246,46 @@ const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
                         <form onSubmit={handleSave} className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Danh mục</label>
-                                <select
-                                    required
-                                    value={formCategoryId}
-                                    onChange={(e) => { setFormCategoryId(e.target.value); setFormSubcategoryId(''); }}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-purple-500 focus:outline-none"
-                                >
-                                    <option value="">Chọn danh mục...</option>
-                                    <optgroup label="Chi tiêu">
-                                        {categories.filter(c => c.type === 'expense').map(c => (
-                                            <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                                        ))}
-                                    </optgroup>
-                                    <optgroup label="Thu nhập">
-                                        {categories.filter(c => c.type === 'income').map(c => (
-                                            <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                                        ))}
-                                    </optgroup>
-                                </select>
+                                <div className="relative">
+                                    <select
+                                        required
+                                        value={formCategoryId}
+                                        onChange={(e) => { setFormCategoryId(e.target.value); setFormSubcategoryId(''); }}
+                                        className="w-full px-4 pr-10 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-purple-500 focus:outline-none appearance-none cursor-pointer"
+                                    >
+                                        <option value="">Chọn danh mục...</option>
+                                        <optgroup label="Chi tiêu">
+                                            {categories.filter(c => c.type === 'expense').map(c => (
+                                                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                                            ))}
+                                        </optgroup>
+                                        <optgroup label="Thu nhập">
+                                            {categories.filter(c => c.type === 'income').map(c => (
+                                                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                                            ))}
+                                        </optgroup>
+                                    </select>
+                                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
                             </div>
 
                             {formCategoryId && getSubcategories(formCategoryId).length > 0 && (
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Danh mục con</label>
-                                    <select
-                                        required
-                                        value={formSubcategoryId}
-                                        onChange={(e) => setFormSubcategoryId(e.target.value)}
-                                        className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-purple-500 focus:outline-none"
-                                    >
-                                        <option value="">Chọn mục con...</option>
-                                        {getSubcategories(formCategoryId).map(s => (
-                                            <option key={s.id} value={s.id}>{s.name}</option>
-                                        ))}
-                                    </select>
+                                    <div className="relative">
+                                        <select
+                                            required
+                                            value={formSubcategoryId}
+                                            onChange={(e) => setFormSubcategoryId(e.target.value)}
+                                            className="w-full px-4 pr-10 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-purple-500 focus:outline-none appearance-none cursor-pointer"
+                                        >
+                                            <option value="">Chọn mục con...</option>
+                                            {getSubcategories(formCategoryId).map(s => (
+                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
                                 </div>
                             )}
 
