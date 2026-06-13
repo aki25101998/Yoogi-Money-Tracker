@@ -106,16 +106,16 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
         <div className="space-y-6">
             {/* Header & Filter Bar */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm sticky top-0 z-20">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                            <Filter className="w-5 h-5 text-indigo-500" />
+                <div className="flex flex-col gap-4">
+                    <div className="flex justify-center items-center w-full">
+                        <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <Filter className="w-6 h-6 text-indigo-500" />
                             Lịch sử giao dịch
                         </h2>
                     </div>
 
                     {/* Filter Controls */}
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-center gap-2">
                         <select
                             value={selectedWalletId}
                             onChange={(e) => setSelectedWalletId(e.target.value)}
