@@ -13,6 +13,7 @@ import WalletModal from '../components/modals/WalletModal';
 import ReorderWalletsModal from '../components/modals/ReorderWalletsModal';
 import DateRangeSelector from '../components/DateRangeSelector';
 import AIChatModal from '../components/chat/AIChatModal';
+import AIContextModal from '../components/modals/AIContextModal';
 import { Bot, PenSquare } from 'lucide-react';
 
 import {
@@ -94,6 +95,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
     
     // UI States
     const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+    const [isAIContextOpen, setIsAIContextOpen] = useState(false);
     const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -637,10 +639,15 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
                 aiMemories={aiMemories}
                 wallets={wallets}
                 selectedWalletId={selectedWalletIds.length === 1 ? selectedWalletIds[0] : null}
-                onOpenContextWallet={() => {
-                    setIsAIChatOpen(false);
-                    if (onNavigate) onNavigate('settings:ai');
-                }}
+                onOpenContextWallet={() => setIsAIContextOpen(true)}
+            />
+
+            <AIContextModal
+                isOpen={isAIContextOpen}
+                onClose={() => setIsAIContextOpen(false)}
+                user={user}
+                categories={categories}
+                aiMemories={aiMemories}
             />
 
             <TransactionModal

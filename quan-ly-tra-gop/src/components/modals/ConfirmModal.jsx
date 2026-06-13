@@ -24,7 +24,7 @@ const ConfirmModal = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-6 text-center animate-in fade-in zoom-in-95 duration-200">
                 {Icon && (
                     <div className={`w-12 h-12 ${iconBgClass} dark:bg-opacity-20 ${iconColorClass} rounded-full flex items-center justify-center mx-auto mb-4`}>
