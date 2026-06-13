@@ -45,7 +45,7 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
                 <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
                     {NAV_ITEMS.map(item => {
                         const Icon = item.icon;
-                        const isActive = activePage === item.id;
+                        const isActive = activePage === item.id || activePage?.startsWith(item.id + ':');
                         return (
                             <button
                                 key={item.id}
@@ -141,7 +141,7 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
                 <div className="flex items-center justify-around h-16 px-1">
                     {NAV_ITEMS.map(item => {
                         const Icon = item.icon;
-                        const isActive = activePage === item.id;
+                        const isActive = activePage === item.id || activePage?.startsWith(item.id + ':');
                         return (
                             <button
                                 key={item.id}

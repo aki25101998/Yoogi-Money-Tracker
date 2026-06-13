@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Wallet, Users, FolderTree, Brain } from 'lucide-react';
 
 import WalletsSettings from '../components/settings/WalletsSettings';
