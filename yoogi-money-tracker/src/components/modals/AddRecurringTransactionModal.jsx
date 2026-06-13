@@ -98,7 +98,7 @@ const AddRecurringTransactionModal = ({ isOpen, onClose, categories }) => {
                                         onChange={e => setForm({ ...form, categoryId: e.target.value, subcategoryId: '' })}
                                         className="w-full pl-4 pr-10 py-3 appearance-none border border-slate-700/50 bg-[#161c2d] text-slate-200 rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none cursor-pointer shadow-sm"
                                     >
-                                        <option value="" disabled>Chọn danh mục cha</option>
+                                        <option value="" disabled>Danh mục chính</option>
                                         {getCategoriesByType(form.type).map(c => (
                                             <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
                                         ))}
@@ -114,7 +114,7 @@ const AddRecurringTransactionModal = ({ isOpen, onClose, categories }) => {
                                         className="w-full pl-4 pr-10 py-3 appearance-none border border-slate-700/50 bg-[#161c2d] text-slate-200 rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none cursor-pointer shadow-sm"
                                         disabled={!form.categoryId || getSubcategories(form.categoryId).length === 0}
                                     >
-                                        <option value="">Danh mục con (tùy chọn)</option>
+                                        <option value="">Danh mục phụ</option>
                                         {getSubcategories(form.categoryId).map(s => (
                                             <option key={s.id} value={s.id}>{s.name}</option>
                                         ))}
