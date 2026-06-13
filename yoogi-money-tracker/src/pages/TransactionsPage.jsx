@@ -104,19 +104,18 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header & Filter Bar */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm sticky top-0 z-20">
-                <div className="flex flex-col gap-4">
-                    <div className="flex justify-center items-center w-full">
-                        <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                            <Filter className="w-6 h-6 text-indigo-500" />
-                            Lịch sử giao dịch
-                        </h2>
-                    </div>
+            {/* Header Title */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm flex justify-center items-center">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <Filter className="w-6 h-6 text-indigo-500" />
+                    Lịch sử giao dịch
+                </h2>
+            </div>
 
-                    {/* Filter Controls */}
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                        <select
+            {/* Filter Bar */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm sticky top-0 z-20">
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                    <select
                             value={selectedWalletId}
                             onChange={(e) => setSelectedWalletId(e.target.value)}
                             className="px-3 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
@@ -168,7 +167,6 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                             onChange={(range) => setDateRange(range)} 
                         />
                     </div>
-                </div>
             </div>
 
             {/* Summary Banner */}
