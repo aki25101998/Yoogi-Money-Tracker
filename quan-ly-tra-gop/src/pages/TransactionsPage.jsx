@@ -185,7 +185,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                             {/* Info */}
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-slate-800 dark:text-white truncate mb-0.5">
-                                                    {wallet?.icon} {wallet?.name || 'Chưa phân ví'} • {cat?.name || '❓ Chưa phân loại'}
+                                                    {wallet?.name || 'Chưa phân ví'} • {cat?.name || '❓ Chưa phân loại'}
                                                 </p>
                                                 <div className="flex items-center gap-2">
                                                     <p className="font-medium text-slate-500 dark:text-slate-400 truncate text-sm">{txn.description}</p>
