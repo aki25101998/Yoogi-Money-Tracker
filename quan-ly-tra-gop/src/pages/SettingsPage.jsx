@@ -6,8 +6,14 @@ import PayersSettings from '../components/settings/PayersSettings';
 import CategoriesPage from './CategoriesPage'; // Reusing existing page as a component
 import AINotesPage from './AINotesPage'; // Reusing existing page as a component
 
-const SettingsPage = ({ user, categories, aiMemories, wallets, payers }) => {
-    const [activeTab, setActiveTab] = useState('wallets');
+const SettingsPage = ({ user, categories, aiMemories, wallets, payers, initialTab = 'wallets' }) => {
+    const [activeTab, setActiveTab] = useState(initialTab);
+
+    useEffect(() => {
+        if (initialTab) {
+            setActiveTab(initialTab);
+        }
+    }, [initialTab]);
 
     const tabs = [
         { id: 'wallets', label: 'Ví tiền', icon: Wallet },

@@ -243,49 +243,50 @@ export default function App() {
             );
         }
 
-        switch (activePage) {
-            case 'dashboard':
-                return (
-                    <DashboardPage
-                        user={user}
-                        transactions={transactions}
-                        categories={categories}
-                        aiMemories={aiMemories}
-                        wallets={wallets}
-                    />
-                );
-            case 'transactions':
-                return (
-                    <TransactionsPage
-                        user={user}
-                        transactions={transactions}
-                        categories={categories}
-                        aiMemories={aiMemories}
-                        wallets={wallets}
-                    />
-                );
-            case 'installments':
-                return (
-                    <InstallmentsPage
-                        user={user}
-                        items={installments}
-                        payers={payers}
-                        isLoading={false}
-                    />
-                );
-            case 'settings':
-                return (
-                    <SettingsPage
-                        user={user}
-                        categories={categories}
-                        aiMemories={aiMemories}
-                        wallets={wallets}
-                        payers={payers}
-                    />
-                );
-            default:
-                return null;
+        if (activePage === 'dashboard') {
+            return (
+                <DashboardPage
+                    user={user}
+                    transactions={transactions}
+                    categories={categories}
+                    aiMemories={aiMemories}
+                    wallets={wallets}
+                    onNavigate={setActivePage}
+                />
+            );
+        } else if (activePage === 'transactions') {
+            return (
+                <TransactionsPage
+                    user={user}
+                    transactions={transactions}
+                    categories={categories}
+                    aiMemories={aiMemories}
+                    wallets={wallets}
+                />
+            );
+        } else if (activePage === 'installments') {
+            return (
+                <InstallmentsPage
+                    user={user}
+                    items={installments}
+                    payers={payers}
+                    isLoading={false}
+                />
+            );
+        } else if (activePage?.startsWith('settings')) {
+            const initialTab = activePage.split(':')[1] || 'wallets';
+            return (
+                <SettingsPage
+                    user={user}
+                    categories={categories}
+                    aiMemories={aiMemories}
+                    wallets={wallets}
+                    payers={payers}
+                    initialTab={initialTab}
+                />
+            );
         }
+        return null;
     };
 
     return (

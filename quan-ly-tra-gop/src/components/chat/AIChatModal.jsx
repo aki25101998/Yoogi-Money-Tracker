@@ -4,7 +4,7 @@ import { categorizeTransaction } from '../../utils/aiCategorizer';
 import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransaction } from '../../utils/firebaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
 
-const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, selectedWalletId }) => {
+const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, selectedWalletId, onOpenContextWallet }) => {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -330,7 +330,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                                                     <select
                                                         value={msg.transaction.subcategoryId || ''}
                                                         onChange={(e) => handleSubcategoryChange(msg.id, msg.transaction.id, msg.transaction.categoryId, e.target.value, msg.transaction.originalInput)}
-                                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 border-l-2 border-l-emerald-500 ml-2 w-[calc(100%-0.5rem)]"
+                                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
                                                     >
                                                         <option value="">Chọn danh mục con...</option>
                                                         {categories.find(c => c.id === msg.transaction.categoryId).subcategories.map(s => (
@@ -388,7 +388,10 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                 
                 {/* Context Wallet Link at Bottom */}
                 <div className="flex justify-center">
-                    <button className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+                    <button 
+                        onClick={onOpenContextWallet}
+                        className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                    >
                         <Bot className="w-4 h-4" />
                         <span>Ví ngữ cảnh của Rolly</span>
                     </button>

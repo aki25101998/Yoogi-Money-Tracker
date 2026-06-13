@@ -85,7 +85,7 @@ const SortableWalletCard = ({ w, isSelected, onClick, onClickEdit, onLongPress }
 
 const COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#2dd4bf', '#fb923c', '#94a3b8'];
 
-const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) => {
+const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, onNavigate }) => {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -637,6 +637,10 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets }) 
                 aiMemories={aiMemories}
                 wallets={wallets}
                 selectedWalletId={selectedWalletIds.length === 1 ? selectedWalletIds[0] : null}
+                onOpenContextWallet={() => {
+                    setIsAIChatOpen(false);
+                    if (onNavigate) onNavigate('settings:ai');
+                }}
             />
 
             <TransactionModal
