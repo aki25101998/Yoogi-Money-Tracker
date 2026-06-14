@@ -12,18 +12,47 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('active');
     const [activeTab, setActiveTab] = useState('debts');
+    const [selectedGroupKey, setSelectedGroupKey] = useState(null);
 
     const totalLent = debts.reduce((acc, d) => d.status === 'active' ? acc + (d.totalAmount - (d.repaidAmount || 0)) : acc, 0);
     const totalRepaid = debts.reduce((acc, d) => acc + (d.repaidAmount || 0), 0);
 
-    const filteredDebts = debts.filter(d => {
-        const matchSearch = d.personName.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchStatus = filterStatus === 'all' || d.status === filterStatus;
-        return matchSearch && matchStatus;
-    });
+    const groupedDebtsObj = debts.reduce((acc, d) => {
+        const key = d.personName.trim().toLowerCase();
+        if (!acc[key]) {
+            acc[key] = {
+                id: key,
+                personName: d.personName,
+                totalAmount: 0,
+                repaidAmount: 0,
+                debts: [],
+                status: 'paid',
+                createdAt: d.createdAt,
+            };
+        }
+        acc[key].totalAmount += d.totalAmount;
+        acc[key].repaidAmount += (d.repaidAmount || 0);
+        acc[key].debts.push(d);
+        if (d.status === 'active') {
+            acc[key].status = 'active';
+        }
+        if (new Date(d.createdAt) > new Date(acc[key].createdAt)) {
+            acc[key].createdAt = d.createdAt;
+            acc[key].personName = d.personName;
+        }
+        return acc;
+    }, {});
 
-    const openRepayModal = (id) => {
-        setSelectedDebtId(id);
+    const groupedDebtsArray = Object.values(groupedDebtsObj);
+
+    const filteredGroups = groupedDebtsArray.filter(g => {
+        const matchSearch = g.personName.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchStatus = filterStatus === 'all' || g.status === filterStatus;
+        return matchSearch && matchStatus;
+    }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const openRepayModal = (key) => {
+        setSelectedGroupKey(key);
         setIsRepayOpen(true);
     };
 
@@ -155,7 +184,7 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                     </div>
 
                     {/* List */}
-                    {filteredDebts.length === 0 ? (
+                    {filteredGroups.length === 0 ? (
                         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-10 flex flex-col items-center justify-center text-center">
                             <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mb-4">
                                 <Users className="w-10 h-10 text-slate-300 dark:text-slate-600" />
@@ -164,36 +193,31 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {filteredDebts.map(debt => {
-                                const progress = Math.min(100, Math.round(((debt.repaidAmount || 0) / debt.totalAmount) * 100));
-                                const remaining = debt.totalAmount - (debt.repaidAmount || 0);
+                            {filteredGroups.map(group => {
+                                const remaining = group.totalAmount - group.repaidAmount;
+                                const progress = group.totalAmount > 0 ? Math.round((group.repaidAmount / group.totalAmount) * 100) : 0;
 
                                 return (
-                                    <div key={debt.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                                        {debt.status === 'paid' && (
-                                            <div className="absolute top-4 right-4 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                                                Đã trả xong
-                                            </div>
-                                        )}
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-sm ${debt.status === 'paid' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'}`}>
-                                                {debt.personName.charAt(0).toUpperCase()}
+                                    <div key={group.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col justify-between hover:shadow-md transition-shadow">
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-xl">
+                                                {group.personName.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-slate-800 dark:text-white text-lg">{debt.personName}</h3>
-                                                <p className="text-xs text-slate-500">{new Date(debt.createdAt).toLocaleDateString('vi-VN')}</p>
+                                                <h3 className="font-bold text-slate-800 dark:text-white text-lg">{group.personName}</h3>
+                                                <p className="text-xs text-slate-500">{new Date(group.createdAt).toLocaleDateString('vi-VN')}</p>
                                             </div>
                                         </div>
 
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-baseline">
                                                 <span className="text-sm text-slate-500">Đã mượn</span>
-                                                <span className="font-bold text-slate-800 dark:text-white text-lg">{formatCurrency(debt.totalAmount)}</span>
+                                                <span className="font-bold text-slate-800 dark:text-white text-lg">{formatCurrency(group.totalAmount)}</span>
                                             </div>
 
                                             <div>
                                                 <div className="flex justify-between text-xs mb-1.5">
-                                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">Đã trả: {formatCurrency(debt.repaidAmount || 0)}</span>
+                                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">Đã trả: {formatCurrency(group.repaidAmount || 0)}</span>
                                                     <span className="font-medium text-slate-500">{progress}%</span>
                                                 </div>
                                                 <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
@@ -201,14 +225,14 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                                                 </div>
                                             </div>
 
-                                            {debt.status === 'active' && (
+                                            {group.status === 'active' && (
                                                 <div className="pt-2 flex gap-2 border-t border-slate-100 dark:border-slate-700">
                                                     <div className="flex-1">
                                                         <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-0.5">Còn nợ</span>
                                                         <span className="font-bold text-orange-500">{formatCurrency(remaining)}</span>
                                                     </div>
                                                     <button 
-                                                        onClick={() => openRepayModal(debt.id)}
+                                                        onClick={() => openRepayModal(group.id)}
                                                         className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl font-bold text-sm transition-colors flex items-center gap-1"
                                                     >
                                                         Nhận trả
@@ -276,7 +300,7 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                     onClose={() => { setIsRepayOpen(false); setSelectedDebtId(null); }}
                     user={user}
                     wallets={wallets}
-                    debt={debts.find(d => d.id === selectedDebtId)}
+                    debt={groupedDebtsObj[selectedGroupKey]}
                 />
             )}
         </div>

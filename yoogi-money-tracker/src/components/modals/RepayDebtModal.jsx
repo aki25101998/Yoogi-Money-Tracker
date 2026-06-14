@@ -30,14 +30,29 @@ const RepayDebtModal = ({ isOpen, onClose, user, wallets, debt }) => {
             const amountNum = parseFloat(form.amount) || 0;
             if (amountNum <= 0) return;
             
-            const newRepaidAmount = (debt.repaidAmount || 0) + amountNum;
-            const newStatus = newRepaidAmount >= debt.totalAmount ? 'paid' : 'active';
+            const activeDebts = debt.debts
+                .filter(d => d.status === 'active')
+                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // oldest first
 
-            // 1. Cập nhật khoản nợ
-            await updateDebt(user.uid, debt.id, {
-                repaidAmount: newRepaidAmount,
-                status: newStatus
-            });
+            let amountToDistribute = amountNum;
+
+            for (const d of activeDebts) {
+                if (amountToDistribute <= 0) break;
+                
+                const dRemaining = d.totalAmount - (d.repaidAmount || 0);
+                if (dRemaining > 0) {
+                    const payAmount = Math.min(amountToDistribute, dRemaining);
+                    const newRepaidAmount = (d.repaidAmount || 0) + payAmount;
+                    const newStatus = newRepaidAmount >= d.totalAmount ? 'paid' : 'active';
+                    
+                    await updateDebt(user.uid, d.id, {
+                        repaidAmount: newRepaidAmount,
+                        status: newStatus
+                    });
+                    
+                    amountToDistribute -= payAmount;
+                }
+            }
 
             // 2. Tạo giao dịch cộng tiền (loan_repaid)
             const transactionData = {
@@ -48,8 +63,10 @@ const RepayDebtModal = ({ isOpen, onClose, user, wallets, debt }) => {
                 subcategoryId: '',
                 date: new Date(form.date).toISOString(),
                 walletId: form.walletId,
-                debtId: debt.id
             };
+            if (activeDebts.length > 0) {
+                transactionData.debtId = activeDebts[0].id;
+            }
             await addTransaction(user.uid, transactionData);
 
             onClose();
