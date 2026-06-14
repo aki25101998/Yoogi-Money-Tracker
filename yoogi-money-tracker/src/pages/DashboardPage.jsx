@@ -97,6 +97,10 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, re
     const [selectedWalletIds, setSelectedWalletIds] = useState([]);
     
     // UI States
+    const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+    const [isAIContextOpen, setIsAIContextOpen] = useState(false);
+    const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
@@ -674,9 +678,61 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, re
                 </div>
             </div>
 
-            {/* FAB is now globally managed in App.jsx */}
+            {/* Floating Action Button (FAB) Menu */}
+            {isFabMenuOpen && (
+                <div className="fixed inset-0 z-30 flex" onClick={() => setIsFabMenuOpen(false)}>
+                    <div className="absolute bottom-36 right-6 md:bottom-24 md:right-8 flex flex-col gap-3 items-end">
+                        <button 
+                            onClick={() => { setIsFabMenuOpen(false); setEditingTransaction(null); setIsModalOpen(true); }}
+                            className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Nhập thủ công</span>
+                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                                <PenSquare className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                            </div>
+                        </button>
+                        <button 
+                            onClick={() => { setIsFabMenuOpen(false); setIsAIChatOpen(true); }}
+                            className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 transition-colors"
+                        >
+                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Nhập bằng AI</span>
+                            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                                <Bot className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <button
+                onClick={() => setIsFabMenuOpen(!isFabMenuOpen)}
+                className={`fixed bottom-20 right-6 md:bottom-6 md:right-8 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-lg transition-all z-40 ${isFabMenuOpen ? 'bg-slate-600 rotate-45 scale-90' : 'bg-slate-800 dark:bg-cyan-600 hover:scale-105 active:scale-95'}`}
+            >
+                <Plus className="w-6 h-6" />
+            </button>
 
             {/* Modals */}
+            <AIChatModal 
+                isOpen={isAIChatOpen}
+                onClose={() => setIsAIChatOpen(false)}
+                user={user}
+                categories={categories}
+                aiMemories={aiMemories}
+                wallets={walletBalances}
+                payers={payers}
+                recurringTransactions={recurringTransactions}
+                selectedWalletId={selectedWalletIds.length === 1 ? selectedWalletIds[0] : null}
+                onOpenContextWallet={() => setIsAIContextOpen(true)}
+            />
+
+            <AIContextModal
+                isOpen={isAIContextOpen}
+                onClose={() => setIsAIContextOpen(false)}
+                user={user}
+                categories={categories}
+                aiMemories={aiMemories}
+            />
+
             <TransactionModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}

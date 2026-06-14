@@ -360,11 +360,9 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
 
     return (
         <>
-            <div className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
-
-            {/* Chat Panel */}
+            {/* Chat Modal */}
             <div className="fixed inset-y-0 right-0 z-50 flex flex-col w-full md:w-[400px] lg:w-[450px] bg-slate-50 dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 animate-in slide-in-from-right duration-300">
-                {/* Header */}
+                {/* Compact Header */}
                 <div className="bg-white dark:bg-slate-800 px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between relative z-20 shadow-sm">
                     <div className="flex items-center gap-1 sm:gap-2">
                         <button onClick={onClose} className="p-1.5 -ml-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
