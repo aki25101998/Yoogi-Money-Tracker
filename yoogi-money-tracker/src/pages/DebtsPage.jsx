@@ -4,7 +4,7 @@ import { formatCurrency } from '../utils/formatters';
 import AddDebtModal from '../components/modals/AddDebtModal';
 import RepayDebtModal from '../components/modals/RepayDebtModal';
 import DebtDetailsModal from '../components/modals/DebtDetailsModal';
-import { addDebtor, deleteDebtor } from '../utils/firebaseHelpers';
+import { addDebtor, deleteDebtor, deleteDebt } from '../utils/firebaseHelpers';
 
 const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -75,6 +75,17 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
             }
         }
         return null;
+    };
+
+    const handleDeleteDebt = async (debtId) => {
+        if (window.confirm('Bạn có chắc chắn muốn xóa khoản nợ này? Hành động này không thể hoàn tác.')) {
+            try {
+                await deleteDebt(user.uid, debtId);
+                // If the group has no debts left, we might want to close the details modal, but React state will handle it naturally if it's derived from `debts` props.
+            } catch (error) {
+                alert('Lỗi khi xóa: ' + error.message);
+            }
+        }
     };
 
     return (
@@ -319,6 +330,7 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                 isOpen={isDetailsOpen}
                 onClose={() => { setIsDetailsOpen(false); setSelectedDetailsKey(null); }}
                 groupedDebt={groupedDebtsObj[selectedDetailsKey]}
+                onDeleteDebt={handleDeleteDebt}
             />
         </div>
     );

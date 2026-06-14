@@ -1,9 +1,9 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar } from 'lucide-react';
+import { X, Calendar, Trash2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
-const DebtDetailsModal = ({ isOpen, onClose, groupedDebt }) => {
+const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt }) => {
     if (!isOpen || !groupedDebt) return null;
 
     // Sort debts by date descending
@@ -32,9 +32,18 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt }) => {
                                         Đã trả xong
                                     </div>
                                 )}
-                                <div className="flex items-center gap-2 text-slate-500 mb-3">
-                                    <Calendar className="w-4 h-4" />
-                                    <span className="text-xs font-medium">{new Date(debt.createdAt).toLocaleDateString('vi-VN')}</span>
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2 text-slate-500">
+                                        <Calendar className="w-4 h-4" />
+                                        <span className="text-xs font-medium">{new Date(debt.createdAt).toLocaleDateString('vi-VN')}</span>
+                                    </div>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); onDeleteDebt(debt.id); }}
+                                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                        title="Xóa khoản nợ này"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </div>
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-baseline">
