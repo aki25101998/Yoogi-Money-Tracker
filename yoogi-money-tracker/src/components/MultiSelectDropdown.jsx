@@ -71,6 +71,11 @@ const MultiSelectDropdown = ({ options, selectedIds, onChange, placeholder, isGr
 
                     {isGrouped ? options.map((group, gIdx) => (
                         <div key={gIdx}>
+                            {group.superLabel && (
+                                <div className={`px-4 py-2 ${gIdx > 0 ? 'mt-3' : ''} text-sm font-black uppercase tracking-widest border-b border-slate-200 dark:border-slate-700/50 sticky top-0 z-10 bg-white dark:bg-slate-800`}>
+                                    {group.superLabel}
+                                </div>
+                            )}
                             <div className="px-4 py-2 font-bold text-slate-800 dark:text-white bg-white dark:bg-slate-800 sticky top-0 z-10 border-b border-slate-100 dark:border-slate-700/50">
                                 {group.label}
                             </div>

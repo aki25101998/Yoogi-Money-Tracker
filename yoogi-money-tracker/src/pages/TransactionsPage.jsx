@@ -172,13 +172,17 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                             options={(() => {
                                 const filtered = categories?.filter(c => selectedCategoryIds.length === 0 || selectedCategoryIds.includes(c.id)) || [];
                                 const expenseGroups = filtered.filter(c => c.type === 'expense').map(c => ({
-                                    label: `[Chi tiêu] ${c.name}`,
+                                    label: c.name,
                                     options: c.subcategories?.map(s => ({ id: s.id, name: s.name })) || []
                                 })).filter(group => group.options.length > 0);
+                                if (expenseGroups.length > 0) expenseGroups[0].superLabel = <span className="text-rose-600 dark:text-rose-400">CHI TIÊU</span>;
+
                                 const incomeGroups = filtered.filter(c => c.type === 'income').map(c => ({
-                                    label: `[Thu nhập] ${c.name}`,
+                                    label: c.name,
                                     options: c.subcategories?.map(s => ({ id: s.id, name: s.name })) || []
                                 })).filter(group => group.options.length > 0);
+                                if (incomeGroups.length > 0) incomeGroups[0].superLabel = <span className="text-emerald-600 dark:text-emerald-400">THU NHẬP</span>;
+
                                 return [...expenseGroups, ...incomeGroups];
                             })()}
                             selectedIds={selectedSubcategoryIds}
