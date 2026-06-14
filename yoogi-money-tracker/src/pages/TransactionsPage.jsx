@@ -141,7 +141,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
 
             {/* Filter Bar */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm sticky top-0 z-20">
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center justify-center gap-3">
                     <MultiSelectDropdown
                         placeholder="🏦 Tất cả ví"
                         options={wallets || []}
@@ -150,7 +150,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                         widthClass="min-w-[160px]"
                     />
 
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap justify-center gap-3">
                         <MultiSelectDropdown
                             placeholder="📂 Tất cả danh mục chính"
                             isGrouped={true}
@@ -168,10 +168,13 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
 
                         <MultiSelectDropdown
                             placeholder="Tất cả danh mục phụ"
+                            isGrouped={true}
                             options={categories
                                 ?.filter(c => selectedCategoryIds.length === 0 || selectedCategoryIds.includes(c.id))
-                                .flatMap(c => c.subcategories || [])
-                                .map(s => ({ id: s.id, name: s.name })) || []}
+                                .map(c => ({
+                                    label: c.name,
+                                    options: c.subcategories?.map(s => ({ id: s.id, name: s.name })) || []
+                                })).filter(group => group.options.length > 0) || []}
                             selectedIds={selectedSubcategoryIds}
                             onChange={setSelectedSubcategoryIds}
                             widthClass="min-w-[160px]"
