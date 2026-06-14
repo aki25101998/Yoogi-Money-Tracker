@@ -92,39 +92,25 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
 
     const handleTransferSave = async (transferData) => {
         try {
-            const expenseData = {
-                type: 'expense',
+            const transferTxn = {
+                type: 'transfer',
                 amount: transferData.amount,
                 description: transferData.description || 'Chuyển tiền',
                 categoryId: 'transfer',
                 subcategoryId: '',
                 date: transferData.date,
                 walletId: transferData.fromWallet,
-                isTransfer: true,
                 transferTo: transferData.toWallet,
                 createdAt: new Date().toISOString()
             };
 
-            const incomeData = {
-                type: 'income',
-                amount: transferData.amount,
-                description: transferData.description || 'Nhận tiền chuyển khoản',
-                categoryId: 'transfer',
-                subcategoryId: '',
-                date: transferData.date,
-                walletId: transferData.toWallet,
-                isTransfer: true,
-                transferFrom: transferData.fromWallet,
-                createdAt: new Date().toISOString()
-            };
-
-            await addDoc(collection(db, `artifacts/${APP_ID}/users/${user.uid}/transactions`), expenseData);
-            await addDoc(collection(db, `artifacts/${APP_ID}/users/${user.uid}/transactions`), incomeData);
+            const docRef = await addDoc(collection(db, `artifacts/${APP_ID}/users/${user.uid}/transactions`), transferTxn);
 
             const aiMsg = {
                 id: Date.now().toString(),
                 type: 'bot',
                 text: `Đã ghi nhận lệnh chuyển ${formatCurrency(transferData.amount)} từ ví này sang ví khác.`,
+                transaction: { ...transferTxn, id: docRef.id, originalInput: transferData.description || 'Chuyển tiền' },
                 timestamp: Date.now()
             };
             setMessages(prev => [...prev, aiMsg]);
@@ -346,11 +332,11 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight">{msg.transaction.description}</p>
-                                                    <p className="text-xs text-slate-500">{activeWallet?.name}</p>
+                                                    <p className="text-xs text-slate-500">{wallets.find(w => w.id === msg.transaction.walletId)?.name || activeWallet?.name}</p>
                                                 </div>
                                             </div>
                                             <span className={`font-bold text-base ${msg.transaction.type === 'income' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                {msg.transaction.type === 'income' ? '+' : '-'}{formatCurrency(msg.transaction.amount)}
+                                                {msg.transaction.type === 'income' ? '+' : (msg.transaction.type === 'transfer' ? '⇄ ' : '-')}{formatCurrency(msg.transaction.amount)}
                                             </span>
                                         </div>
                                         

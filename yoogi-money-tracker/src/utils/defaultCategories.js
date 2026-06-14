@@ -114,4 +114,14 @@ export const DEFAULT_CATEGORIES = [
         order: 99,
         subcategories: [],
     },
+
+    // --- CHUYỂN TIỀN (TRANSFER) ---
+    {
+        id: 'transfer',
+        name: 'Chuyển tiền',
+        icon: '💸',
+        type: 'transfer',
+        order: 1,
+        subcategories: [],
+    },
 ];

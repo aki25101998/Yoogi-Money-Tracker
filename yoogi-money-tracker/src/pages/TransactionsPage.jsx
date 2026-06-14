@@ -4,6 +4,7 @@ import { formatCurrency } from '../utils/formatters';
 import { deleteTransaction, updateTransaction } from '../utils/firebaseHelpers';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import TransactionModal from '../components/modals/TransactionModal';
+import TransferFundsModal from '../components/modals/TransferFundsModal';
 import DateRangeSelector from '../components/DateRangeSelector';
 
 const TransactionsPage = ({ user, transactions, categories, wallets }) => {
@@ -15,6 +16,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
 
     // --- Modal State ---
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
 
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
@@ -28,7 +30,13 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
             if (dateRange.start && t.date < dateRange.start) return false;
             if (dateRange.end && t.date > dateRange.end) return false;
             
-            if (selectedWalletId !== 'all' && t.walletId !== selectedWalletId) return false;
+            if (selectedWalletId !== 'all') {
+                if (t.type === 'transfer') {
+                    if (t.walletId !== selectedWalletId && t.transferTo !== selectedWalletId) return false;
+                } else {
+                    if (t.walletId !== selectedWalletId) return false;
+                }
+            }
 
             if (selectedCategoryId !== 'all' && t.categoryId !== selectedCategoryId) return false;
             if (selectedSubcategoryId !== 'all' && t.subcategoryId !== selectedSubcategoryId) return false;
@@ -44,17 +52,29 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
             if (!groups[t.date]) groups[t.date] = { date: t.date, totalIncome: 0, totalExpense: 0, items: [] };
             groups[t.date].items.push(t);
             if (t.type === 'income') groups[t.date].totalIncome += t.amount;
-            else groups[t.date].totalExpense += t.amount;
+            else if (t.type === 'expense') groups[t.date].totalExpense += t.amount;
+            else if (t.type === 'transfer' && selectedWalletId !== 'all') {
+                if (t.transferTo === selectedWalletId) groups[t.date].totalIncome += t.amount;
+                if (t.walletId === selectedWalletId) groups[t.date].totalExpense += t.amount;
+            }
         });
         // Sort dates descending
         return Object.values(groups).sort((a, b) => b.date.localeCompare(a.date));
     }, [filteredTransactions]);
 
     const summaryStats = useMemo(() => {
-        const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
-        const expense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
+        let income = 0;
+        let expense = 0;
+        filteredTransactions.forEach(t => {
+            if (t.type === 'income') income += (t.amount || 0);
+            else if (t.type === 'expense') expense += (t.amount || 0);
+            else if (t.type === 'transfer' && selectedWalletId !== 'all') {
+                if (t.transferTo === selectedWalletId) income += (t.amount || 0);
+                if (t.walletId === selectedWalletId) expense += (t.amount || 0);
+            }
+        });
         return { income, expense, balance: income - expense };
-    }, [filteredTransactions]);
+    }, [filteredTransactions, selectedWalletId]);
 
     // --- Handlers ---
     const handleSaveTransaction = async (formData) => {
@@ -62,6 +82,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
         try {
             await updateTransaction(user.uid, editingTransaction.id, formData);
             setIsModalOpen(false);
+            setIsTransferModalOpen(false);
             setEditingTransaction(null);
         } catch (err) {
             alert('Lỗi: ' + err.message);
@@ -85,6 +106,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
         try {
             await deleteTransaction(user.uid, id);
             setIsModalOpen(false);
+            setIsTransferModalOpen(false);
             setEditingTransaction(null);
         } catch (error) {
             alert("Lỗi khi xóa: " + error.message);
@@ -94,7 +116,11 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
     const openEditModal = (e, txn) => {
         e.stopPropagation();
         setEditingTransaction(txn);
-        setIsModalOpen(true);
+        if (txn.type === 'transfer') {
+            setIsTransferModalOpen(true);
+        } else {
+            setIsModalOpen(true);
+        }
     };
 
     const openDeleteModal = (e, id) => {
@@ -218,19 +244,20 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                 {group.items.map(txn => {
                                     const cat = categories.find(c => c.id === txn.categoryId);
                                     const wallet = wallets?.find(w => w.id === txn.walletId);
-                                    const isIncome = txn.type === 'income';
+                                    const isIncome = txn.type === 'income' || (txn.type === 'transfer' && selectedWalletId !== 'all' && txn.transferTo === selectedWalletId);
+                                    const isExpense = txn.type === 'expense' || (txn.type === 'transfer' && selectedWalletId !== 'all' && txn.walletId === selectedWalletId);
 
                                     return (
                                         <div key={txn.id} onClick={(e) => openEditModal(e, txn)} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer group">
                                             {/* Icon */}
-                                            <div className={`w-12 h-12 rounded-2xl flex flex-shrink-0 items-center justify-center text-2xl shadow-inner ${isIncome ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-rose-100 dark:bg-rose-900/30'}`}>
+                                            <div className={`w-12 h-12 rounded-2xl flex flex-shrink-0 items-center justify-center text-2xl shadow-inner ${isIncome ? 'bg-emerald-100 dark:bg-emerald-900/30' : (isExpense ? 'bg-rose-100 dark:bg-rose-900/30' : 'bg-slate-100 dark:bg-slate-800')}`}>
                                                 {cat?.icon || '❓'}
                                             </div>
                                             
                                             {/* Info */}
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-slate-800 dark:text-white truncate mb-0.5">
-                                                    {wallet?.name || 'Chưa phân ví'} • {cat?.name || '❓ Chưa phân loại'} {txn.subcategoryId && cat?.subcategories?.find(s => s.id === txn.subcategoryId) ? `> ${cat.subcategories.find(s => s.id === txn.subcategoryId).name}` : ''}
+                                                    {txn.type === 'transfer' ? `Đến: ${wallets?.find(w => w.id === txn.transferTo)?.name || '?'}` : (wallet?.name || 'Chưa phân ví')} • {cat?.name || '❓ Chưa phân loại'} {txn.subcategoryId && cat?.subcategories?.find(s => s.id === txn.subcategoryId) ? `> ${cat.subcategories.find(s => s.id === txn.subcategoryId).name}` : ''}
                                                 </p>
                                                 <div className="flex items-center gap-2">
                                                     <p className="font-medium text-slate-500 dark:text-slate-400 truncate text-sm">{txn.description}</p>
@@ -240,8 +267,8 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                             {/* Amount & Actions */}
                                             <div className="flex items-center gap-4">
                                                 <div className="text-right">
-                                                    <p className={`font-bold text-base whitespace-nowrap flex items-center justify-end gap-1 ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                                        {isIncome ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                                                    <p className={`font-bold text-base whitespace-nowrap flex items-center justify-end gap-1 ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : (isExpense ? 'text-rose-600 dark:text-rose-400' : 'text-rose-500')}`}>
+                                                        {isIncome ? <ArrowUpRight className="w-4 h-4" /> : (isExpense ? <ArrowDownRight className="w-4 h-4" /> : '⇄')}
                                                         {formatCurrency(txn.amount)}
                                                     </p>
                                                 </div>
@@ -267,6 +294,16 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                 onSave={handleSaveTransaction}
                 onDelete={handleDeleteFromModal}
                 categories={categories}
+                wallets={wallets}
+                initialData={editingTransaction}
+            />
+
+            {/* Transfer Edit Modal */}
+            <TransferFundsModal
+                isOpen={isTransferModalOpen}
+                onClose={() => setIsTransferModalOpen(false)}
+                onSave={handleSaveTransaction}
+                onDelete={handleDeleteFromModal}
                 wallets={wallets}
                 initialData={editingTransaction}
             />

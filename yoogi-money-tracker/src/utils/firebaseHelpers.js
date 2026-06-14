@@ -79,6 +79,7 @@ export const ensureRequiredCategories = async (userId) => {
 
     const hasUncategorizedExpense = categories.some(c => c.id === 'uncategorized_expense' || c.name === 'Chưa phân loại' || c.name === '❓ Chưa phân loại');
     const hasUncategorizedIncome = categories.some(c => c.id === 'uncategorized_income' || c.name === 'Chưa phân loại' || c.name === '❓ Chưa phân loại');
+    const hasTransfer = categories.some(c => c.id === 'transfer');
 
     const batch = writeBatch(db);
     let updated = false;
@@ -131,6 +132,20 @@ export const ensureRequiredCategories = async (userId) => {
             icon: '❓',
             type: 'income',
             order: 99,
+            subcategories: [],
+            createdAt: new Date().toISOString(),
+        });
+        updated = true;
+    }
+
+    if (!hasTransfer) {
+        const docRef = doc(catRef);
+        batch.set(docRef, {
+            id: 'transfer',
+            name: 'Chuyển tiền',
+            icon: '💸',
+            type: 'transfer',
+            order: 1,
             subcategories: [],
             createdAt: new Date().toISOString(),
         });

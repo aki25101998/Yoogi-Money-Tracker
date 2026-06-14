@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ArrowRightLeft, Check } from 'lucide-react';
 
-const TransferFundsModal = ({ isOpen, onClose, wallets, onSave }) => {
+const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initialData }) => {
     const [fromWallet, setFromWallet] = useState('');
     const [toWallet, setToWallet] = useState('');
     const [description, setDescription] = useState('');
@@ -10,20 +10,34 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave }) => {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
     useEffect(() => {
-        if (isOpen && wallets?.length > 0) {
-            setFromWallet(wallets[0]?.id);
-            setToWallet(wallets.length > 1 ? wallets[1]?.id : wallets[0]?.id);
+        if (isOpen) {
+            if (initialData) {
+                setFromWallet(initialData.walletId || '');
+                setToWallet(initialData.transferTo || '');
+                setDescription(initialData.description || '');
+                setAmount(initialData.amount || '');
+                setDate(initialData.date || new Date().toISOString().split('T')[0]);
+            } else if (wallets?.length > 0) {
+                setFromWallet(wallets[0]?.id);
+                setToWallet(wallets.length > 1 ? wallets[1]?.id : wallets[0]?.id);
+                setDescription('');
+                setAmount('');
+                setDate(new Date().toISOString().split('T')[0]);
+            }
         }
-    }, [isOpen, wallets]);
+    }, [isOpen, wallets, initialData]);
 
     if (!isOpen) return null;
 
     const handleSubmit = (e) => {
         e.preventDefault();
         onSave({
-            transferType: 'transfer',
-            fromWallet,
-            toWallet,
+            ...(initialData ? { id: initialData.id } : {}),
+            type: 'transfer',
+            categoryId: 'transfer',
+            subcategoryId: '',
+            walletId: fromWallet,
+            transferTo: toWallet,
             description,
             amount: parseFloat(amount) || 0,
             date
@@ -38,9 +52,9 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave }) => {
                     <div className="flex flex-col items-center w-full relative">
                         <div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mb-4"></div>
                         <h3 className="font-bold text-xl text-slate-800 dark:text-white">
-                            Di chuyển Quỹ
+                            {initialData ? 'Chỉnh sửa chuyển nhượng' : 'Di chuyển Quỹ'}
                         </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Chuyển tiền đến ví khác</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{initialData ? 'Chỉnh sửa bản chuyển nhượng của bạn bên dưới.' : 'Chuyển tiền đến ví khác'}</p>
                     </div>
                 </div>
 
@@ -117,12 +131,28 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave }) => {
                         </div>
                     </div>
 
-                    <button
-                        type="submit"
-                        className="w-full py-4 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-bold text-lg transition-colors shadow-lg shadow-teal-500/30"
-                    >
-                        Lưu
-                    </button>
+                    <div className="flex gap-3 pt-2 flex-col sm:flex-row">
+                        <button
+                            type="submit"
+                            className="w-full py-4 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-bold text-lg transition-colors shadow-lg shadow-teal-500/30"
+                        >
+                            Lưu
+                        </button>
+                        
+                        {initialData && onDelete && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (window.confirm('Bạn có chắc chắn muốn xóa giao dịch này?')) {
+                                        onDelete(initialData.id);
+                                    }
+                                }}
+                                className="w-full py-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-lg transition-colors shadow-lg shadow-rose-500/30"
+                            >
+                                Xóa Chuyển
+                            </button>
+                        )}
+                    </div>
                     
                     <button
                         type="button"
