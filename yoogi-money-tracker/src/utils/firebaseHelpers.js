@@ -258,6 +258,40 @@ export const deleteTransaction = async (userId, transactionId) => {
 };
 
 // ============================================================
+// RECURRING TRANSACTIONS
+// ============================================================
+
+export const subscribeRecurringTransactions = (userId, callback) => {
+    const q = query(getCollectionRef(userId, 'recurring_transactions'));
+    return onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        callback(items);
+    });
+};
+
+export const addRecurringTransaction = async (userId, data) => {
+    return await addDoc(getCollectionRef(userId, 'recurring_transactions'), {
+        ...data,
+        createdAt: new Date().toISOString(),
+    });
+};
+
+export const updateRecurringTransaction = async (userId, id, updates) => {
+    const docRef = getDocRef(userId, 'recurring_transactions', id);
+    return await updateDoc(docRef, {
+        ...updates,
+        updatedAt: new Date().toISOString(),
+    });
+};
+
+export const deleteRecurringTransaction = async (userId, id) => {
+    return await deleteDoc(getDocRef(userId, 'recurring_transactions', id));
+};
+
+// ============================================================
 // AI MEMORY
 // ============================================================
 

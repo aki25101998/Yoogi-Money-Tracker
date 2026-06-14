@@ -9,7 +9,7 @@ import TransferFundsModal from '../modals/TransferFundsModal';
 import TransactionModal from '../modals/TransactionModal';
 import RecurringTransactionsModal from '../modals/RecurringTransactionsModal';
 
-const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, selectedWalletId, onOpenContextWallet }) => {
+const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, recurringTransactions, selectedWalletId, onOpenContextWallet }) => {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -558,6 +558,9 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                 isOpen={isRecurringModalOpen} 
                 onClose={() => setIsRecurringModalOpen(false)} 
                 categories={categories}
+                user={user}
+                wallets={wallets}
+                recurringTransactions={recurringTransactions}
             />
         </div>
         </>

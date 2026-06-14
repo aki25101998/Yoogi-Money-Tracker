@@ -29,6 +29,9 @@ import {
     subscribeAIMemory,
     subscribeWallets,
     subscribePayers,
+    subscribeRecurringTransactions,
+    addTransaction,
+    updateRecurringTransaction
 } from './utils/firebaseHelpers';
 
 export default function App() {
@@ -43,6 +46,7 @@ export default function App() {
     const [aiMemories, setAiMemories] = useState([]);
     const [wallets, setWallets] = useState([]);
     const [payers, setPayers] = useState([]);
+    const [recurringTransactions, setRecurringTransactions] = useState([]);
     const [isDataLoading, setIsDataLoading] = useState(true);
 
     // --- Navigation ---
@@ -132,6 +136,9 @@ export default function App() {
         // Subscribe to Payers
         const unsubPayers = subscribePayers(user.uid, setPayers);
 
+        // Subscribe to Recurring Transactions
+        const unsubRecurring = subscribeRecurringTransactions(user.uid, setRecurringTransactions);
+
         // Mark loading as done after a short delay to allow subscriptions to initialize
         const timer = setTimeout(() => setIsDataLoading(false), 500);
 
@@ -142,9 +149,72 @@ export default function App() {
             unsubMem();
             unsubWallets();
             unsubPayers();
+            unsubRecurring();
             clearTimeout(timer);
         };
     }, [user]);
+
+    // --- Recurring Transactions Check Effect ---
+    useEffect(() => {
+        if (!user || recurringTransactions.length === 0) return;
+
+        const intervalId = setInterval(async () => {
+            const now = new Date();
+            for (const rt of recurringTransactions) {
+                const nextDate = new Date(rt.nextDate);
+                if (now >= nextDate) {
+                    // It's time to execute this recurring transaction
+                    try {
+                        const transactionData = {
+                            type: rt.type,
+                            amount: rt.amount,
+                            description: rt.description,
+                            categoryId: rt.categoryId,
+                            subcategoryId: rt.subcategoryId || '',
+                            date: now.toISOString(),
+                            walletId: rt.walletId,
+                            isRecurring: true,
+                            recurringId: rt.id
+                        };
+                        await addTransaction(user.uid, transactionData);
+
+                        // Calculate next date
+                        const newNextDate = new Date(nextDate);
+                        const value = parseInt(rt.intervalValue) || 1;
+                        if (rt.intervalUnit === 'Phút') {
+                            newNextDate.setMinutes(newNextDate.getMinutes() + value);
+                        } else if (rt.intervalUnit === 'Ngày') {
+                            newNextDate.setDate(newNextDate.getDate() + value);
+                        } else if (rt.intervalUnit === 'Tuần') {
+                            newNextDate.setDate(newNextDate.getDate() + value * 7);
+                        } else if (rt.intervalUnit === 'Tháng') {
+                            newNextDate.setMonth(newNextDate.getMonth() + value);
+                        } else if (rt.intervalUnit === 'Năm') {
+                            newNextDate.setFullYear(newNextDate.getFullYear() + value);
+                        }
+
+                        // If the newNextDate is still in the past (e.g. app was offline), catch it up to future
+                        while (newNextDate <= now) {
+                            if (rt.intervalUnit === 'Phút') newNextDate.setMinutes(newNextDate.getMinutes() + value);
+                            else if (rt.intervalUnit === 'Ngày') newNextDate.setDate(newNextDate.getDate() + value);
+                            else if (rt.intervalUnit === 'Tuần') newNextDate.setDate(newNextDate.getDate() + value * 7);
+                            else if (rt.intervalUnit === 'Tháng') newNextDate.setMonth(newNextDate.getMonth() + value);
+                            else if (rt.intervalUnit === 'Năm') newNextDate.setFullYear(newNextDate.getFullYear() + value);
+                        }
+
+                        await updateRecurringTransaction(user.uid, rt.id, {
+                            nextDate: newNextDate.toISOString()
+                        });
+                        console.log("Executed recurring transaction:", rt.description);
+                    } catch (error) {
+                        console.error("Error executing recurring transaction:", error);
+                    }
+                }
+            }
+        }, 30000); // Check every 30 seconds
+
+        return () => clearInterval(intervalId);
+    }, [user, recurringTransactions]);
 
     // --- Auth Handlers ---
     const handleGoogleLogin = async () => {
@@ -251,6 +321,7 @@ export default function App() {
                     categories={categories}
                     aiMemories={aiMemories}
                     wallets={wallets}
+                    recurringTransactions={recurringTransactions}
                     onNavigate={setActivePage}
                 />
             );
