@@ -341,6 +341,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                                         </div>
                                         
                                         {/* Category Selection / Edit */}
+                                        {msg.transaction.type !== 'transfer' && (
                                         <div className="border-t border-slate-100 dark:border-slate-700 pt-3 flex flex-col gap-2">
                                             <label className="text-[10px] uppercase font-bold text-slate-400">Phân loại danh mục</label>
                                             <div className="flex flex-col gap-2">
@@ -382,6 +383,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                                                 )}
                                             </div>
                                         </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
