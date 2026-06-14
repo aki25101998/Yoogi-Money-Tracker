@@ -82,19 +82,29 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         return new Date();
     }, [filterDate]);
 
+    const filteredItems = useMemo(() => {
+        let result = items;
+        if (filterOwner !== 'all') {
+            result = result.filter(item => (item.owner || 'Tôi') === filterOwner);
+        }
+        return result;
+    }, [items, filterOwner]);
+
     const paymentHistoryGroups = useMemo(() => {
         const history = [];
-        items.forEach(item => {
+        filteredItems.forEach(item => {
             if (Array.isArray(item.paidMonths)) {
                 item.paidMonths.forEach(month => {
-                    history.push({
-                        id: `${item.id}-${month}`,
-                        item: item,
-                        itemName: item.name,
-                        owner: item.owner,
-                        month: month,
-                        amount: item.monthlyPayment
-                    });
+                    if (!filterDate || month === filterDate) {
+                        history.push({
+                            id: `${item.id}-${month}`,
+                            item: item,
+                            itemName: item.name,
+                            owner: item.owner,
+                            month: month,
+                            amount: item.monthlyPayment
+                        });
+                    }
                 });
             }
         });
@@ -109,15 +119,7 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         });
         
         return Object.values(groups).sort((a, b) => b.month.localeCompare(a.month));
-    }, [items]);
-
-    const filteredItems = useMemo(() => {
-        let result = items;
-        if (filterOwner !== 'all') {
-            result = result.filter(item => (item.owner || 'Tôi') === filterOwner);
-        }
-        return result;
-    }, [items, filterOwner]);
+    }, [filteredItems, filterDate]);
 
     const { inProgressItems, completedItems } = useMemo(() => {
         const targetDate = activeReferenceDate;
