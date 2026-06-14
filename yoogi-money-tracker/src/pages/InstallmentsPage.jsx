@@ -122,7 +122,6 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
     const { inProgressItems, completedItems } = useMemo(() => {
         const targetDate = activeReferenceDate;
         const targetMonthStr = getYearMonth(targetDate);
-        const currentYM = getYearMonth(new Date());
         const inProgress = [];
         const completed = [];
         
@@ -131,33 +130,24 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
             const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
             const monthsDiff = (target.getFullYear() - start.getFullYear()) * 12 + (target.getMonth() - start.getMonth());
             
-            // 1. Ignore items that haven't started yet relative to the viewed month
             if (monthsDiff < 0) return;
 
-            // 2. Check how many payments were made BEFORE the currently viewed month
-            const paidBeforeTargetMonth = (item.paidMonths || []).filter(pm => pm < targetMonthStr).length;
+            const maxCheckMonth = Math.min(monthsDiff, item.term - 1);
             
-            // If the item was already fully paid off before this month started, hide it completely
-            if (paidBeforeTargetMonth >= item.term) return;
-
-            // 3. For items whose scheduled term has completely passed:
-            if (monthsDiff >= item.term) {
-                // If viewing a future month (projection), strictly follow the schedule and hide it.
-                if (targetMonthStr > currentYM) return;
+            for (let i = 0; i <= maxCheckMonth; i++) {
+                const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+                const mStr = getYearMonth(d);
+                const isPaid = item.paidMonths?.includes(mStr);
                 
-                // If viewing current/past month, we keep it visible as an OVERDUE payment 
-                // so the user doesn't forget to pay it.
-            }
-
-            // 4. Did we pay it IN the currently viewed month?
-            const isPaidThisMonth = item.paidMonths?.includes(targetMonthStr);
-
-            if (isPaidThisMonth) {
-                completed.push(item);
-            } else {
-                inProgress.push(item);
+                if (isPaid && mStr === targetMonthStr) {
+                    completed.push({ item, monthStr: mStr, index: i + 1, refDate: d });
+                } else if (!isPaid) {
+                    inProgress.push({ item, monthStr: mStr, index: i + 1, refDate: d });
+                }
             }
         });
+        
+        inProgress.sort((a, b) => a.monthStr.localeCompare(b.monthStr));
         
         return { inProgressItems: inProgress, completedItems: completed };
     }, [filteredItems, activeReferenceDate]);
@@ -198,8 +188,8 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         });
 
         // Calculate monthly total for the currently viewed month (unpaid items only)
-        inProgressItems.forEach(item => {
-            monthlyTotal += item.monthlyPayment;
+        inProgressItems.forEach(wrapper => {
+            monthlyTotal += wrapper.item.monthlyPayment;
         });
 
         return { monthlyTotal, remainingTotal, projectedRemainingTotal };
@@ -242,29 +232,16 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         setEditingItem(null);
     };
 
-    const handleTogglePaid = async (item) => {
+    const togglePaidForMonth = async (item, monthStr) => {
         if (!user) return;
-        const targetMonthStr = getYearMonth(activeReferenceDate);
         const currentPaidMonths = item.paidMonths || [];
-        const isPaid = currentPaidMonths.includes(targetMonthStr);
+        const isPaid = currentPaidMonths.includes(monthStr);
         let newPaidMonths;
         if (isPaid) {
-            newPaidMonths = currentPaidMonths.filter(m => m !== targetMonthStr);
+            newPaidMonths = currentPaidMonths.filter(m => m !== monthStr);
         } else {
-            newPaidMonths = [...currentPaidMonths, targetMonthStr].sort();
+            newPaidMonths = [...currentPaidMonths, monthStr].sort();
         }
-        try {
-            const docRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', item.id);
-            await updateDoc(docRef, { paidMonths: newPaidMonths });
-        } catch (err) {
-            alert("Lỗi cập nhật trạng thái: " + err.message);
-        }
-    };
-
-    const handleTogglePaidSpecific = async (item, targetMonthStr) => {
-        if (!user) return;
-        const currentPaidMonths = item.paidMonths || [];
-        const newPaidMonths = currentPaidMonths.filter(m => m !== targetMonthStr);
         try {
             const docRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', item.id);
             await updateDoc(docRef, { paidMonths: newPaidMonths });
@@ -591,16 +568,17 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                         <h2 className="text-sm font-semibold text-indigo-400 border-l-4 border-indigo-400 pl-2 tracking-wider flex items-center justify-between">
                             <span>Đang chờ thanh toán ({inProgressItems.length})</span>
                         </h2>
-                        {inProgressItems.map(item => (
+                        {inProgressItems.map(wrapper => (
                             <InstallmentItem
-                                key={item.id}
-                                item={item}
-                                onEdit={() => { setEditingItem(item); setIsAddEditModalOpen(true); }}
+                                key={`${wrapper.item.id}-${wrapper.monthStr}`}
+                                item={wrapper.item}
+                                onEdit={() => { setEditingItem(wrapper.item); setIsAddEditModalOpen(true); }}
                                 onDelete={confirmDelete}
-                                referenceDate={activeReferenceDate}
+                                referenceDate={wrapper.refDate}
                                 isPaid={false}
-                                onTogglePaid={handleTogglePaid}
+                                onTogglePaid={(item) => togglePaidForMonth(item, wrapper.monthStr)}
                                 isReadOnly={false}
+                                kyIndex={wrapper.index}
                             />
                         ))}
                         {inProgressItems.length === 0 && (
@@ -617,7 +595,7 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                                 <span>Đã hoàn thành ({completedItems.length})</span>
                                 {completedItems.length > 0 && (
                                     <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded text-xs font-bold">
-                                        {formatCurrency(completedItems.reduce((sum, item) => sum + item.monthlyPayment, 0))}
+                                        {formatCurrency(completedItems.reduce((sum, wrapper) => sum + wrapper.item.monthlyPayment, 0))}
                                     </span>
                                 )}
                             </div>
@@ -636,19 +614,18 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                {completedItems.map(item => {
-                                    const targetMonthStr = getYearMonth(activeReferenceDate);
-                                    const isPaid = item.paidMonths?.includes(targetMonthStr);
+                                {completedItems.map(wrapper => {
                                     return (
                                         <InstallmentItem
-                                            key={item.id}
-                                            item={item}
-                                            onEdit={() => { setEditingItem(item); setIsAddEditModalOpen(true); }}
+                                            key={`${wrapper.item.id}-${wrapper.monthStr}`}
+                                            item={wrapper.item}
+                                            onEdit={() => { setEditingItem(wrapper.item); setIsAddEditModalOpen(true); }}
                                             onDelete={confirmDelete}
-                                            referenceDate={activeReferenceDate}
-                                            isPaid={isPaid}
-                                            onTogglePaid={handleTogglePaid}
+                                            referenceDate={wrapper.refDate}
+                                            isPaid={true}
+                                            onTogglePaid={(item) => togglePaidForMonth(item, wrapper.monthStr)}
                                             isReadOnly={false}
+                                            kyIndex={wrapper.index}
                                         />
                                     );
                                 })}
@@ -716,7 +693,7 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                                                     </div>
                                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button 
-                                                            onClick={(e) => { e.stopPropagation(); handleTogglePaidSpecific(txn.item, txn.month); }}
+                                                            onClick={(e) => { e.stopPropagation(); togglePaidForMonth(txn.item, txn.month); }}
                                                             title="Hoàn tác (Đánh dấu chưa trả)"
                                                             className="p-2 text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/30 rounded-lg transition-colors shadow-sm border border-slate-200 dark:border-slate-700"
                                                         >

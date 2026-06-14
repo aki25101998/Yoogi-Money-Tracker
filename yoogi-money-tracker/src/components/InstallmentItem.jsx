@@ -5,7 +5,7 @@ import Badge from './ui/Badge';
 import { formatCurrency } from '../utils/formatters';
 import { calculateItemStats, monthDiff } from '../utils/calculations';
 
-const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, isReadOnly }) => {
+const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, isReadOnly, kyIndex }) => {
     const stats = calculateItemStats(item, referenceDate);
     const paidCount = Array.isArray(item.paidMonths) ? item.paidMonths.length : stats.effectiveMonths;
     const cannotTickMore = !isPaid && paidCount >= item.term;
@@ -29,7 +29,7 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                                 <User className="w-3 h-3" /> {item.owner || 'Tôi'}
                             </div>
                             <div className="flex items-center gap-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-indigo-200 dark:border-indigo-800">
-                                Kỳ T{referenceDate.getMonth() + 1}/{referenceDate.getFullYear()}
+                                {kyIndex ? `Kỳ ${kyIndex}/${item.term} (T${referenceDate.getMonth() + 1}/${referenceDate.getFullYear()})` : `Kỳ T${referenceDate.getMonth() + 1}/${referenceDate.getFullYear()}`}
                             </div>
                             {stats.isFinished ? (
                                 <Badge type="success">Hoàn tất</Badge>
