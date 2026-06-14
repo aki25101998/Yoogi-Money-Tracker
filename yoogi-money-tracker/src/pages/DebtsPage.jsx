@@ -3,6 +3,7 @@ import { Users, Plus, ArrowDownToLine, ArrowUpFromLine, Search, ChevronRight, Co
 import { formatCurrency } from '../utils/formatters';
 import AddDebtModal from '../components/modals/AddDebtModal';
 import RepayDebtModal from '../components/modals/RepayDebtModal';
+import DebtDetailsModal from '../components/modals/DebtDetailsModal';
 import { addDebtor, deleteDebtor } from '../utils/firebaseHelpers';
 
 const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
@@ -13,6 +14,8 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
     const [filterStatus, setFilterStatus] = useState('active');
     const [activeTab, setActiveTab] = useState('debts');
     const [selectedGroupKey, setSelectedGroupKey] = useState(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [selectedDetailsKey, setSelectedDetailsKey] = useState(null);
 
     const totalLent = debts.reduce((acc, d) => d.status === 'active' ? acc + (d.totalAmount - (d.repaidAmount || 0)) : acc, 0);
     const totalRepaid = debts.reduce((acc, d) => acc + (d.repaidAmount || 0), 0);
@@ -54,6 +57,11 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
     const openRepayModal = (key) => {
         setSelectedGroupKey(key);
         setIsRepayOpen(true);
+    };
+
+    const openDetailsModal = (key) => {
+        setSelectedDetailsKey(key);
+        setIsDetailsOpen(true);
     };
 
     const handleQuickAddPayer = async () => {
@@ -199,13 +207,16 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
 
                                 return (
                                     <div key={group.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col justify-between hover:shadow-md transition-shadow">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-xl">
+                                        <div 
+                                            className="flex items-center gap-3 mb-6 cursor-pointer group/header"
+                                            onClick={() => openDetailsModal(group.id)}
+                                        >
+                                            <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-xl group-hover/header:bg-orange-200 transition-colors">
                                                 {group.personName.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-slate-800 dark:text-white text-lg">{group.personName}</h3>
-                                                <p className="text-xs text-slate-500">{new Date(group.createdAt).toLocaleDateString('vi-VN')}</p>
+                                                <h3 className="font-bold text-slate-800 dark:text-white text-lg group-hover/header:text-emerald-600 transition-colors">{group.personName}</h3>
+                                                <p className="text-xs text-slate-500">Bấm để xem chi tiết khoản nợ</p>
                                             </div>
                                         </div>
 
@@ -252,7 +263,7 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                     {payers.length === 0 ? (
                         <div className="col-span-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-10 flex flex-col items-center justify-center text-center">
                             <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mb-4">
-                                <Users className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+                                <Users className="w-10 h-10 text-slate-300 dark:bg-slate-600" />
                             </div>
                             <p className="text-slate-500 dark:text-slate-400 font-medium">Chưa có người mượn nào.</p>
                         </div>
@@ -294,15 +305,21 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                 onAddPayer={handleQuickAddPayer}
             />
 
-            {selectedDebtId && (
+            {isRepayOpen && selectedGroupKey && (
                 <RepayDebtModal
                     isOpen={isRepayOpen}
-                    onClose={() => { setIsRepayOpen(false); setSelectedDebtId(null); }}
+                    onClose={() => { setIsRepayOpen(false); setSelectedGroupKey(null); }}
                     user={user}
                     wallets={wallets}
                     debt={groupedDebtsObj[selectedGroupKey]}
                 />
             )}
+
+            <DebtDetailsModal
+                isOpen={isDetailsOpen}
+                onClose={() => { setIsDetailsOpen(false); setSelectedDetailsKey(null); }}
+                groupedDebt={groupedDebtsObj[selectedDetailsKey]}
+            />
         </div>
     );
 };
