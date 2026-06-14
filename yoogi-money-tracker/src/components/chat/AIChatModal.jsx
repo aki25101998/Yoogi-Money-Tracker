@@ -99,8 +99,8 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                 categoryId: 'transfer',
                 subcategoryId: '',
                 date: transferData.date,
-                walletId: transferData.fromWallet,
-                transferTo: transferData.toWallet,
+                walletId: transferData.walletId,
+                transferTo: transferData.transferTo,
                 createdAt: new Date().toISOString()
             };
 
