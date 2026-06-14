@@ -48,6 +48,10 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
     return createPortal(
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">Chuyển tiền</h3>
+                    <button onClick={onClose}><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
+                </div>
                 <div className="px-6 py-4 flex justify-between items-center sticky top-0 bg-white dark:bg-slate-800 z-10">
                     <div className="flex flex-col items-center w-full relative">
                         <div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mb-4"></div>

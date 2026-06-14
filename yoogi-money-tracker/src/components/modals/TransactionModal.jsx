@@ -103,46 +103,61 @@ const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, walle
 
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Ví tiền</label>
-                        <select
-                            required
-                            value={form.walletId}
-                            onChange={e => setForm({ ...form, walletId: e.target.value })}
-                            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none"
-                        >
-                            <option value="">Chọn ví...</option>
-                            {wallets?.map(w => (
-                                <option key={w.id} value={w.id}>{w.icon} {w.name}</option>
-                            ))}
-                        </select>
+                        <div className="relative">
+                            <select
+                                required
+                                value={form.walletId}
+                                onChange={e => setForm({ ...form, walletId: e.target.value })}
+                                className="w-full pl-4 pr-10 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none appearance-none"
+                            >
+                                <option value="">Chọn ví...</option>
+                                {wallets?.map(w => (
+                                    <option key={w.id} value={w.id}>{w.icon} {w.name}</option>
+                                ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Danh mục</label>
-                        <select
-                            value={form.categoryId}
-                            onChange={e => setForm({ ...form, categoryId: e.target.value, subcategoryId: '' })}
-                            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none"
-                        >
-                            <option value="">Chọn danh mục...</option>
-                            {getCategoriesByType(form.type).map(c => (
-                                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                            ))}
-                        </select>
+                        <div className="relative">
+                            <select
+                                value={form.categoryId}
+                                onChange={e => setForm({ ...form, categoryId: e.target.value, subcategoryId: '' })}
+                                className="w-full pl-4 pr-10 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none appearance-none"
+                            >
+                                <option value="">Chọn danh mục...</option>
+                                {getCategoriesByType(form.type).map(c => (
+                                    <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                                ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
                     </div>
 
                     {form.categoryId && getSubcategories(form.categoryId).length > 0 && (
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Danh mục phụ</label>
-                            <select
-                                value={form.subcategoryId}
-                                onChange={e => setForm({ ...form, subcategoryId: e.target.value })}
-                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none"
-                            >
-                                <option value="">Chọn danh mục phụ...</option>
-                                {getSubcategories(form.categoryId).map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
-                            </select>
+                            <div className="relative">
+                                <select
+                                    value={form.subcategoryId}
+                                    onChange={e => setForm({ ...form, subcategoryId: e.target.value })}
+                                    className="w-full pl-4 pr-10 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none appearance-none"
+                                >
+                                    <option value="">Chọn danh mục phụ...</option>
+                                    {getSubcategories(form.categoryId).map(s => (
+                                        <option key={s.id} value={s.id}>{s.name}</option>
+                                    ))}
+                                </select>
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
                         </div>
                     )}
 
