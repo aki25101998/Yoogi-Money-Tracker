@@ -81,7 +81,16 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
         if (window.confirm('Bạn có chắc chắn muốn xóa khoản nợ này? Hành động này không thể hoàn tác.')) {
             try {
                 await deleteDebt(user.uid, debtId);
-                // If the group has no debts left, we might want to close the details modal, but React state will handle it naturally if it's derived from `debts` props.
+            } catch (error) {
+                alert('Lỗi khi xóa: ' + error.message);
+            }
+        }
+    };
+
+    const handleDeleteGroup = async (group) => {
+        if (window.confirm(`Bạn có chắc chắn muốn xóa TOÀN BỘ nợ của "${group.personName}"?\nHành động này sẽ xóa ${group.debts.length} khoản nợ và không thể hoàn tác.`)) {
+            try {
+                await Promise.all(group.debts.map(d => deleteDebt(user.uid, d.id)));
             } catch (error) {
                 alert('Lỗi khi xóa: ' + error.message);
             }
@@ -217,9 +226,16 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                                 const progress = group.totalAmount > 0 ? Math.round((group.repaidAmount / group.totalAmount) * 100) : 0;
 
                                 return (
-                                    <div key={group.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col justify-between hover:shadow-md transition-shadow">
+                                    <div key={group.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col justify-between hover:shadow-md transition-shadow relative">
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group); }}
+                                            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors z-10"
+                                            title="Xóa toàn bộ nợ của người này"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
                                         <div 
-                                            className="flex items-center gap-3 mb-6 cursor-pointer group/header"
+                                            className="flex items-center gap-3 mb-6 cursor-pointer group/header pr-10"
                                             onClick={() => openDetailsModal(group.id)}
                                         >
                                             <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-xl group-hover/header:bg-orange-200 transition-colors">
