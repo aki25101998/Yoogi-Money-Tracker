@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Bot, User, Loader2, Pencil, Trash2, CheckCircle2, ChevronRight, ChevronDown, Settings, CalendarClock, ArrowRightLeft } from 'lucide-react';
 import { categorizeTransaction } from '../../utils/aiCategorizer';
-import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransaction } from '../../utils/firebaseHelpers';
+import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransaction, deleteTransaction } from '../../utils/firebaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
 import { APP_ID, db } from '../../config/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import TransferFundsModal from '../modals/TransferFundsModal';
+import TransactionModal from '../modals/TransactionModal';
 import RecurringTransactionsModal from '../modals/RecurringTransactionsModal';
 
 const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, selectedWalletId, onOpenContextWallet }) => {
@@ -18,6 +19,11 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
     const [isContextWalletOpen, setIsContextWalletOpen] = useState(false);
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
     const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
+
+    // Edit Modal States
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isEditTransferModalOpen, setIsEditTransferModalOpen] = useState(false);
+    const [editingTransaction, setEditingTransaction] = useState(null);
 
     // Initialize active wallet
     useEffect(() => {
@@ -117,6 +123,53 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
             
         } catch (error) {
             console.error("Error saving transfer:", error);
+        }
+    };
+
+    const handleSaveEdit = async (formData) => {
+        if (!user || !editingTransaction) return;
+        try {
+            await updateTransaction(user.uid, editingTransaction.id, formData);
+            setMessages(prev => prev.map(msg => {
+                if (msg.transaction && msg.transaction.id === editingTransaction.id) {
+                    return { ...msg, transaction: { ...msg.transaction, ...formData } };
+                }
+                return msg;
+            }));
+            setIsEditModalOpen(false);
+            setIsEditTransferModalOpen(false);
+            setEditingTransaction(null);
+        } catch (err) {
+            alert('Lỗi: ' + err.message);
+        }
+    };
+
+    const handleDeleteEditWithoutPrompt = async (id) => {
+        if (!user || !id) return;
+        try {
+            await deleteTransaction(user.uid, id);
+            setMessages(prev => prev.filter(msg => !(msg.transaction && msg.transaction.id === id)));
+            setIsEditModalOpen(false);
+            setIsEditTransferModalOpen(false);
+            setEditingTransaction(null);
+        } catch (error) {
+            alert("Lỗi khi xóa: " + error.message);
+        }
+    };
+
+    const handleDeleteEdit = async (id) => {
+        if (!user || !id) return;
+        if (window.confirm('Bạn có chắc chắn muốn xóa giao dịch này?')) {
+            await handleDeleteEditWithoutPrompt(id);
+        }
+    };
+
+    const openEditModal = (txn) => {
+        setEditingTransaction(txn);
+        if (txn.type === 'transfer') {
+            setIsEditTransferModalOpen(true);
+        } else {
+            setIsEditModalOpen(true);
         }
     };
 
@@ -324,8 +377,11 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
 
                                 {/* Transaction Card */}
                                 {msg.transaction && (
-                                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm min-w-[260px]">
-                                        <div className="flex justify-between items-start mb-3">
+                                    <div 
+                                        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm min-w-[260px] cursor-pointer hover:border-emerald-500 transition-colors"
+                                        onClick={() => openEditModal(msg.transaction)}
+                                    >
+                                        <div className={`flex justify-between items-center ${msg.transaction.type !== 'transfer' ? 'mb-3' : ''}`}>
                                             <div className="flex items-center gap-2">
                                                 <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm">
                                                     {categories.find(c => c.id === msg.transaction.categoryId)?.icon || '❓'}
@@ -342,7 +398,10 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                                         
                                         {/* Category Selection / Edit */}
                                         {msg.transaction.type !== 'transfer' && (
-                                        <div className="border-t border-slate-100 dark:border-slate-700 pt-3 flex flex-col gap-2">
+                                        <div 
+                                            className="border-t border-slate-100 dark:border-slate-700 pt-3 flex flex-col gap-2"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
                                             <label className="text-[10px] uppercase font-bold text-slate-400">Phân loại danh mục</label>
                                             <div className="flex flex-col gap-2">
                                                 <div className="relative">
@@ -458,10 +517,36 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
             </div>
 
             <TransferFundsModal 
-                isOpen={isTransferModalOpen} 
+                isOpen={isTransferModalOpen && !editingTransaction} 
                 onClose={() => setIsTransferModalOpen(false)} 
                 wallets={wallets} 
                 onSave={handleTransferSave}
+            />
+
+            <TransferFundsModal
+                isOpen={isEditTransferModalOpen}
+                onClose={() => setIsEditTransferModalOpen(false)}
+                wallets={wallets}
+                onSave={handleSaveEdit}
+                onDelete={(id) => {
+                    // TransferFundsModal already prompts, but our handleDeleteEdit also prompts.
+                    // Let's avoid double prompt. The user said TransferFundsModal prompts.
+                    // Wait, in TransferFundsModal: "Bạn có chắc chắn muốn xóa giao dịch này?"
+                    // So we shouldn't prompt again. I will update handleDeleteEdit not to prompt or just let it.
+                    // Actually, I'll pass a separate handler to skip double prompt.
+                    handleDeleteEditWithoutPrompt(id);
+                }}
+                initialData={editingTransaction}
+            />
+
+            <TransactionModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                categories={categories}
+                wallets={wallets}
+                onSave={handleSaveEdit}
+                onDelete={handleDeleteEdit}
+                initialData={editingTransaction}
             />
 
             <RecurringTransactionsModal 
