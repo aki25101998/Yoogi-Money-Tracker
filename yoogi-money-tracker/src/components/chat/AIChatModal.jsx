@@ -363,7 +363,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
             <div className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
 
             {/* Chat Panel */}
-            <div className="fixed top-[10vh] bottom-[10vh] right-4 md:right-6 lg:right-8 z-50 flex flex-col w-[calc(100%-2rem)] md:w-[400px] lg:w-[450px] bg-slate-50 dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 rounded-3xl animate-in slide-in-from-right duration-300 overflow-hidden">
+            <div className="fixed inset-y-0 right-0 z-50 flex flex-col w-full md:w-[400px] lg:w-[450px] bg-slate-50 dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 animate-in slide-in-from-right duration-300">
                 {/* Header */}
                 <div className="bg-white dark:bg-slate-800 px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between relative z-20 shadow-sm">
                     <div className="flex items-center gap-1 sm:gap-2">
