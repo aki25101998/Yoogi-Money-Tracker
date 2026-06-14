@@ -132,17 +132,30 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
             
             if (monthsDiff < 0) return;
 
-            const maxCheckMonth = Math.min(monthsDiff, item.term - 1);
-            
-            for (let i = 0; i <= maxCheckMonth; i++) {
-                const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
-                const mStr = getYearMonth(d);
-                const isPaid = item.paidMonths?.includes(mStr);
+            if (filterDate) {
+                // Nếu đang dùng bộ lọc để xem 1 tháng cụ thể: CHỈ HIỆN giao dịch của đúng tháng đó
+                if (monthsDiff < item.term) {
+                    const isPaid = item.paidMonths?.includes(targetMonthStr);
+                    if (isPaid) {
+                        completed.push({ item, monthStr: targetMonthStr, index: monthsDiff + 1, refDate: targetDate });
+                    } else {
+                        inProgress.push({ item, monthStr: targetMonthStr, index: monthsDiff + 1, refDate: targetDate });
+                    }
+                }
+            } else {
+                // Nếu ở chế độ mặc định (Tháng hiện tại): CỘNG DỒN tất cả giao dịch chưa trả từ quá khứ
+                const maxCheckMonth = Math.min(monthsDiff, item.term - 1);
                 
-                if (isPaid && mStr === targetMonthStr) {
-                    completed.push({ item, monthStr: mStr, index: i + 1, refDate: d });
-                } else if (!isPaid) {
-                    inProgress.push({ item, monthStr: mStr, index: i + 1, refDate: d });
+                for (let i = 0; i <= maxCheckMonth; i++) {
+                    const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+                    const mStr = getYearMonth(d);
+                    const isPaid = item.paidMonths?.includes(mStr);
+                    
+                    if (isPaid && mStr === targetMonthStr) {
+                        completed.push({ item, monthStr: mStr, index: i + 1, refDate: d });
+                    } else if (!isPaid) {
+                        inProgress.push({ item, monthStr: mStr, index: i + 1, refDate: d });
+                    }
                 }
             }
         });
@@ -150,7 +163,7 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         inProgress.sort((a, b) => a.monthStr.localeCompare(b.monthStr));
         
         return { inProgressItems: inProgress, completedItems: completed };
-    }, [filteredItems, activeReferenceDate]);
+    }, [filteredItems, activeReferenceDate, filterDate]);
 
     const totalStats = useMemo(() => {
         let monthlyTotal = 0;
