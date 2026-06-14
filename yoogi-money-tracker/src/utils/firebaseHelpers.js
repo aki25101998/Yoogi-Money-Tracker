@@ -527,6 +527,10 @@ export const addPayer = async (userId, payerData) => {
     });
 };
 
+export const updatePayer = async (userId, payerId, payerData) => {
+    return await updateDoc(getDocRef(userId, 'payers', payerId), payerData);
+};
+
 export const deletePayer = async (userId, payerId) => {
     return await deleteDoc(getDocRef(userId, 'payers', payerId));
 };

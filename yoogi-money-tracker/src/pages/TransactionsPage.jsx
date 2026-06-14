@@ -55,18 +55,19 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
     const groupedTransactions = useMemo(() => {
         const groups = {};
         filteredTransactions.forEach(t => {
-            if (!groups[t.date]) groups[t.date] = { date: t.date, totalIncome: 0, totalExpense: 0, items: [] };
-            groups[t.date].items.push(t);
-            if (t.type === 'income' || t.type === 'loan_repaid') groups[t.date].totalIncome += t.amount;
-            else if (t.type === 'expense' || t.type === 'loan_given') groups[t.date].totalExpense += t.amount;
+            const dateKey = t.date.split('T')[0];
+            if (!groups[dateKey]) groups[dateKey] = { date: dateKey, totalIncome: 0, totalExpense: 0, items: [] };
+            groups[dateKey].items.push(t);
+            if (t.type === 'income' || t.type === 'loan_repaid') groups[dateKey].totalIncome += t.amount;
+            else if (t.type === 'expense' || t.type === 'loan_given') groups[dateKey].totalExpense += t.amount;
             else if (t.type === 'transfer' && selectedWalletIds.length > 0) {
-                if (selectedWalletIds.includes(t.transferTo)) groups[t.date].totalIncome += t.amount;
-                if (selectedWalletIds.includes(t.walletId)) groups[t.date].totalExpense += t.amount;
+                if (selectedWalletIds.includes(t.transferTo)) groups[dateKey].totalIncome += t.amount;
+                if (selectedWalletIds.includes(t.walletId)) groups[dateKey].totalExpense += t.amount;
             }
         });
         // Sort dates descending
         return Object.values(groups).sort((a, b) => b.date.localeCompare(a.date));
-    }, [filteredTransactions]);
+    }, [filteredTransactions, selectedWalletIds]);
 
     const summaryStats = useMemo(() => {
         let income = 0;
@@ -143,6 +144,14 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
     };
 
+    const handleSelectAll = () => {
+        if (selectedIds.length === filteredTransactions.length) {
+            setSelectedIds([]); // Deselect all
+        } else {
+            setSelectedIds(filteredTransactions.map(t => t.id)); // Select all
+        }
+    };
+
     const handleBatchDelete = async () => {
         if (!user || selectedIds.length === 0) return;
         if (!window.confirm(`Xác nhận xóa ${selectedIds.length} giao dịch đã chọn? Hành động này không thể hoàn tác.`)) return;
@@ -166,12 +175,22 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                     <Filter className="w-6 h-6 text-indigo-500" />
                     Lịch sử giao dịch
                 </h2>
-                <button 
-                    onClick={toggleSelectMode}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${isSelectMode ? 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-400' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700'}`}
-                >
-                    {isSelectMode ? 'Hủy chọn' : 'Chế độ chọn'}
-                </button>
+                <div className="flex items-center gap-2">
+                    {isSelectMode && (
+                        <button 
+                            onClick={handleSelectAll}
+                            className="px-4 py-2 rounded-xl text-sm font-bold transition-colors border bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                        >
+                            {selectedIds.length === filteredTransactions.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                        </button>
+                    )}
+                    <button 
+                        onClick={toggleSelectMode}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${isSelectMode ? 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-400' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700'}`}
+                    >
+                        {isSelectMode ? 'Hủy chọn' : 'Chế độ chọn'}
+                    </button>
+                </div>
             </div>
 
             {/* Filter Bar */}
