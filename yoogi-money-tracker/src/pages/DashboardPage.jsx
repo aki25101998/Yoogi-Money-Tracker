@@ -631,7 +631,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
                                         {cat?.icon || '❓'}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{txn.type === 'transfer' ? `Chuyển đến: ${wallets?.find(w => w.id === txn.transferTo)?.name || '?'}` : (cat?.name || 'Chưa phân loại')}</p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{txn.type === 'transfer' ? `${wallets?.find(w => w.id === txn.walletId)?.name || '?'} ➝ ${wallets?.find(w => w.id === txn.transferTo)?.name || '?'}` : (cat?.name || 'Chưa phân loại')}</p>
                                         <p className="text-sm text-slate-400 truncate">{txn.description}</p>
                                     </div>
                                     <span className={`text-sm font-bold ${isIncome ? 'text-emerald-500' : (isExpense ? 'text-rose-500' : 'text-slate-500')}`}>

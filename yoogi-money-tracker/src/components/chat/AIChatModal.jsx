@@ -388,7 +388,12 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight">{msg.transaction.description}</p>
-                                                    <p className="text-xs text-slate-500">{wallets.find(w => w.id === msg.transaction.walletId)?.name || activeWallet?.name}</p>
+                                                    <p className="text-xs text-slate-500">
+                                                        {msg.transaction.type === 'transfer' 
+                                                            ? `${wallets.find(w => w.id === msg.transaction.walletId)?.name || '?'} ➝ ${wallets.find(w => w.id === msg.transaction.transferTo)?.name || '?'}`
+                                                            : (wallets.find(w => w.id === msg.transaction.walletId)?.name || activeWallet?.name)
+                                                        }
+                                                    </p>
                                                 </div>
                                             </div>
                                             <span className={`font-bold text-base ${msg.transaction.type === 'income' ? 'text-emerald-500' : 'text-rose-500'}`}>
