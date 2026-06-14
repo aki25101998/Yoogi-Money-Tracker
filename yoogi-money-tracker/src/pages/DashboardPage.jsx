@@ -11,6 +11,7 @@ import { addTransaction, incrementMemoryUsage, updateWalletOrder, addWallet } fr
 import TransactionModal from '../components/modals/TransactionModal';
 import WalletModal from '../components/modals/WalletModal';
 import ReorderWalletsModal from '../components/modals/ReorderWalletsModal';
+import TransferFundsModal from '../components/modals/TransferFundsModal';
 import DateRangeSelector from '../components/DateRangeSelector';
 import AIChatModal from '../components/chat/AIChatModal';
 import AIContextModal from '../components/modals/AIContextModal';
@@ -100,6 +101,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
     const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
     const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
@@ -177,9 +179,14 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
         wallets?.forEach(w => { balances[w.id] = { ...w, balance: w.initialBalance || 0 }; });
         
         transactions.forEach(t => {
-            if (!t.walletId || !balances[t.walletId]) return;
-            if (t.type === 'income') balances[t.walletId].balance += t.amount;
-            else if (t.type === 'expense') balances[t.walletId].balance -= t.amount;
+            if (t.type === 'income' && balances[t.walletId]) {
+                balances[t.walletId].balance += (t.amount || 0);
+            } else if (t.type === 'expense' && balances[t.walletId]) {
+                balances[t.walletId].balance -= (t.amount || 0);
+            } else if (t.type === 'transfer') {
+                if (balances[t.walletId]) balances[t.walletId].balance -= (t.amount || 0);
+                if (t.transferTo && balances[t.transferTo]) balances[t.transferTo].balance += (t.amount || 0);
+            }
         });
         return Object.values(balances);
     }, [transactions, wallets]);
@@ -196,7 +203,13 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
     const filteredTransactions = useMemo(() => {
         return transactions.filter(t => {
             if (!t.date) return false;
-            if (selectedWalletIds.length > 0 && !selectedWalletIds.includes(t.walletId)) return false;
+            if (selectedWalletIds.length > 0) {
+                if (t.type === 'transfer') {
+                    if (!selectedWalletIds.includes(t.walletId) && !selectedWalletIds.includes(t.transferTo)) return false;
+                } else {
+                    if (!selectedWalletIds.includes(t.walletId)) return false;
+                }
+            }
 
             if (dateRange.start && t.date < dateRange.start) return false;
             if (dateRange.end && t.date > dateRange.end) return false;
@@ -255,6 +268,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
                 await addTransaction(user.uid, { ...formData, aiCategorized: false });
             }
             setIsModalOpen(false);
+            setIsTransferModalOpen(false);
             setEditingTransaction(null);
         } catch (err) {
             alert('Lỗi: ' + err.message);
@@ -267,6 +281,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
             const { deleteTransaction } = await import('../utils/firebaseHelpers');
             await deleteTransaction(user.uid, transactionId);
             setIsModalOpen(false);
+            setIsTransferModalOpen(false);
             setEditingTransaction(null);
         } catch (err) {
             alert('Lỗi khi xóa: ' + err.message);
@@ -603,18 +618,24 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
                     ) : (
                         recentTransactions.map(txn => {
                             const cat = categories.find(c => c.id === txn.categoryId);
-                            const isIncome = txn.type === 'income';
+                            const isIncome = txn.type === 'income' || (txn.type === 'transfer' && selectedWalletIds.length > 0 && selectedWalletIds.includes(txn.transferTo) && !selectedWalletIds.includes(txn.walletId));
+                            const isExpense = txn.type === 'expense' || (txn.type === 'transfer' && selectedWalletIds.length > 0 && selectedWalletIds.includes(txn.walletId) && !selectedWalletIds.includes(txn.transferTo));
+                            
                             return (
-                                <div key={txn.id} className="px-5 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer" onClick={() => { setEditingTransaction(txn); setIsModalOpen(true); }}>
+                                <div key={txn.id} className="px-5 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer" onClick={() => { 
+                                    setEditingTransaction(txn); 
+                                    if (txn.type === 'transfer') setIsTransferModalOpen(true);
+                                    else setIsModalOpen(true); 
+                                }}>
                                     <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg">
                                         {cat?.icon || '❓'}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{cat?.name || 'Chưa phân loại'}</p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{txn.type === 'transfer' ? `Chuyển đến: ${wallets?.find(w => w.id === txn.transferTo)?.name || '?'}` : (cat?.name || 'Chưa phân loại')}</p>
                                         <p className="text-sm text-slate-400 truncate">{txn.description}</p>
                                     </div>
-                                    <span className={`text-sm font-bold ${isIncome ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                        {isIncome ? '+' : '-'}{formatCurrency(txn.amount)}
+                                    <span className={`text-sm font-bold ${isIncome ? 'text-emerald-500' : (isExpense ? 'text-rose-500' : 'text-slate-500')}`}>
+                                        {isIncome ? '+' : (isExpense ? '-' : '⇄ ')}{formatCurrency(txn.amount)}
                                     </span>
                                 </div>
                             );
@@ -685,6 +706,15 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, on
                 wallets={wallets}
                 initialData={editingTransaction}
                 defaultWalletId={selectedWalletIds.length === 1 ? selectedWalletIds[0] : null}
+            />
+
+            <TransferFundsModal
+                isOpen={isTransferModalOpen}
+                onClose={() => setIsTransferModalOpen(false)}
+                wallets={wallets}
+                onSave={handleSaveTransaction}
+                onDelete={handleDeleteTransaction}
+                initialData={editingTransaction}
             />
 
             <WalletModal
