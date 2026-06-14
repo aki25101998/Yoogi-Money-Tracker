@@ -245,7 +245,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                 if (m.id === msgId && m.transaction) {
                     return {
                         ...m,
-                        text: hasSub ? 'Vui lòng chọn thêm danh mục con để AI học phân loại chính xác.' : '✅ Đã cập nhật danh mục và AI đã học ghi chú này!',
+                        text: hasSub ? 'Vui lòng chọn thêm danh mục phụ để AI học phân loại chính xác.' : '✅ Đã cập nhật danh mục và AI đã học ghi chú này!',
                         transaction: { ...m.transaction, categoryId: newCategoryId, subcategoryId: '' }
                     };
                 }
@@ -276,7 +276,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                 if (m.id === msgId && m.transaction) {
                     return {
                         ...m,
-                        text: newSubcategoryId ? '✅ Đã cập nhật danh mục và AI đã học ghi chú này!' : 'Vui lòng chọn danh mục con.',
+                        text: newSubcategoryId ? '✅ Đã cập nhật danh mục và AI đã học ghi chú này!' : 'Vui lòng chọn danh mục phụ.',
                         transaction: { ...m.transaction, subcategoryId: newSubcategoryId }
                     };
                 }
@@ -437,7 +437,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, s
                                                             onChange={(e) => handleSubcategoryChange(msg.id, msg.transaction.id, msg.transaction.categoryId, e.target.value, msg.transaction.description)}
                                                             className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-3 pr-10 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer"
                                                         >
-                                                            <option value="">Chọn danh mục con...</option>
+                                                            <option value="">Chọn danh mục phụ...</option>
                                                             {categories.find(c => c.id === msg.transaction.categoryId).subcategories.map(s => (
                                                                 <option key={s.id} value={s.id}>{s.name}</option>
                                                             ))}

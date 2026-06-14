@@ -272,7 +272,7 @@ const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
 
                             {formCategoryId && getSubcategories(formCategoryId).length > 0 && (
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Danh mục con</label>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Danh mục phụ</label>
                                     <div className="relative">
                                         <select
                                             required
@@ -280,7 +280,7 @@ const AINotesPage = ({ user, aiMemories, categories, hideHeader = false }) => {
                                             onChange={(e) => setFormSubcategoryId(e.target.value)}
                                             className="w-full px-4 pr-10 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-purple-500 focus:outline-none appearance-none cursor-pointer"
                                         >
-                                            <option value="">Chọn mục con...</option>
+                                            <option value="">Chọn danh mục phụ...</option>
                                             {getSubcategories(formCategoryId).map(s => (
                                                 <option key={s.id} value={s.id}>{s.name}</option>
                                             ))}

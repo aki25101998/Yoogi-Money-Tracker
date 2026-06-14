@@ -132,13 +132,13 @@ const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, walle
 
                     {form.categoryId && getSubcategories(form.categoryId).length > 0 && (
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Danh mục con</label>
+                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Danh mục phụ</label>
                             <select
                                 value={form.subcategoryId}
                                 onChange={e => setForm({ ...form, subcategoryId: e.target.value })}
                                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none"
                             >
-                                <option value="">Chọn mục con...</option>
+                                <option value="">Chọn danh mục phụ...</option>
                                 {getSubcategories(form.categoryId).map(s => (
                                     <option key={s.id} value={s.id}>{s.name}</option>
                                 ))}

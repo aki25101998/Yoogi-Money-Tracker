@@ -6,13 +6,14 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 import TransactionModal from '../components/modals/TransactionModal';
 import TransferFundsModal from '../components/modals/TransferFundsModal';
 import DateRangeSelector from '../components/DateRangeSelector';
+import MultiSelectDropdown from '../components/MultiSelectDropdown';
 
 const TransactionsPage = ({ user, transactions, categories, wallets }) => {
     // --- Filters ---
     const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
-    const [selectedWalletId, setSelectedWalletId] = useState('all');
-    const [selectedCategoryId, setSelectedCategoryId] = useState('all');
-    const [selectedSubcategoryId, setSelectedSubcategoryId] = useState('all');
+    const [selectedWalletIds, setSelectedWalletIds] = useState([]);
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+    const [selectedSubcategoryIds, setSelectedSubcategoryIds] = useState([]);
 
     // --- Modal State ---
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,20 +31,20 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
             if (dateRange.start && t.date < dateRange.start) return false;
             if (dateRange.end && t.date > dateRange.end) return false;
             
-            if (selectedWalletId !== 'all') {
+            if (selectedWalletIds.length > 0) {
                 if (t.type === 'transfer') {
-                    if (t.walletId !== selectedWalletId && t.transferTo !== selectedWalletId) return false;
+                    if (!selectedWalletIds.includes(t.walletId) && !selectedWalletIds.includes(t.transferTo)) return false;
                 } else {
-                    if (t.walletId !== selectedWalletId) return false;
+                    if (!selectedWalletIds.includes(t.walletId)) return false;
                 }
             }
 
-            if (selectedCategoryId !== 'all' && t.categoryId !== selectedCategoryId) return false;
-            if (selectedSubcategoryId !== 'all' && t.subcategoryId !== selectedSubcategoryId) return false;
+            if (selectedCategoryIds.length > 0 && !selectedCategoryIds.includes(t.categoryId)) return false;
+            if (selectedSubcategoryIds.length > 0 && !selectedSubcategoryIds.includes(t.subcategoryId)) return false;
 
             return true;
         });
-    }, [transactions, dateRange, selectedWalletId, selectedCategoryId, selectedSubcategoryId]);
+    }, [transactions, dateRange, selectedWalletIds, selectedCategoryIds, selectedSubcategoryIds]);
 
     // Group by Date for better UI
     const groupedTransactions = useMemo(() => {
@@ -53,9 +54,9 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
             groups[t.date].items.push(t);
             if (t.type === 'income') groups[t.date].totalIncome += t.amount;
             else if (t.type === 'expense') groups[t.date].totalExpense += t.amount;
-            else if (t.type === 'transfer' && selectedWalletId !== 'all') {
-                if (t.transferTo === selectedWalletId) groups[t.date].totalIncome += t.amount;
-                if (t.walletId === selectedWalletId) groups[t.date].totalExpense += t.amount;
+            else if (t.type === 'transfer' && selectedWalletIds.length > 0) {
+                if (selectedWalletIds.includes(t.transferTo)) groups[t.date].totalIncome += t.amount;
+                if (selectedWalletIds.includes(t.walletId)) groups[t.date].totalExpense += t.amount;
             }
         });
         // Sort dates descending
@@ -68,13 +69,13 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
         filteredTransactions.forEach(t => {
             if (t.type === 'income') income += (t.amount || 0);
             else if (t.type === 'expense') expense += (t.amount || 0);
-            else if (t.type === 'transfer' && selectedWalletId !== 'all') {
-                if (t.transferTo === selectedWalletId) income += (t.amount || 0);
-                if (t.walletId === selectedWalletId) expense += (t.amount || 0);
+            else if (t.type === 'transfer' && selectedWalletIds.length > 0) {
+                if (selectedWalletIds.includes(t.transferTo)) income += (t.amount || 0);
+                if (selectedWalletIds.includes(t.walletId)) expense += (t.amount || 0);
             }
         });
         return { income, expense, balance: income - expense };
-    }, [filteredTransactions, selectedWalletId]);
+    }, [filteredTransactions, selectedWalletIds]);
 
     // --- Handlers ---
     const handleSaveTransaction = async (formData) => {
@@ -141,60 +142,41 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
             {/* Filter Bar */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm sticky top-0 z-20">
                 <div className="flex flex-wrap items-center justify-center gap-2">
-                    <div className="relative group">
-                        <select
-                            value={selectedWalletId}
-                            onChange={(e) => setSelectedWalletId(e.target.value)}
-                            className="appearance-none pl-4 pr-10 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
-                        >
-                            <option value="all">🏦 Tất cả ví</option>
-                            {wallets?.map(w => (
-                                <option key={w.id} value={w.id}>
-                                    {w.icon} {w.name}
-                                </option>
-                            ))}
-                        </select>
-                        <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <div className="relative group">
-                            <select
-                                value={selectedCategoryId}
-                                onChange={(e) => {
-                                    setSelectedCategoryId(e.target.value);
-                                    setSelectedSubcategoryId('all');
-                                }}
-                                className="appearance-none pl-4 pr-10 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer min-w-[160px] max-w-[200px] truncate"
-                            >
-                                <option value="all">📂 Tất cả danh mục</option>
-                                <optgroup label="Chi tiêu">
-                                    {categories?.filter(c => c.type === 'expense').map(c => (
-                                        <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                                    ))}
-                                </optgroup>
-                                <optgroup label="Thu nhập">
-                                    {categories?.filter(c => c.type === 'income').map(c => (
-                                        <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                                    ))}
-                                </optgroup>
-                            </select>
-                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        </div>
+                    <MultiSelectDropdown
+                        placeholder="🏦 Tất cả ví"
+                        options={wallets || []}
+                        selectedIds={selectedWalletIds}
+                        onChange={setSelectedWalletIds}
+                        widthClass="min-w-[160px]"
+                    />
 
-                        <div className="relative group">
-                            <select
-                                value={selectedSubcategoryId}
-                                onChange={(e) => setSelectedSubcategoryId(e.target.value)}
-                                className="appearance-none pl-4 pr-10 py-2 h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer min-w-[140px] max-w-[180px] truncate"
-                            >
-                                <option value="all">Tất cả mục con</option>
-                                {selectedCategoryId !== 'all' && categories?.find(c => c.id === selectedCategoryId)?.subcategories?.map(sub => (
-                                    <option key={sub.id} value={sub.id}>{sub.name}</option>
-                                ))}
-                            </select>
-                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        </div>
-                        </div>
+                    <div className="flex flex-wrap gap-2">
+                        <MultiSelectDropdown
+                            placeholder="📂 Tất cả danh mục chính"
+                            isGrouped={true}
+                            options={[
+                                { label: 'Chi tiêu', options: categories?.filter(c => c.type === 'expense') || [] },
+                                { label: 'Thu nhập', options: categories?.filter(c => c.type === 'income') || [] }
+                            ]}
+                            selectedIds={selectedCategoryIds}
+                            onChange={(ids) => {
+                                setSelectedCategoryIds(ids);
+                                setSelectedSubcategoryIds([]);
+                            }}
+                            widthClass="min-w-[180px] max-w-[200px]"
+                        />
+
+                        <MultiSelectDropdown
+                            placeholder="Tất cả danh mục phụ"
+                            options={categories
+                                ?.filter(c => selectedCategoryIds.length === 0 || selectedCategoryIds.includes(c.id))
+                                .flatMap(c => c.subcategories || [])
+                                .map(s => ({ id: s.id, name: s.name })) || []}
+                            selectedIds={selectedSubcategoryIds}
+                            onChange={setSelectedSubcategoryIds}
+                            widthClass="min-w-[160px] max-w-[180px]"
+                        />
+                    </div>
                         <DateRangeSelector 
                             initialMode="month" 
                             onChange={(range) => setDateRange(range)} 
@@ -244,8 +226,8 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                 {group.items.map(txn => {
                                     const cat = categories.find(c => c.id === txn.categoryId);
                                     const wallet = wallets?.find(w => w.id === txn.walletId);
-                                    const isIncome = txn.type === 'income' || (txn.type === 'transfer' && selectedWalletId !== 'all' && txn.transferTo === selectedWalletId);
-                                    const isExpense = txn.type === 'expense' || (txn.type === 'transfer' && selectedWalletId !== 'all' && txn.walletId === selectedWalletId);
+                                    const isIncome = txn.type === 'income' || (txn.type === 'transfer' && selectedWalletIds.length > 0 && selectedWalletIds.includes(txn.transferTo));
+                                    const isExpense = txn.type === 'expense' || (txn.type === 'transfer' && selectedWalletIds.length > 0 && selectedWalletIds.includes(txn.walletId));
 
                                     return (
                                         <div key={txn.id} onClick={(e) => openEditModal(e, txn)} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer group">

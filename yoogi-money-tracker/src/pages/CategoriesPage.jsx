@@ -218,7 +218,7 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                                     <span className="text-2xl">{cat.icon}</span>
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-bold text-slate-800 dark:text-white text-base">{cat.name}</h4>
-                                        <p className="text-xs text-slate-400 dark:text-slate-500">{subCount} mục con</p>
+                                        <p className="text-xs text-slate-400 dark:text-slate-500">{subCount} danh mục phụ</p>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         {!isUncategorized && (
@@ -272,7 +272,7 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                                                 onClick={() => openAddSubcategory(cat.id)}
                                                 className="w-full py-3 px-4 pl-12 text-left text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-2 border-t border-slate-100 dark:border-slate-700"
                                             >
-                                                <Plus className="w-3.5 h-3.5" /> Thêm mục con
+                                                <Plus className="w-3.5 h-3.5" /> Thêm danh mục phụ
                                             </button>
                                         )}
                                     </div>
@@ -289,7 +289,7 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md">
                         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
                             <h3 className="font-bold text-lg text-slate-800 dark:text-white">
-                                {editModal.mode === 'add' ? 'Thêm' : 'Sửa'} {editModal.level === 'category' ? 'danh mục' : 'mục con'}
+                                {editModal.mode === 'add' ? 'Thêm' : 'Sửa'} {editModal.level === 'category' ? 'danh mục chính' : 'danh mục phụ'}
                             </h3>
                             <button onClick={closeModal}><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
                         </div>
@@ -351,8 +351,8 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                 isOpen={confirmState.isOpen}
                 onClose={() => setConfirmState({ isOpen: false, data: null, type: null })}
                 onConfirm={handleDelete}
-                title={`Xóa ${confirmState.type === 'category' ? 'danh mục' : 'mục con'}?`}
-                description={`Bạn có chắc muốn xóa ${confirmState.type === 'category' ? 'danh mục này và tất cả mục con' : 'mục con này'} không?`}
+                title={`Xóa ${confirmState.type === 'category' ? 'danh mục chính' : 'danh mục phụ'}?`}
+                description={`Bạn có chắc muốn xóa ${confirmState.type === 'category' ? 'danh mục chính này và tất cả danh mục phụ' : 'danh mục phụ này'} không?`}
                 confirmText="Xóa"
                 confirmVariant="danger"
                 isProcessing={isDeleting}
