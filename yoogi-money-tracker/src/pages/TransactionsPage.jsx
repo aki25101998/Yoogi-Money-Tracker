@@ -169,12 +169,18 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                         <MultiSelectDropdown
                             placeholder="Tất cả danh mục phụ"
                             isGrouped={true}
-                            options={categories
-                                ?.filter(c => selectedCategoryIds.length === 0 || selectedCategoryIds.includes(c.id))
-                                .map(c => ({
-                                    label: c.name,
+                            options={(() => {
+                                const filtered = categories?.filter(c => selectedCategoryIds.length === 0 || selectedCategoryIds.includes(c.id)) || [];
+                                const expenseGroups = filtered.filter(c => c.type === 'expense').map(c => ({
+                                    label: `[Chi tiêu] ${c.name}`,
                                     options: c.subcategories?.map(s => ({ id: s.id, name: s.name })) || []
-                                })).filter(group => group.options.length > 0) || []}
+                                })).filter(group => group.options.length > 0);
+                                const incomeGroups = filtered.filter(c => c.type === 'income').map(c => ({
+                                    label: `[Thu nhập] ${c.name}`,
+                                    options: c.subcategories?.map(s => ({ id: s.id, name: s.name })) || []
+                                })).filter(group => group.options.length > 0);
+                                return [...expenseGroups, ...incomeGroups];
+                            })()}
                             selectedIds={selectedSubcategoryIds}
                             onChange={setSelectedSubcategoryIds}
                             widthClass="min-w-[160px]"
