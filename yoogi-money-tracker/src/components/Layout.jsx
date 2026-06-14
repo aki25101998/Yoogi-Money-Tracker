@@ -9,13 +9,15 @@ import {
     Sun,
     User,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Users
 } from 'lucide-react';
 
 const NAV_ITEMS = [
     { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
     { id: 'transactions', label: 'Giao dịch', icon: ArrowRightLeft },
     { id: 'installments', label: 'Trả góp', icon: CreditCard },
+    { id: 'debts', label: 'Sổ nợ', icon: Users },
     { id: 'settings', label: 'Cài đặt', icon: Settings },
 ];
 

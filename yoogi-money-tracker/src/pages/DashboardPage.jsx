@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
     Wallet, ArrowUpRight, ArrowDownRight, CreditCard,
     PieChart as PieChartIcon, Sparkles, Loader2, Plus, Pencil,
-    Filter, Calendar, ChevronDown, Check, Info
+    Filter, Calendar, ChevronDown, Check, Info, Trash2, AlertTriangle
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
@@ -16,6 +16,7 @@ import DateRangeSelector from '../components/DateRangeSelector';
 import AIChatModal from '../components/chat/AIChatModal';
 import AIContextModal from '../components/modals/AIContextModal';
 import CategoryTransactionsModal from '../components/modals/CategoryTransactionsModal';
+import ConfirmModal from '../components/modals/ConfirmModal';
 import { Bot, PenSquare } from 'lucide-react';
 
 import {
@@ -88,7 +89,7 @@ const SortableWalletCard = ({ w, isSelected, onClick, onClickEdit, onLongPress }
 
 const COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#2dd4bf', '#fb923c', '#94a3b8'];
 
-const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, recurringTransactions, onNavigate }) => {
+const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, recurringTransactions, payers, onNavigate }) => {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -105,6 +106,9 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, re
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
     const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
+
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const [walletModalMode, setWalletModalMode] = useState('add');
     const [editingWallet, setEditingWallet] = useState(null);
@@ -186,6 +190,10 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, re
             } else if (t.type === 'transfer') {
                 if (balances[t.walletId]) balances[t.walletId].balance -= (t.amount || 0);
                 if (t.transferTo && balances[t.transferTo]) balances[t.transferTo].balance += (t.amount || 0);
+            } else if (t.type === 'loan_given' && balances[t.walletId]) {
+                balances[t.walletId].balance -= (t.amount || 0);
+            } else if (t.type === 'loan_repaid' && balances[t.walletId]) {
+                balances[t.walletId].balance += (t.amount || 0);
             }
         });
         return Object.values(balances);
@@ -286,6 +294,24 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, re
         } catch (err) {
             alert('Lỗi khi xóa: ' + err.message);
         }
+    };
+
+    const handleQuickDelete = async () => {
+        if (!user || !deleteModal.id) return;
+        setIsDeleting(true);
+        try {
+            const { deleteTransaction } = await import('../utils/firebaseHelpers');
+            await deleteTransaction(user.uid, deleteModal.id);
+            setDeleteModal({ isOpen: false, id: null });
+        } catch (error) {
+            alert("Lỗi khi xóa: " + error.message);
+        }
+        setIsDeleting(false);
+    };
+
+    const openDeleteModal = (e, id) => {
+        e.stopPropagation();
+        setDeleteModal({ isOpen: true, id });
     };
 
     const handlePieMouseEnter = (data, index) => {
@@ -634,9 +660,17 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, re
                                         <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{txn.type === 'transfer' ? `${wallets?.find(w => w.id === txn.walletId)?.name || '?'} ➝ ${wallets?.find(w => w.id === txn.transferTo)?.name || '?'}` : (cat?.name || 'Chưa phân loại')}</p>
                                         <p className="text-sm text-slate-400 truncate">{txn.description}</p>
                                     </div>
-                                    <span className={`text-sm font-bold ${isIncome ? 'text-emerald-500' : (isExpense ? 'text-rose-500' : 'text-slate-500')}`}>
-                                        {isIncome ? '+' : (isExpense ? '-' : '⇄ ')}{formatCurrency(txn.amount)}
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        <span className={`text-sm font-bold ${isIncome ? 'text-emerald-500' : (isExpense ? 'text-rose-500' : 'text-slate-500')}`}>
+                                            {isIncome ? '+' : (isExpense ? '-' : '⇄ ')}{formatCurrency(txn.amount)}
+                                        </span>
+                                        <button 
+                                            onClick={(e) => openDeleteModal(e, txn.id)} 
+                                            className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             );
                         })
@@ -684,7 +718,8 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, re
                 user={user}
                 categories={categories}
                 aiMemories={aiMemories}
-                wallets={wallets}
+                wallets={walletBalances}
+                payers={payers}
                 recurringTransactions={recurringTransactions}
                 selectedWalletId={selectedWalletIds.length === 1 ? selectedWalletIds[0] : null}
                 onOpenContextWallet={() => setIsAIContextOpen(true)}
@@ -751,6 +786,23 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, re
                     setEditingTransaction(txn);
                     setIsModalOpen(true);
                 }}
+                onDeleteTransaction={(txnId) => {
+                    openDeleteModal({ stopPropagation: () => {} }, txnId);
+                }}
+            />
+
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, id: null })}
+                onConfirm={handleQuickDelete}
+                title="Xóa giao dịch này?"
+                description="Hành động này không thể hoàn tác."
+                confirmText="Xóa"
+                confirmVariant="danger"
+                isProcessing={isDeleting}
+                Icon={AlertTriangle}
+                iconColorClass="text-rose-600"
+                iconBgClass="bg-rose-100"
             />
         </div>
     );

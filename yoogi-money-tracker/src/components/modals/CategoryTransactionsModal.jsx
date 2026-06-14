@@ -1,13 +1,14 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { X, Trash2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
-const CategoryTransactionsModal = ({ isOpen, onClose, category, transactions, categories, onEditTransaction }) => {
+const CategoryTransactionsModal = ({ isOpen, onClose, category, transactions, categories, onEditTransaction, onDeleteTransaction }) => {
     if (!isOpen || !category) return null;
 
     const totalAmount = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[32px] md:rounded-3xl shadow-2xl flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
                 {/* Header */}
@@ -51,9 +52,22 @@ const CategoryTransactionsModal = ({ isOpen, onClose, category, transactions, ca
                                             <p className="text-base font-bold text-slate-800 dark:text-white truncate">{txn.description}</p>
                                             <p className="text-xs text-slate-400 mt-0.5">{new Date(txn.date).toLocaleDateString('vi-VN')}</p>
                                         </div>
-                                        <span className={`text-base font-bold ${isIncome ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                            {isIncome ? '+' : '-'}{formatCurrency(txn.amount)}
-                                        </span>
+                                        <div className="flex items-center gap-3">
+                                            <span className={`text-base font-bold ${isIncome ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                {isIncome ? '+' : '-'}{formatCurrency(txn.amount)}
+                                            </span>
+                                            {onDeleteTransaction && (
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDeleteTransaction(txn.id);
+                                                    }} 
+                                                    className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 );
                             })}
@@ -61,7 +75,8 @@ const CategoryTransactionsModal = ({ isOpen, onClose, category, transactions, ca
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

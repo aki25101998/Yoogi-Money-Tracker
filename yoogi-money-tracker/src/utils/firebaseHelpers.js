@@ -257,6 +257,57 @@ export const deleteTransaction = async (userId, transactionId) => {
     return await deleteDoc(getDocRef(userId, 'transactions', transactionId));
 };
 
+/**
+ * Delete multiple transactions using batch
+ */
+export const deleteMultipleTransactions = async (userId, transactionIds) => {
+    if (!transactionIds || transactionIds.length === 0) return;
+    
+    // Firestore batch has a limit of 500 operations.
+    // Assuming we won't delete more than 500 at once for now.
+    const batch = writeBatch(db);
+    transactionIds.forEach(id => {
+        const docRef = getDocRef(userId, 'transactions', id);
+        batch.delete(docRef);
+    });
+    
+    await batch.commit();
+};
+
+// ============================================================
+// DEBTS (Sổ nợ)
+// ============================================================
+
+export const subscribeDebts = (userId, callback) => {
+    const q = query(getCollectionRef(userId, 'debts'), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        callback(items);
+    });
+};
+
+export const addDebt = async (userId, data) => {
+    return await addDoc(getCollectionRef(userId, 'debts'), {
+        ...data,
+        createdAt: new Date().toISOString(),
+    });
+};
+
+export const updateDebt = async (userId, id, updates) => {
+    const docRef = getDocRef(userId, 'debts', id);
+    return await updateDoc(docRef, {
+        ...updates,
+        updatedAt: new Date().toISOString(),
+    });
+};
+
+export const deleteDebt = async (userId, id) => {
+    return await deleteDoc(getDocRef(userId, 'debts', id));
+};
+
 // ============================================================
 // RECURRING TRANSACTIONS
 // ============================================================
@@ -458,36 +509,46 @@ export const deleteWallet = async (userId, walletId) => {
     return await deleteDoc(getDocRef(userId, 'wallets', walletId));
 };
 
-// ============================================================
-// PAYERS (Người trả góp)
-// ============================================================
-
-export const subscribePayers = (userId, callback) => {
-    const q = query(getCollectionRef(userId, 'payers'));
+// ==============================
+// PAYERS (INSTALLMENTS)
+// ==============================
+export const subscribePayers = (userId, onUpdate) => {
+    const colRef = getCollectionRef(userId, 'payers');
+    const q = query(colRef, orderBy('name'));
     return onSnapshot(q, (snapshot) => {
-        const payers = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        }));
-        callback(payers);
+        onUpdate(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 };
 
 export const addPayer = async (userId, payerData) => {
     return await addDoc(getCollectionRef(userId, 'payers'), {
         ...payerData,
-        createdAt: new Date().toISOString(),
-    });
-};
-
-export const updatePayer = async (userId, payerId, updates) => {
-    const docRef = getDocRef(userId, 'payers', payerId);
-    return await updateDoc(docRef, {
-        ...updates,
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString()
     });
 };
 
 export const deletePayer = async (userId, payerId) => {
     return await deleteDoc(getDocRef(userId, 'payers', payerId));
+};
+
+// ==============================
+// DEBTORS (DEBTS)
+// ==============================
+export const subscribeDebtors = (userId, onUpdate) => {
+    const colRef = getCollectionRef(userId, 'debtors');
+    const q = query(colRef, orderBy('name'));
+    return onSnapshot(q, (snapshot) => {
+        onUpdate(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+};
+
+export const addDebtor = async (userId, debtorData) => {
+    return await addDoc(getCollectionRef(userId, 'debtors'), {
+        ...debtorData,
+        createdAt: new Date().toISOString()
+    });
+};
+
+export const deleteDebtor = async (userId, debtorId) => {
+    return await deleteDoc(getDocRef(userId, 'debtors', debtorId));
 };

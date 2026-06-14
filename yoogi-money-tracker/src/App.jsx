@@ -18,6 +18,7 @@ import Layout from './components/Layout';
 import DashboardPage from './pages/DashboardPage';
 import TransactionsPage from './pages/TransactionsPage';
 import InstallmentsPage from './pages/InstallmentsPage';
+import DebtsPage from './pages/DebtsPage';
 import SettingsPage from './pages/SettingsPage';
 
 // Helpers
@@ -29,6 +30,8 @@ import {
     subscribeAIMemory,
     subscribeWallets,
     subscribePayers,
+    subscribeDebtors,
+    subscribeDebts,
     subscribeRecurringTransactions,
     addTransaction,
     updateRecurringTransaction
@@ -46,6 +49,8 @@ export default function App() {
     const [aiMemories, setAiMemories] = useState([]);
     const [wallets, setWallets] = useState([]);
     const [payers, setPayers] = useState([]);
+    const [debtors, setDebtors] = useState([]);
+    const [debts, setDebts] = useState([]);
     const [recurringTransactions, setRecurringTransactions] = useState([]);
     const [isDataLoading, setIsDataLoading] = useState(true);
 
@@ -94,6 +99,7 @@ export default function App() {
             setAiMemories([]);
             setWallets([]);
             setPayers([]);
+            setDebtors([]);
             setIsDataLoading(false);
             return;
         }
@@ -136,6 +142,12 @@ export default function App() {
         // Subscribe to Payers
         const unsubPayers = subscribePayers(user.uid, setPayers);
 
+        // Subscribe to Debtors
+        const unsubDebtors = subscribeDebtors(user.uid, setDebtors);
+
+        // Subscribe to Debts
+        const unsubDebts = subscribeDebts(user.uid, setDebts);
+
         // Subscribe to Recurring Transactions
         const unsubRecurring = subscribeRecurringTransactions(user.uid, setRecurringTransactions);
 
@@ -149,6 +161,8 @@ export default function App() {
             unsubMem();
             unsubWallets();
             unsubPayers();
+            unsubDebtors();
+            unsubDebts();
             unsubRecurring();
             clearTimeout(timer);
         };
@@ -315,12 +329,13 @@ export default function App() {
 
         if (activePage === 'dashboard') {
             return (
-                <DashboardPage
-                    user={user}
-                    transactions={transactions}
+                <DashboardPage 
+                    user={user} 
+                    transactions={transactions} 
                     categories={categories}
                     aiMemories={aiMemories}
                     wallets={wallets}
+                    payers={debtors}
                     recurringTransactions={recurringTransactions}
                     onNavigate={setActivePage}
                 />
@@ -342,6 +357,16 @@ export default function App() {
                     items={installments}
                     payers={payers}
                     isLoading={false}
+                />
+            );
+        } else if (activePage === 'debts') {
+            return (
+                <DebtsPage
+                    user={user}
+                    debts={debts}
+                    wallets={wallets}
+                    categories={categories}
+                    payers={debtors}
                 />
             );
         } else if (activePage?.startsWith('settings')) {

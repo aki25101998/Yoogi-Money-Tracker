@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Bot, User, Loader2, Pencil, Trash2, CheckCircle2, ChevronRight, ChevronDown, Settings, CalendarClock, ArrowRightLeft } from 'lucide-react';
 import { categorizeTransaction } from '../../utils/aiCategorizer';
-import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransaction, deleteTransaction } from '../../utils/firebaseHelpers';
+import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransaction, deleteTransaction, addDebt, updateDebt } from '../../utils/firebaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
 import { APP_ID, db } from '../../config/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, limit } from 'firebase/firestore';
 import TransferFundsModal from '../modals/TransferFundsModal';
 import TransactionModal from '../modals/TransactionModal';
 import RecurringTransactionsModal from '../modals/RecurringTransactionsModal';
 
-const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, recurringTransactions, selectedWalletId, onOpenContextWallet }) => {
+const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, payers, recurringTransactions, selectedWalletId, onOpenContextWallet }) => {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -183,20 +183,87 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, r
         setIsTyping(true);
 
         try {
-            const result = await categorizeTransaction(userMsgText, categories, aiMemories);
+            const result = await categorizeTransaction(userMsgText, categories, aiMemories, wallets, payers);
             
-            const transactionData = {
-                type: result.type,
-                amount: result.amount,
-                description: result.description,
-                categoryId: result.categoryId,
-                subcategoryId: result.subcategoryId,
-                date: result.date || new Date().toISOString(),
-                walletId: activeWallet.id,
-                aiCategorized: result.aiCategorized,
-            };
+            let docRef;
+            let finalWalletId = result.walletId || activeWallet.id;
+            let transactionData;
 
-            const docRef = await addTransaction(user.uid, transactionData);
+            if (result.type === 'loan_given' || result.type === 'loan_repaid') {
+                const amountNum = parseFloat(result.amount) || 0;
+                let debtId = null;
+                const personName = result.personName || 'Người vô danh';
+
+                if (result.type === 'loan_given') {
+                    const debtData = {
+                        personName: personName,
+                        totalAmount: amountNum,
+                        repaidAmount: 0,
+                        status: 'active',
+                        date: new Date().toISOString()
+                    };
+                    const debtRef = await addDebt(user.uid, debtData);
+                    debtId = debtRef.id;
+                } else if (result.type === 'loan_repaid') {
+                    // Cố gắng tìm khoản nợ đang active của người này
+                    const debtsRef = collection(db, 'artifacts', APP_ID, 'users', user.uid, 'debts');
+                    const q = query(debtsRef, where('personName', '==', personName), where('status', '==', 'active'), limit(1));
+                    const querySnapshot = await getDocs(q);
+                    
+                    if (!querySnapshot.empty) {
+                        const debtDoc = querySnapshot.docs[0];
+                        const debtData = debtDoc.data();
+                        debtId = debtDoc.id;
+                        
+                        const newRepaidAmount = (debtData.repaidAmount || 0) + amountNum;
+                        const newStatus = newRepaidAmount >= debtData.totalAmount ? 'completed' : 'active';
+                        
+                        await updateDebt(user.uid, debtId, {
+                            repaidAmount: newRepaidAmount,
+                            status: newStatus
+                        });
+                    }
+                }
+
+                transactionData = {
+                    type: result.type,
+                    amount: amountNum,
+                    description: result.description || (result.type === 'loan_given' ? `Cho ${personName} mượn` : `Nhận trả nợ từ ${personName}`),
+                    categoryId: result.type,
+                    subcategoryId: '',
+                    date: result.date || new Date().toISOString(),
+                    walletId: finalWalletId,
+                    debtId: debtId,
+                    aiCategorized: result.aiCategorized
+                };
+                docRef = await addTransaction(user.uid, transactionData);
+
+            } else if (result.type === 'transfer') {
+                transactionData = {
+                    type: 'transfer',
+                    amount: result.amount,
+                    description: result.description || 'Chuyển tiền',
+                    categoryId: 'transfer',
+                    subcategoryId: '',
+                    date: result.date || new Date().toISOString(),
+                    walletId: finalWalletId,
+                    transferTo: result.transferTo,
+                    aiCategorized: result.aiCategorized
+                };
+                docRef = await addTransaction(user.uid, transactionData);
+            } else {
+                transactionData = {
+                    type: result.type,
+                    amount: result.amount,
+                    description: result.description,
+                    categoryId: result.categoryId,
+                    subcategoryId: result.subcategoryId,
+                    date: result.date || new Date().toISOString(),
+                    walletId: finalWalletId,
+                    aiCategorized: result.aiCategorized,
+                };
+                docRef = await addTransaction(user.uid, transactionData);
+            }
 
             if (result.memoryId) {
                 await incrementMemoryUsage(user.uid, result.memoryId);

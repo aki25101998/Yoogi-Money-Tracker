@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Filter, Calendar, Pencil, Trash2, AlertTriangle, ArrowDownRight, ArrowUpRight, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
-import { deleteTransaction, updateTransaction } from '../utils/firebaseHelpers';
+import { deleteTransaction, deleteMultipleTransactions, updateTransaction } from '../utils/firebaseHelpers';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import TransactionModal from '../components/modals/TransactionModal';
 import TransferFundsModal from '../components/modals/TransferFundsModal';
@@ -22,6 +22,11 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
 
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // --- Batch Delete State ---
+    const [isSelectMode, setIsSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 
     // --- Filter Logic ---
     const filteredTransactions = useMemo(() => {
@@ -52,8 +57,8 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
         filteredTransactions.forEach(t => {
             if (!groups[t.date]) groups[t.date] = { date: t.date, totalIncome: 0, totalExpense: 0, items: [] };
             groups[t.date].items.push(t);
-            if (t.type === 'income') groups[t.date].totalIncome += t.amount;
-            else if (t.type === 'expense') groups[t.date].totalExpense += t.amount;
+            if (t.type === 'income' || t.type === 'loan_repaid') groups[t.date].totalIncome += t.amount;
+            else if (t.type === 'expense' || t.type === 'loan_given') groups[t.date].totalExpense += t.amount;
             else if (t.type === 'transfer' && selectedWalletIds.length > 0) {
                 if (selectedWalletIds.includes(t.transferTo)) groups[t.date].totalIncome += t.amount;
                 if (selectedWalletIds.includes(t.walletId)) groups[t.date].totalExpense += t.amount;
@@ -129,14 +134,44 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
         setDeleteModal({ isOpen: true, id });
     };
 
+    const toggleSelectMode = () => {
+        setIsSelectMode(!isSelectMode);
+        setSelectedIds([]);
+    };
+
+    const toggleSelection = (id) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+    };
+
+    const handleBatchDelete = async () => {
+        if (!user || selectedIds.length === 0) return;
+        if (!window.confirm(`Xác nhận xóa ${selectedIds.length} giao dịch đã chọn? Hành động này không thể hoàn tác.`)) return;
+        
+        setIsBatchDeleting(true);
+        try {
+            await deleteMultipleTransactions(user.uid, selectedIds);
+            setSelectedIds([]);
+            setIsSelectMode(false);
+        } catch (error) {
+            alert('Lỗi khi xóa nhiều: ' + error.message);
+        }
+        setIsBatchDeleting(false);
+    };
+
     return (
         <div className="space-y-6">
             {/* Header Title */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm flex justify-center items-center">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                     <Filter className="w-6 h-6 text-indigo-500" />
                     Lịch sử giao dịch
                 </h2>
+                <button 
+                    onClick={toggleSelectMode}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${isSelectMode ? 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-400' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700'}`}
+                >
+                    {isSelectMode ? 'Hủy chọn' : 'Chế độ chọn'}
+                </button>
             </div>
 
             {/* Filter Bar */}
@@ -239,20 +274,43 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                 {group.items.map(txn => {
                                     const cat = categories.find(c => c.id === txn.categoryId);
                                     const wallet = wallets?.find(w => w.id === txn.walletId);
-                                    const isIncome = txn.type === 'income' || (txn.type === 'transfer' && selectedWalletIds.length > 0 && selectedWalletIds.includes(txn.transferTo));
-                                    const isExpense = txn.type === 'expense' || (txn.type === 'transfer' && selectedWalletIds.length > 0 && selectedWalletIds.includes(txn.walletId));
+                                    const isIncome = txn.type === 'income' || txn.type === 'loan_repaid' || (txn.type === 'transfer' && selectedWalletIds.length > 0 && selectedWalletIds.includes(txn.transferTo));
+                                    const isExpense = txn.type === 'expense' || txn.type === 'loan_given' || (txn.type === 'transfer' && selectedWalletIds.length > 0 && selectedWalletIds.includes(txn.walletId));
+                                    const isLoan = txn.type === 'loan_given' || txn.type === 'loan_repaid';
 
                                     return (
-                                        <div key={txn.id} onClick={(e) => openEditModal(e, txn)} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer group">
+                                        <div 
+                                            key={txn.id} 
+                                            onClick={(e) => {
+                                                if (isSelectMode) {
+                                                    toggleSelection(txn.id);
+                                                } else {
+                                                    !isLoan && openEditModal(e, txn);
+                                                }
+                                            }} 
+                                            className={`px-5 py-4 flex items-center gap-4 transition-colors group ${(!isLoan && !isSelectMode) ? 'hover:bg-slate-50 dark:hover:bg-slate-700/30 cursor-pointer' : (isSelectMode ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30' : '')}`}
+                                        >
+                                            {/* Checkbox */}
+                                            {isSelectMode && (
+                                                <div className="flex-shrink-0 flex items-center justify-center mr-2">
+                                                    <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${selectedIds.includes(txn.id) ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'}`}>
+                                                        {selectedIds.includes(txn.id) && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {/* Icon */}
                                             <div className={`w-12 h-12 rounded-2xl flex flex-shrink-0 items-center justify-center text-2xl shadow-inner ${isIncome ? 'bg-emerald-100 dark:bg-emerald-900/30' : (isExpense ? 'bg-rose-100 dark:bg-rose-900/30' : 'bg-slate-100 dark:bg-slate-800')}`}>
-                                                {cat?.icon || '❓'}
+                                                {isLoan ? (txn.type === 'loan_given' ? '📤' : '📥') : (cat?.icon || '❓')}
                                             </div>
                                             
                                             {/* Info */}
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-slate-800 dark:text-white truncate mb-0.5">
-                                                    {txn.type === 'transfer' ? `${wallets?.find(w => w.id === txn.walletId)?.name || '?'} ➝ ${wallets?.find(w => w.id === txn.transferTo)?.name || '?'}` : (wallet?.name || 'Chưa phân ví')} • {cat?.name || '❓ Chưa phân loại'} {txn.subcategoryId && cat?.subcategories?.find(s => s.id === txn.subcategoryId) ? `> ${cat.subcategories.find(s => s.id === txn.subcategoryId).name}` : ''}
+                                                    {txn.type === 'transfer' ? `${wallets?.find(w => w.id === txn.walletId)?.name || '?'} ➝ ${wallets?.find(w => w.id === txn.transferTo)?.name || '?'}` 
+                                                    : (txn.type === 'loan_given' ? `Cho mượn (Ví: ${wallet?.name || '?'})` 
+                                                    : (txn.type === 'loan_repaid' ? `Nhận trả nợ (Ví: ${wallet?.name || '?'})`
+                                                    : `${wallet?.name || 'Chưa phân ví'} • ${cat?.name || '❓ Chưa phân loại'} ${txn.subcategoryId && cat?.subcategories?.find(s => s.id === txn.subcategoryId) ? `> ${cat.subcategories.find(s => s.id === txn.subcategoryId).name}` : ''}`))}
                                                 </p>
                                                 <div className="flex items-center gap-2">
                                                     <p className="font-medium text-slate-500 dark:text-slate-400 truncate text-sm">{txn.description}</p>
@@ -267,10 +325,12 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                                         {formatCurrency(txn.amount)}
                                                     </p>
                                                 </div>
-                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={(e) => openDeleteModal(e, txn.id)} className="p-2 text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/30 rounded-lg transition-colors shadow-sm border border-slate-200 dark:border-slate-700">
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                <div className={`flex items-center gap-1 transition-opacity ${(!isSelectMode && !isLoan) ? 'opacity-0 group-hover:opacity-100' : 'hidden'}`}>
+                                                    {!isLoan && !isSelectMode && (
+                                                        <button onClick={(e) => openDeleteModal(e, txn.id)} className="p-2 text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/30 rounded-lg transition-colors shadow-sm border border-slate-200 dark:border-slate-700">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -317,6 +377,24 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                 iconColorClass="text-rose-600"
                 iconBgClass="bg-rose-100"
             />
+
+            {/* Batch Delete Floating Action Bar */}
+            {isSelectMode && selectedIds.length > 0 && (
+                <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-4 rounded-full shadow-2xl flex items-center gap-6 z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
+                    <span className="font-bold whitespace-nowrap">Đã chọn {selectedIds.length}</span>
+                    <button 
+                        onClick={handleBatchDelete}
+                        disabled={isBatchDeleting}
+                        className="bg-rose-500 hover:bg-rose-600 text-white px-6 py-2 rounded-full font-bold transition-colors whitespace-nowrap disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {isBatchDeleting ? 'Đang xóa...' : (
+                            <>
+                                <Trash2 className="w-4 h-4" /> Xóa
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

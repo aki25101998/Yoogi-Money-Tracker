@@ -137,35 +137,65 @@ const findDefaultUncategorized = (categories, type) => {
 };
 
 /**
- * Call Gemini API to categorize a transaction
+ * Call Gemini API to extract FULL transaction context
  */
-const callGeminiForCategory = async (description, type, categories) => {
+const callGeminiWithFullContext = async (rawInput, amount, categories, wallets, payers) => {
     if (!API_KEY) {
         console.warn('No Gemini API key, falling back to uncategorized');
         return null;
     }
 
-    // Build category context for the prompt
-    const relevantCats = categories.filter(c => c.type === type);
-    const categoryContext = relevantCats.map(cat => ({
+    // Build contexts
+    const categoryContext = categories.map(cat => ({
         id: cat.id,
         name: cat.name,
-        subcategories: (cat.subcategories || []).map(s => ({ id: s.id, name: s.name, description: s.description })),
+        type: cat.type,
+        subcategories: (cat.subcategories || []).map(s => ({ id: s.id, name: s.name })),
     }));
+    const walletContext = (wallets || []).map(w => ({ id: w.id, name: w.name }));
+    const payerContext = (payers || []).map(p => ({ id: p.id, name: p.name }));
 
-    const prompt = `Bạn là trợ lý phân loại chi tiêu/thu nhập cá nhân.
+    const prompt = `Bạn là siêu AI phân tích tài chính cá nhân.
 
-Giao dịch: "${description}"
-Loại: ${type === 'income' ? 'Thu nhập' : 'Chi tiêu'}
+Giao dịch gốc: "${rawInput}"
+Số tiền đã trích xuất: ${amount}
 
-Danh mục hiện có:
+Hãy phân tích giao dịch trên và phân loại vào MỘT trong các nhóm sau:
+
+1. Chi tiêu (expense) hoặc Thu nhập (income):
+   - Chọn categoryId và subcategoryId phù hợp nhất từ danh sách.
+   - Chọn walletId (id của ví) nếu người dùng có nhắc đến tên ví (ví dụ "từ atm", "trong momo").
+
+2. Chuyển tiền nội bộ (transfer):
+   - Ví dụ: "chuyển 50k từ bidv sang momo".
+   - walletId: ví nguồn (bị trừ tiền).
+   - transferTo: ví đích (được cộng tiền).
+
+3. Vay mượn (loan_given: cho người khác mượn / loan_repaid: người khác trả nợ):
+   - Ví dụ: "cho mẹ mượn 50k từ atm", "tuấn trả nợ 200k vào bidv".
+   - personName: tên người mượn/trả. Nếu tên này có trong danh sách Người dùng dưới đây, hãy dùng chính xác tên đó. Nếu chưa có, hãy trả về tên gốc.
+   - walletId: ví bị trừ tiền (nếu cho mượn) hoặc ví được cộng tiền (nếu nhận trả nợ).
+
+Danh sách Ví (Wallets):
+${JSON.stringify(walletContext, null, 2)}
+
+Danh sách Danh mục (Categories):
 ${JSON.stringify(categoryContext, null, 2)}
 
-Hãy phân loại giao dịch trên vào danh mục phù hợp nhất.
-Trả về JSON thuần túy (KHÔNG markdown, KHÔNG backtick):
-{"categoryId": "...", "subcategoryId": "...", "confidence": 0.0-1.0}
+Danh sách Người dùng (Payers/Debts):
+${JSON.stringify(payerContext, null, 2)}
 
-Nếu không chắc chắn (confidence < 0.5), trả về categoryId và subcategoryId rỗng.`;
+Trả về ĐÚNG định dạng JSON thuần túy (KHÔNG markdown, KHÔNG backtick):
+{
+  "type": "expense" | "income" | "transfer" | "loan_given" | "loan_repaid",
+  "categoryId": "...",
+  "subcategoryId": "...",
+  "walletId": "...",
+  "transferTo": "...",
+  "personName": "...",
+  "confidence": 0.0-1.0
+}
+Lưu ý: Nếu thuộc tính nào không áp dụng (ví dụ personName cho expense), hãy để chuỗi rỗng "".`;
 
     try {
         const response = await fetch(
@@ -194,16 +224,7 @@ Nếu không chắc chắn (confidence < 0.5), trả về categoryId và subcate
 
         const result = JSON.parse(jsonString);
 
-        // Validate the result
-        if (result.confidence && result.confidence < 0.5) return null;
-        if (!result.categoryId || !result.subcategoryId) return null;
-
-        // Verify the IDs actually exist
-        const cat = relevantCats.find(c => c.id === result.categoryId);
-        if (!cat) return null;
-        const sub = cat.subcategories.find(s => s.id === result.subcategoryId);
-        if (!sub) return null;
-
+        // We won't strictly validate IDs here because type could be loan_given/transfer
         return result;
     } catch (error) {
         console.error('Gemini categorization error:', error);
@@ -219,7 +240,7 @@ Nếu không chắc chắn (confidence < 0.5), trả về categoryId và subcate
  * @param {Array} aiMemories - All AI memory rules from Firestore
  * @returns {Object} Transaction data ready to save
  */
-export const categorizeTransaction = async (rawInput, categories, aiMemories) => {
+export const categorizeTransaction = async (rawInput, categories, aiMemories, wallets, payers) => {
     // Step 1: Parse input
     const parsed = parseInput(rawInput);
     if (!parsed) {
@@ -228,18 +249,17 @@ export const categorizeTransaction = async (rawInput, categories, aiMemories) =>
 
     const { description, amount } = parsed;
 
-    // Step 2: Guess type (income/expense)
-    const type = guessTransactionType(description);
+    // Step 2: Guess type (income/expense) as fallback
+    const guessedType = guessTransactionType(description);
 
-    // Step 3: Check AI Memory first
+    // Step 3: Check AI Memory first (only applies to simple income/expense)
     const memoryMatch = searchMemory(aiMemories, description);
 
     if (memoryMatch) {
-        // Verify the matched category still exists
         const cat = categories.find(c => c.id === memoryMatch.categoryId);
         if (cat) {
             return {
-                type,
+                type: guessedType,
                 amount,
                 description,
                 categoryId: memoryMatch.categoryId,
@@ -252,16 +272,19 @@ export const categorizeTransaction = async (rawInput, categories, aiMemories) =>
         }
     }
 
-    // Step 4: Call Gemini API
-    const geminiResult = await callGeminiForCategory(description, type, categories);
+    // Step 4: Call Gemini API with FULL context
+    const geminiResult = await callGeminiWithFullContext(rawInput, amount, categories, wallets, payers);
 
-    if (geminiResult) {
+    if (geminiResult && geminiResult.confidence >= 0.5) {
         return {
-            type,
+            type: geminiResult.type,
             amount,
             description,
-            categoryId: geminiResult.categoryId,
-            subcategoryId: geminiResult.subcategoryId,
+            categoryId: geminiResult.categoryId || '',
+            subcategoryId: geminiResult.subcategoryId || '',
+            walletId: geminiResult.walletId || null,
+            transferTo: geminiResult.transferTo || null,
+            personName: geminiResult.personName || null,
             aiCategorized: true,
             aiSource: 'gemini',
             date: new Date().toISOString().split('T')[0],
@@ -269,10 +292,10 @@ export const categorizeTransaction = async (rawInput, categories, aiMemories) =>
     }
 
     // Step 5: Fallback to "Chưa phân loại"
-    const uncategorized = findDefaultUncategorized(categories, type);
+    const uncategorized = findDefaultUncategorized(categories, guessedType);
 
     return {
-        type,
+        type: guessedType,
         amount,
         description,
         categoryId: uncategorized.categoryId,
