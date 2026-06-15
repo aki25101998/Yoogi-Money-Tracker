@@ -261,8 +261,15 @@ export const categorizeTransaction = async (rawInput, categories, aiMemories, wa
     // Step 2: Guess type (income/expense) as fallback
     const guessedType = guessTransactionType(description);
 
+    // Phát hiện các giao dịch phức tạp (vay, mượn, trả nợ, chuyển tiền)
+    // Nếu có chứa các từ khóa này, ta bỏ qua Memory và gọi thẳng Gemini để phân tích chính xác.
+    const isComplexTransaction = /mượn|vay|nợ|trả|chuyển|sang/i.test(description);
+
     // Step 3: Check AI Memory first (only applies to simple income/expense)
-    const memoryMatch = searchMemory(aiMemories, description);
+    let memoryMatch = null;
+    if (!isComplexTransaction) {
+        memoryMatch = searchMemory(aiMemories, description);
+    }
 
     if (memoryMatch) {
         const cat = categories.find(c => c.id === memoryMatch.categoryId);
