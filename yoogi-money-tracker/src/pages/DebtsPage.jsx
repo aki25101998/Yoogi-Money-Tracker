@@ -226,7 +226,11 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                                 const progress = group.totalAmount > 0 ? Math.round((group.repaidAmount / group.totalAmount) * 100) : 0;
 
                                 return (
-                                    <div key={group.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col justify-between hover:shadow-md transition-shadow relative">
+                                    <div 
+                                        key={group.id} 
+                                        onClick={() => openDetailsModal(group.id)}
+                                        className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col justify-between hover:shadow-md transition-shadow relative cursor-pointer group/card"
+                                    >
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group); }}
                                             className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors z-10"
@@ -234,15 +238,12 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
-                                        <div 
-                                            className="flex items-center gap-3 mb-6 cursor-pointer group/header pr-10"
-                                            onClick={() => openDetailsModal(group.id)}
-                                        >
-                                            <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-xl group-hover/header:bg-orange-200 transition-colors">
+                                        <div className="flex items-center gap-3 mb-6 pr-10">
+                                            <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-xl group-hover/card:bg-orange-200 transition-colors">
                                                 {group.personName.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-slate-800 dark:text-white text-lg group-hover/header:text-emerald-600 transition-colors">{group.personName}</h3>
+                                                <h3 className="font-bold text-slate-800 dark:text-white text-lg group-hover/card:text-emerald-600 transition-colors">{group.personName}</h3>
                                                 <p className="text-xs text-slate-500">Bấm để xem chi tiết khoản nợ</p>
                                             </div>
                                         </div>
@@ -270,7 +271,7 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                                                         <span className="font-bold text-orange-500">{formatCurrency(remaining)}</span>
                                                     </div>
                                                     <button 
-                                                        onClick={() => openRepayModal(group.id)}
+                                                        onClick={(e) => { e.stopPropagation(); openRepayModal(group.id); }}
                                                         className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl font-bold text-sm transition-colors flex items-center gap-1"
                                                     >
                                                         Nhận trả
