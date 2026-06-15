@@ -556,3 +556,7 @@ export const addDebtor = async (userId, debtorData) => {
 export const deleteDebtor = async (userId, debtorId) => {
     return await deleteDoc(getDocRef(userId, 'debtors', debtorId));
 };
+
+export const updateDebtor = async (userId, debtorId, debtorData) => {
+    return await updateDoc(getDocRef(userId, 'debtors', debtorId), debtorData);
+};

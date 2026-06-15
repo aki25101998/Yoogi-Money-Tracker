@@ -4,7 +4,7 @@ import { formatCurrency } from '../utils/formatters';
 import AddDebtModal from '../components/modals/AddDebtModal';
 import RepayDebtModal from '../components/modals/RepayDebtModal';
 import DebtDetailsModal from '../components/modals/DebtDetailsModal';
-import { addDebtor, deleteDebtor, deleteDebt } from '../utils/firebaseHelpers';
+import { addDebtor, deleteDebtor, deleteDebt, updateDebt, updateDebtor } from '../utils/firebaseHelpers';
 
 const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -93,6 +93,24 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                 await Promise.all(group.debts.map(d => deleteDebt(user.uid, d.id)));
             } catch (error) {
                 alert('Lỗi khi xóa: ' + error.message);
+            }
+        }
+    };
+
+    const handleEditGroup = async (group) => {
+        const newName = window.prompt('Nhập tên người mượn mới:', group.personName);
+        if (newName && newName.trim() && newName.trim() !== group.personName) {
+            try {
+                // Update all debts
+                await Promise.all(group.debts.map(d => updateDebt(user.uid, d.id, { personName: newName.trim() })));
+                
+                // Try to update the debtor in 'debtors' collection if it exists
+                const matchedDebtor = payers.find(p => p.name.trim().toLowerCase() === group.personName.trim().toLowerCase());
+                if (matchedDebtor) {
+                    await updateDebtor(user.uid, matchedDebtor.id, { name: newName.trim() });
+                }
+            } catch (error) {
+                alert('Lỗi khi sửa tên: ' + error.message);
             }
         }
     };
@@ -228,8 +246,7 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                                 return (
                                     <div 
                                         key={group.id} 
-                                        onClick={() => openDetailsModal(group.id)}
-                                        className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col justify-between hover:shadow-md transition-shadow relative cursor-pointer group/card"
+                                        className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group/card"
                                     >
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group); }}
@@ -238,17 +255,27 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
-                                        <div className="flex items-center gap-3 mb-6 pr-10">
-                                            <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-xl group-hover/card:bg-orange-200 transition-colors">
-                                                {group.personName.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <h3 className="font-bold text-slate-800 dark:text-white text-lg group-hover/card:text-emerald-600 transition-colors">{group.personName}</h3>
-                                                <p className="text-xs text-slate-500">Bấm để xem chi tiết khoản nợ</p>
+                                        
+                                        <div 
+                                            className="p-5 pb-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700"
+                                            onClick={(e) => { e.stopPropagation(); handleEditGroup(group); }}
+                                        >
+                                            <div className="flex items-center gap-3 pr-10">
+                                                <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-xl group-hover/card:bg-orange-200 transition-colors">
+                                                    {group.personName.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-slate-800 dark:text-white text-lg group-hover/card:text-emerald-600 transition-colors">{group.personName}</h3>
+                                                    <p className="text-xs text-slate-500">Bấm để thay đổi thông tin</p>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4">
+                                        <div 
+                                            className="p-5 pt-4 cursor-pointer flex-1 flex flex-col justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                                            onClick={() => openDetailsModal(group.id)}
+                                        >
+                                            <div className="space-y-4">
                                             <div className="flex justify-between items-baseline">
                                                 <span className="text-sm text-slate-500">Đã mượn</span>
                                                 <span className="font-bold text-slate-800 dark:text-white text-lg">{formatCurrency(group.totalAmount)}</span>
@@ -279,6 +306,7 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                                                     </button>
                                                 </div>
                                             )}
+                                        </div>
                                         </div>
                                     </div>
                                 );
