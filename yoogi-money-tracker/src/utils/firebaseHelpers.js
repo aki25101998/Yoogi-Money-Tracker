@@ -258,6 +258,21 @@ export const deleteTransaction = async (userId, transactionId) => {
 };
 
 /**
+ * Get transaction by debt ID
+ */
+export const getTransactionByDebtId = async (userId, debtId) => {
+    const q = query(
+        getCollectionRef(userId, 'transactions'),
+        where('debtId', '==', debtId)
+    );
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+        return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+    }
+    return null;
+};
+
+/**
  * Delete multiple transactions using batch
  */
 export const deleteMultipleTransactions = async (userId, transactionIds) => {

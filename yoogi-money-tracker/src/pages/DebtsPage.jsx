@@ -405,6 +405,8 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                 onClose={() => { setIsDetailsOpen(false); setSelectedDetailsKey(null); }}
                 groupedDebt={groupedDebtsObj[selectedDetailsKey]}
                 onDeleteDebt={handleDeleteDebt}
+                user={user}
+                wallets={wallets}
             />
         </div>
     );

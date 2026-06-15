@@ -1,12 +1,60 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, Trash2 } from 'lucide-react';
+import { X, Calendar, Trash2, Pencil, Check, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
+import { updateDebt, updateTransaction, getTransactionByDebtId } from '../../utils/firebaseHelpers';
 
-const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt }) => {
+const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wallets }) => {
     const [activeTab, setActiveTab] = useState('active');
+    const [editingDebtId, setEditingDebtId] = useState(null);
+    const [editForm, setEditForm] = useState({ amount: '', walletId: '', notes: '' });
+    const [isSaving, setIsSaving] = useState(false);
 
     if (!isOpen || !groupedDebt) return null;
+
+    const startEdit = async (debt) => {
+        setEditingDebtId(debt.id);
+        setEditForm({ amount: debt.totalAmount, walletId: '', notes: debt.notes || '' });
+        
+        if (user) {
+            const txn = await getTransactionByDebtId(user.uid, debt.id);
+            if (txn) {
+                setEditForm(prev => ({ ...prev, walletId: txn.walletId }));
+            }
+        }
+    };
+
+    const cancelEdit = () => {
+        setEditingDebtId(null);
+    };
+
+    const saveEdit = async (debt) => {
+        if (!user) return;
+        setIsSaving(true);
+        try {
+            const amountNum = parseFloat(editForm.amount) || 0;
+            
+            await updateDebt(user.uid, debt.id, {
+                totalAmount: amountNum,
+                notes: editForm.notes
+            });
+
+            const txn = await getTransactionByDebtId(user.uid, debt.id);
+            if (txn) {
+                await updateTransaction(user.uid, txn.id, {
+                    amount: amountNum,
+                    walletId: editForm.walletId,
+                    description: `Cho ${debt.personName} mượn: ${editForm.notes}`
+                });
+            }
+            
+            setEditingDebtId(null);
+        } catch (err) {
+            alert("Lỗi: " + err.message);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     // Sort debts by date descending
     const sortedDebts = [...groupedDebt.debts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -55,52 +103,116 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt }) => {
 
                         return (
                             <div key={debt.id} className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 relative overflow-hidden">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-2 text-slate-500">
-                                        <Calendar className="w-4 h-4" />
-                                        <span className="text-xs font-medium">{new Date(debt.createdAt).toLocaleDateString('vi-VN')}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {debt.status === 'paid' && (
-                                            <div className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                                                Đã trả xong
+                                {editingDebtId === debt.id ? (
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="font-bold text-sm text-slate-800 dark:text-white">Chỉnh sửa khoản nợ</span>
+                                            <button onClick={cancelEdit} className="p-1"><X className="w-4 h-4 text-slate-400" /></button>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] text-slate-400 font-medium block mb-1">Số tiền mượn</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={editForm.amount}
+                                                onChange={e => setEditForm({ ...editForm, amount: e.target.value })}
+                                                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] text-slate-400 font-medium block mb-1">Trích từ ví</label>
+                                            <div className="relative">
+                                                <select
+                                                    value={editForm.walletId}
+                                                    onChange={e => setEditForm({ ...editForm, walletId: e.target.value })}
+                                                    className="w-full pl-3 pr-8 py-2 appearance-none border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none cursor-pointer text-sm"
+                                                >
+                                                    <option value="" disabled>Chọn ví</option>
+                                                    {wallets?.map(w => (
+                                                        <option key={w.id} value={w.id}>{w.icon} {w.name}</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                             </div>
-                                        )}
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); onDeleteDebt(debt.id); }}
-                                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                                            title="Xóa khoản nợ này"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-baseline">
-                                        <span className="text-sm text-slate-600 dark:text-slate-400">Đã mượn</span>
-                                        <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(debt.totalAmount)}</span>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between text-xs mb-1.5">
-                                            <span className="font-medium text-emerald-600 dark:text-emerald-400">Đã trả: {formatCurrency(debt.repaidAmount || 0)}</span>
-                                            <span className="font-medium text-slate-500">{progress}%</span>
                                         </div>
-                                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                                            <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                                        <div>
+                                            <label className="text-[10px] text-slate-400 font-medium block mb-1">Ghi chú</label>
+                                            <input
+                                                type="text"
+                                                value={editForm.notes}
+                                                onChange={e => setEditForm({ ...editForm, notes: e.target.value })}
+                                                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                            />
                                         </div>
-                                    </div>
-                                    {debt.status === 'active' && (
-                                        <div className="flex justify-between items-baseline pt-2 border-t border-slate-200 dark:border-slate-700/50">
-                                            <span className="text-xs uppercase tracking-wider text-slate-400 font-bold">Còn nợ</span>
-                                            <span className="font-bold text-orange-500">{formatCurrency(remaining)}</span>
-                                        </div>
-                                    )}
-                                    {debt.notes && (
                                         <div className="pt-2">
-                                            <span className="text-xs text-slate-500 italic block">Ghi chú: {debt.notes}</span>
+                                            <button
+                                                onClick={() => saveEdit(debt)}
+                                                disabled={isSaving}
+                                                className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold shadow-md transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                                            >
+                                                {isSaving ? 'Đang lưu...' : <><Check className="w-4 h-4" /> Lưu thay đổi</>}
+                                            </button>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2 text-slate-500">
+                                                <Calendar className="w-4 h-4" />
+                                                <span className="text-xs font-medium">{new Date(debt.createdAt).toLocaleDateString('vi-VN')}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {debt.status === 'paid' && (
+                                                    <div className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                                                        Đã trả xong
+                                                    </div>
+                                                )}
+                                                {debt.status === 'active' && (
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); startEdit(debt); }}
+                                                        className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                                        title="Sửa khoản nợ này"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); onDeleteDebt(debt.id); }}
+                                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                                    title="Xóa khoản nợ này"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-baseline">
+                                                <span className="text-sm text-slate-600 dark:text-slate-400">Đã mượn</span>
+                                                <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(debt.totalAmount)}</span>
+                                            </div>
+                                            <div>
+                                                <div className="flex justify-between text-xs mb-1.5">
+                                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">Đã trả: {formatCurrency(debt.repaidAmount || 0)}</span>
+                                                    <span className="font-medium text-slate-500">{progress}%</span>
+                                                </div>
+                                                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                                                    <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                                                </div>
+                                            </div>
+                                            {debt.status === 'active' && (
+                                                <div className="flex justify-between items-baseline pt-2 border-t border-slate-200 dark:border-slate-700/50">
+                                                    <span className="text-xs uppercase tracking-wider text-slate-400 font-bold">Còn nợ</span>
+                                                    <span className="font-bold text-orange-500">{formatCurrency(remaining)}</span>
+                                                </div>
+                                            )}
+                                            {debt.notes && (
+                                                <div className="pt-2">
+                                                    <span className="text-xs text-slate-500 italic block">Ghi chú: {debt.notes}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         );
                     }))}
