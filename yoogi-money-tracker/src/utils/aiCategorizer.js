@@ -173,9 +173,10 @@ Hãy phân tích giao dịch trên và phân loại vào MỘT trong các nhóm 
    - transferTo: ví đích (được cộng tiền).
 
 3. Vay mượn (loan_given: cho người khác mượn / loan_repaid: người khác trả nợ):
-   - Ví dụ: "cho mẹ mượn 50k từ atm", "tuấn trả nợ 200k vào bidv".
+   - Ví dụ: "cho mẹ mượn 50k từ atm để nạp điện thoại", "tuấn trả nợ 200k vào bidv khoản ăn sáng".
    - personName: tên người mượn/trả. Nếu tên này có trong danh sách Người dùng dưới đây, hãy dùng chính xác tên đó. Nếu chưa có, hãy trả về tên gốc.
    - walletId: ví bị trừ tiền (nếu cho mượn) hoặc ví được cộng tiền (nếu nhận trả nợ).
+   - debtNotes: Trích xuất ngắn gọn lý do hoặc mô tả của khoản mượn/trả (ví dụ "nạp điện thoại", "ăn sáng"). Nếu không có thì để trống.
 
 Danh sách Ví (Wallets):
 ${JSON.stringify(walletContext, null, 2)}
@@ -197,6 +198,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (KHÔNG markdown, KHÔNG back
   "walletId": "...",
   "transferTo": "...",
   "personName": "...",
+  "debtNotes": "...",
   "confidence": 0.0-1.0
 }
 Lưu ý: Nếu thuộc tính nào không áp dụng (ví dụ personName cho expense), hãy để chuỗi rỗng "".`;
@@ -297,6 +299,7 @@ export const categorizeTransaction = async (rawInput, categories, aiMemories, wa
             walletId: geminiResult.walletId || null,
             transferTo: geminiResult.transferTo || null,
             personName: finalPersonName,
+            debtNotes: geminiResult.debtNotes || '',
             aiCategorized: true,
             aiSource: 'gemini',
             date: new Date().toISOString().split('T')[0],

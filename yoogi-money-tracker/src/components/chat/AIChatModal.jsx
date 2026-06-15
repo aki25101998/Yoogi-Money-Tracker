@@ -200,6 +200,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                         totalAmount: amountNum,
                         repaidAmount: 0,
                         status: 'active',
+                        notes: result.debtNotes || '',
                         date: new Date().toISOString()
                     };
                     const debtRef = await addDebt(user.uid, debtData);
@@ -228,7 +229,9 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                 transactionData = {
                     type: result.type,
                     amount: amountNum,
-                    description: result.description || (result.type === 'loan_given' ? `Cho ${personName} mượn` : `Nhận trả nợ từ ${personName}`),
+                    description: result.type === 'loan_given' 
+                        ? `Cho ${personName} mượn${result.debtNotes ? ': ' + result.debtNotes : ''}` 
+                        : `${personName} trả nợ${result.debtNotes ? ': ' + result.debtNotes : ''}`,
                     categoryId: result.type,
                     subcategoryId: '',
                     date: result.date || new Date().toISOString(),
