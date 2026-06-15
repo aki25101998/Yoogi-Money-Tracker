@@ -344,12 +344,13 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                                         {formatCurrency(txn.amount)}
                                                     </p>
                                                 </div>
-                                                <div className={`flex items-center gap-1 transition-opacity ${(!isSelectMode && !isLoan) ? 'opacity-0 group-hover:opacity-100' : 'hidden'}`}>
-                                                    {!isLoan && !isSelectMode && (
-                                                        <button onClick={(e) => openDeleteModal(e, txn.id)} className="p-2 text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/30 rounded-lg transition-colors shadow-sm border border-slate-200 dark:border-slate-700">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    )}
+                                                <div className={`flex items-center transition-opacity ${isSelectMode ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}>
+                                                    <button 
+                                                        onClick={(e) => !isLoan && openDeleteModal(e, txn.id)} 
+                                                        className={`p-2 text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/30 rounded-lg transition-colors shadow-sm border border-slate-200 dark:border-slate-700 ${isLoan ? 'invisible pointer-events-none' : ''}`}
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
