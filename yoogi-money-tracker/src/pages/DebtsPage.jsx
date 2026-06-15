@@ -33,12 +33,14 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                 createdAt: d.createdAt,
             };
         }
-        acc[key].totalAmount += d.totalAmount;
-        acc[key].repaidAmount += (d.repaidAmount || 0);
-        acc[key].debts.push(d);
+        
         if (d.status === 'active') {
+            acc[key].totalAmount += d.totalAmount;
+            acc[key].repaidAmount += (d.repaidAmount || 0);
             acc[key].status = 'active';
         }
+        
+        acc[key].debts.push(d);
         if (new Date(d.createdAt) > new Date(acc[key].createdAt)) {
             acc[key].createdAt = d.createdAt;
             acc[key].personName = d.personName;
