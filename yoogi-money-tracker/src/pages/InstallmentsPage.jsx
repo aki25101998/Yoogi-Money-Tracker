@@ -27,7 +27,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     const [editingItem, setEditingItem] = useState(null);
 
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-    const [selectedLenderDetails, setSelectedLenderDetails] = useState(null);
+    const [selectedLenderName, setSelectedLenderName] = useState(null);
 
     // Confirm Modal States
     const [confirmModalState, setConfirmModalState] = useState({
@@ -238,6 +238,19 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
 
         return { monthlyTotal, remainingTotal, projectedRemainingTotal };
     }, [filteredItems, inProgressItems, activeReferenceDate]);
+
+    const currentLenderDetails = useMemo(() => {
+        if (!selectedLenderName) return null;
+        
+        const groupActiveItems = inProgressItems.filter(w => (w.item.lender || 'Khác') === selectedLenderName);
+        const groupPaidItems = completedItems.filter(w => (w.item.lender || 'Khác') === selectedLenderName);
+
+        return {
+            lenderName: selectedLenderName,
+            activeItems: groupActiveItems,
+            paidItems: groupPaidItems
+        };
+    }, [selectedLenderName, inProgressItems, completedItems]);
 
     // --- Handlers ---
     const handleOpenAdd = () => { setEditingItem(null); setIsAddEditModalOpen(true); };
@@ -521,14 +534,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     };
 
     const openDetailsModal = (group) => {
-        const groupActiveItems = inProgressItems.filter(w => (w.item.lender || 'Khác') === group.lenderName);
-        const groupPaidItems = completedItems.filter(w => (w.item.lender || 'Khác') === group.lenderName);
-
-        setSelectedLenderDetails({
-            lenderName: group.lenderName,
-            activeItems: groupActiveItems,
-            paidItems: groupPaidItems
-        });
+        setSelectedLenderName(group.lenderName);
         setIsDetailsOpen(true);
     };
 
@@ -870,7 +876,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
             <InstallmentDetailsModal
                 isOpen={isDetailsOpen}
                 onClose={() => setIsDetailsOpen(false)}
-                groupedLender={selectedLenderDetails}
+                groupedLender={currentLenderDetails}
                 onEditItem={(item) => {
                     setEditingItem(item);
                     setIsAddEditModalOpen(true);
