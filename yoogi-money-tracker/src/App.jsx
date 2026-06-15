@@ -466,6 +466,7 @@ export default function App() {
                         aiMemories={aiMemories}
                         wallets={wallets}
                         payers={payers}
+                        debtors={debtors}
                         recurringTransactions={recurringTransactions}
                     />
                 </>

@@ -139,7 +139,7 @@ const findDefaultUncategorized = (categories, type) => {
 /**
  * Call Gemini API to extract FULL transaction context
  */
-const callGeminiWithFullContext = async (rawInput, amount, categories, wallets, payers) => {
+const callGeminiWithFullContext = async (rawInput, amount, categories, wallets, payers, debtors) => {
     if (!API_KEY) {
         console.warn('No Gemini API key, falling back to uncategorized');
         return null;
@@ -154,6 +154,7 @@ const callGeminiWithFullContext = async (rawInput, amount, categories, wallets, 
     }));
     const walletContext = (wallets || []).map(w => ({ id: w.id, name: w.name }));
     const payerContext = (payers || []).map(p => ({ id: p.id, name: p.name }));
+    const debtorContext = (debtors || []).map(p => ({ id: p.id, name: p.name }));
 
     const prompt = `Bạn là siêu AI phân tích tài chính cá nhân.
 
@@ -182,8 +183,11 @@ ${JSON.stringify(walletContext, null, 2)}
 Danh sách Danh mục (Categories):
 ${JSON.stringify(categoryContext, null, 2)}
 
-Danh sách Người dùng (Payers/Debts):
+Danh sách Người dùng/Trả góp (Payers):
 ${JSON.stringify(payerContext, null, 2)}
+
+Danh sách Người mượn nợ (Debtors):
+${JSON.stringify(debtorContext, null, 2)}
 
 Trả về ĐÚNG định dạng JSON thuần túy (KHÔNG markdown, KHÔNG backtick):
 {
@@ -240,7 +244,7 @@ Lưu ý: Nếu thuộc tính nào không áp dụng (ví dụ personName cho exp
  * @param {Array} aiMemories - All AI memory rules from Firestore
  * @returns {Object} Transaction data ready to save
  */
-export const categorizeTransaction = async (rawInput, categories, aiMemories, wallets, payers) => {
+export const categorizeTransaction = async (rawInput, categories, aiMemories, wallets, payers, debtors) => {
     // Step 1: Parse input
     const parsed = parseInput(rawInput);
     if (!parsed) {
@@ -273,9 +277,17 @@ export const categorizeTransaction = async (rawInput, categories, aiMemories, wa
     }
 
     // Step 4: Call Gemini API with FULL context
-    const geminiResult = await callGeminiWithFullContext(rawInput, amount, categories, wallets, payers);
+    const geminiResult = await callGeminiWithFullContext(rawInput, amount, categories, wallets, payers, debtors);
 
     if (geminiResult && geminiResult.confidence >= 0.5) {
+        let finalPersonName = geminiResult.personName || null;
+        if (finalPersonName && debtors && debtors.length > 0) {
+            const matchedDebtor = debtors.find(p => p.name.trim().toLowerCase() === finalPersonName.trim().toLowerCase());
+            if (matchedDebtor) {
+                finalPersonName = matchedDebtor.name;
+            }
+        }
+
         return {
             type: geminiResult.type,
             amount,
@@ -284,7 +296,7 @@ export const categorizeTransaction = async (rawInput, categories, aiMemories, wa
             subcategoryId: geminiResult.subcategoryId || '',
             walletId: geminiResult.walletId || null,
             transferTo: geminiResult.transferTo || null,
-            personName: geminiResult.personName || null,
+            personName: finalPersonName,
             aiCategorized: true,
             aiSource: 'gemini',
             date: new Date().toISOString().split('T')[0],

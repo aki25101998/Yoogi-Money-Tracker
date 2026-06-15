@@ -9,7 +9,7 @@ import TransferFundsModal from '../modals/TransferFundsModal';
 import TransactionModal from '../modals/TransactionModal';
 import RecurringTransactionsModal from '../modals/RecurringTransactionsModal';
 
-const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, payers, recurringTransactions, selectedWalletId, onOpenContextWallet }) => {
+const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, payers, debtors, recurringTransactions, selectedWalletId, onOpenContextWallet }) => {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -183,7 +183,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
         setIsTyping(true);
 
         try {
-            const result = await categorizeTransaction(userMsgText, categories, aiMemories, wallets, payers);
+            const result = await categorizeTransaction(userMsgText, categories, aiMemories, wallets, payers, debtors);
             
             let docRef;
             let finalWalletId = result.walletId || activeWallet.id;
