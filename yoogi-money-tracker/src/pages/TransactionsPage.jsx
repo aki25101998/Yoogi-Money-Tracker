@@ -443,7 +443,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets, debts }) =>
                                                         <span className="tabular-nums">{formatCurrency(txn.amount)}</span>
                                                     </p>
                                                 </div>
-                                                <div className={`flex items-center transition-opacity ${isSelectMode ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}>
+                                                <div className={`flex items-center justify-end w-9 transition-opacity ${isSelectMode ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}>
                                                     {!isLoan && (
                                                         <button 
                                                             onClick={(e) => openDeleteModal(e, txn.id)} 

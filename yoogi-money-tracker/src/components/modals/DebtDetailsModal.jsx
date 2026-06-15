@@ -287,9 +287,9 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                                         ) : (
                                             <>
                                                 <div className="flex items-center justify-between mb-3">
-                                                    <div className="flex items-center gap-2 text-slate-500">
-                                                        <Calendar className="w-4 h-4" />
-                                                        <span className="text-xs font-medium">{new Date(debt.createdAt).toLocaleDateString('vi-VN')}</span>
+                                                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                                        <Calendar className="w-[18px] h-[18px]" />
+                                                        <span className="text-[15px] font-semibold">{new Date(debt.createdAt).toLocaleDateString('vi-VN')}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         {debt.status === 'paid' && (
@@ -314,9 +314,13 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                                                     </div>
                                                 </div>
                                                 <div className="space-y-3">
-                                                    <div className="flex justify-between items-baseline">
-                                                        <span className="text-sm text-slate-600 dark:text-slate-400">{debt.notes ? debt.notes : 'Đã mượn'}</span>
-                                                        <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(debt.totalAmount)}</span>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <div className={`px-3 py-1.5 rounded-xl shadow-sm inline-flex items-center max-w-[65%] border ${debt.status === 'active' ? 'bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-400' : 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300'}`}>
+                                                            <span className="text-[15px] font-bold truncate">
+                                                                {debt.notes ? debt.notes : 'Đã mượn'}
+                                                            </span>
+                                                        </div>
+                                                        <span className="font-bold text-lg text-slate-800 dark:text-white shrink-0">{formatCurrency(debt.totalAmount)}</span>
                                                     </div>
                                                     <div>
                                                         <div className="flex justify-between text-xs mb-1.5">
@@ -404,9 +408,9 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                                     ) : (
                                         <>
                                             <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-2 text-slate-500">
-                                                    <Calendar className="w-4 h-4" />
-                                                    <span className="text-xs font-medium">{new Date(payment.date).toLocaleDateString('vi-VN')}</span>
+                                                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                                    <Calendar className="w-[18px] h-[18px]" />
+                                                    <span className="text-[15px] font-semibold">{new Date(payment.date).toLocaleDateString('vi-VN')}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <div className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
@@ -440,8 +444,10 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                                                     </span>
                                                 </div>
                                                 {payment.description && (
-                                                    <div className="pt-1">
-                                                        <span className="text-xs text-slate-500 italic block">{payment.description}</span>
+                                                    <div className="pt-2">
+                                                        <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 rounded-xl shadow-sm inline-flex items-center max-w-full">
+                                                            <span className="text-[14px] font-bold truncate">{payment.description}</span>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
