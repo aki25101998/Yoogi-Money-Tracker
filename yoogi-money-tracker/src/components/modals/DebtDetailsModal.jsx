@@ -315,7 +315,7 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                                                 </div>
                                                 <div className="space-y-3">
                                                     <div className="flex justify-between items-baseline">
-                                                        <span className="text-sm text-slate-600 dark:text-slate-400">Đã mượn</span>
+                                                        <span className="text-sm text-slate-600 dark:text-slate-400">{debt.notes ? debt.notes : 'Đã mượn'}</span>
                                                         <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(debt.totalAmount)}</span>
                                                     </div>
                                                     <div>
@@ -333,11 +333,7 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                                                             <span className="font-bold text-orange-500">{formatCurrency(remaining)}</span>
                                                         </div>
                                                     )}
-                                                    {debt.notes && (
-                                                        <div className="pt-2">
-                                                            <span className="text-xs text-slate-500 italic block">Ghi chú: {debt.notes}</span>
-                                                        </div>
-                                                    )}
+
                                                 </div>
                                             </>
                                         )}
