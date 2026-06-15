@@ -283,8 +283,12 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                                     {new Date(group.date).toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                                 </h3>
                                 <div className="text-sm font-bold">
-                                    {group.totalIncome > 0 && <span className="text-emerald-600 mx-1">+{formatCurrency(group.totalIncome)}</span>}
-                                    {group.totalExpense > 0 && <span className="text-rose-600 mx-1">-{formatCurrency(group.totalExpense)}</span>}
+                                    {(() => {
+                                        const net = group.totalIncome - group.totalExpense;
+                                        if (net > 0) return <span className="text-emerald-600">+{formatCurrency(net)}</span>;
+                                        if (net < 0) return <span className="text-rose-600">-{formatCurrency(Math.abs(net))}</span>;
+                                        return null;
+                                    })()}
                                 </div>
                             </div>
                             
@@ -338,10 +342,10 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
 
                                             {/* Amount & Actions */}
                                             <div className="flex items-center gap-4">
-                                                <div className="text-right">
-                                                    <p className={`font-bold text-base whitespace-nowrap flex items-center justify-end gap-1 ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : (isExpense ? 'text-rose-600 dark:text-rose-400' : 'text-rose-500')}`}>
-                                                        {isIncome ? <ArrowUpRight className="w-4 h-4" /> : (isExpense ? <ArrowDownRight className="w-4 h-4" /> : '⇄')}
-                                                        {formatCurrency(txn.amount)}
+                                                <div className="w-24 sm:w-32 flex-shrink-0">
+                                                    <p className={`font-bold text-base whitespace-nowrap flex items-center justify-between ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : (isExpense ? 'text-rose-600 dark:text-rose-400' : 'text-rose-500')}`}>
+                                                        <span className="flex-shrink-0">{isIncome ? <ArrowUpRight className="w-4 h-4" /> : (isExpense ? <ArrowDownRight className="w-4 h-4" /> : '⇄')}</span>
+                                                        <span className="text-right flex-1">{formatCurrency(txn.amount)}</span>
                                                     </p>
                                                 </div>
                                                 <div className={`flex items-center transition-opacity ${isSelectMode ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}>
