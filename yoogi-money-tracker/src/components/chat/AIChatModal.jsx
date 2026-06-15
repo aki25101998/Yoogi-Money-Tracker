@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Bot, User, Loader2, Pencil, Trash2, CheckCircle2, ChevronRight, ChevronDown, Settings, CalendarClock, ArrowRightLeft } from 'lucide-react';
 import { categorizeTransaction } from '../../utils/aiCategorizer';
-import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransaction, deleteTransaction, addDebt, updateDebt } from '../../utils/firebaseHelpers';
+import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransaction, deleteTransaction, addDebt, updateDebt, addDebtor } from '../../utils/firebaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
 import { APP_ID, db } from '../../config/firebase';
 import { collection, addDoc, query, where, getDocs, limit } from 'firebase/firestore';
@@ -201,7 +201,23 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
             if (result.type === 'loan_given' || result.type === 'loan_repaid') {
                 const amountNum = parseFloat(result.amount) || 0;
                 let debtId = null;
-                const personName = result.personName || 'Người vô danh';
+                // AI có thể trả về tên với format "Phúc" (đã viết hoa)
+                let personName = result.personName || 'Người vô danh';
+
+                // Tự động tạo người mượn mới nếu chưa có
+                if (personName !== 'Người vô danh' && debtors) {
+                    const existingDebtor = debtors.find(d => d.name.trim().toLowerCase() === personName.trim().toLowerCase());
+                    if (existingDebtor) {
+                        personName = existingDebtor.name; // Đảm bảo dùng đúng tên đã lưu
+                    } else {
+                        // Người này chưa có trong danh sách -> Tạo mới
+                        try {
+                            await addDebtor(user.uid, { name: personName });
+                        } catch (err) {
+                            console.error('Không thể tạo người mượn mới:', err);
+                        }
+                    }
+                }
 
                 if (result.type === 'loan_given') {
                     const debtData = {
