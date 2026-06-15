@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Calendar, Trash2, Pencil, RefreshCw, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import InstallmentItem from '../InstallmentItem';
-import { calculateItemStats } from '../../utils/calculations';
+import { calculateItemStats, getYearMonth } from '../../utils/calculations';
 
 const InstallmentDetailsModal = ({ 
     isOpen, 
@@ -21,11 +21,36 @@ const InstallmentDetailsModal = ({
     const activeItems = [];
     const paidItems = [];
 
-    groupedLender.activeItems.forEach(wrapper => {
-        activeItems.push(wrapper);
-    });
-    groupedLender.paidItems.forEach(wrapper => {
-        paidItems.push(wrapper);
+    (groupedLender.items || []).forEach(item => {
+        const start = new Date(item.startDate);
+        const paidMonths = item.paidMonths || [];
+        
+        let nextUnpaidMonth = null;
+        for (let i = 0; i < item.term; i++) {
+            const checkDate = new Date(start.getFullYear(), start.getMonth() + i, 1);
+            const mStr = getYearMonth(checkDate);
+            if (!paidMonths.includes(mStr)) {
+                nextUnpaidMonth = { monthStr: mStr, index: i + 1, refDate: checkDate };
+                break;
+            }
+        }
+
+        if (!nextUnpaidMonth) {
+            const lastDate = new Date(start.getFullYear(), start.getMonth() + item.term - 1, 1);
+            paidItems.push({
+                item: item,
+                index: item.term,
+                refDate: lastDate,
+                monthStr: getYearMonth(lastDate)
+            });
+        } else {
+            activeItems.push({
+                item: item,
+                index: nextUnpaidMonth.index,
+                refDate: nextUnpaidMonth.refDate,
+                monthStr: nextUnpaidMonth.monthStr
+            });
+        }
     });
 
     const handleTabChange = (tab) => {

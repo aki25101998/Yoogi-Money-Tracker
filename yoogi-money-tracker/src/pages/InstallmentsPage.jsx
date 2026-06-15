@@ -242,15 +242,13 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     const currentLenderDetails = useMemo(() => {
         if (!selectedLenderName) return null;
         
-        const groupActiveItems = inProgressItems.filter(w => (w.item.lender || 'Khác') === selectedLenderName);
-        const groupPaidItems = completedItems.filter(w => (w.item.lender || 'Khác') === selectedLenderName);
+        const items = filteredItems.filter(item => (item.lender || 'Khác') === selectedLenderName);
 
         return {
             lenderName: selectedLenderName,
-            activeItems: groupActiveItems,
-            paidItems: groupPaidItems
+            items: items
         };
-    }, [selectedLenderName, inProgressItems, completedItems]);
+    }, [selectedLenderName, filteredItems]);
 
     // --- Handlers ---
     const handleOpenAdd = () => { setEditingItem(null); setIsAddEditModalOpen(true); };
