@@ -383,6 +383,7 @@ export default function App() {
                 <DebtsPage
                     user={user}
                     debts={debts}
+                    transactions={transactions}
                     wallets={wallets}
                     categories={categories}
                     payers={debtors}

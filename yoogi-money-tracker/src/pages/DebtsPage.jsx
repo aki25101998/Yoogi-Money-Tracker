@@ -6,7 +6,7 @@ import RepayDebtModal from '../components/modals/RepayDebtModal';
 import DebtDetailsModal from '../components/modals/DebtDetailsModal';
 import { addDebtor, deleteDebtor, deleteDebt, updateDebt, updateDebtor } from '../utils/firebaseHelpers';
 
-const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
+const DebtsPage = ({ user, debts, transactions, wallets, categories, payers }) => {
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isRepayOpen, setIsRepayOpen] = useState(false);
     const [selectedDebtId, setSelectedDebtId] = useState(null);
@@ -18,7 +18,7 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
     const [selectedDetailsKey, setSelectedDetailsKey] = useState(null);
 
     const totalLent = debts.reduce((acc, d) => d.status === 'active' ? acc + (d.totalAmount - (d.repaidAmount || 0)) : acc, 0);
-    const totalRepaid = debts.reduce((acc, d) => acc + (d.repaidAmount || 0), 0);
+    const totalRepaid = debts.reduce((acc, d) => d.status === 'active' ? acc + (d.repaidAmount || 0) : acc, 0);
 
     const groupedDebtsObj = debts.reduce((acc, d) => {
         const key = d.personName.trim().toLowerCase();
@@ -103,10 +103,8 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
         const newName = window.prompt('Nhập tên người mượn mới:', group.personName);
         if (newName && newName.trim() && newName.trim() !== group.personName) {
             try {
-                // Update all debts
                 await Promise.all(group.debts.map(d => updateDebt(user.uid, d.id, { personName: newName.trim() })));
                 
-                // Try to update the debtor in 'debtors' collection if it exists
                 const matchedDebtor = payers.find(p => p.name.trim().toLowerCase() === group.personName.trim().toLowerCase());
                 if (matchedDebtor) {
                     await updateDebtor(user.uid, matchedDebtor.id, { name: newName.trim() });
@@ -407,6 +405,7 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                 onDeleteDebt={handleDeleteDebt}
                 user={user}
                 wallets={wallets}
+                transactions={transactions}
             />
         </div>
     );
