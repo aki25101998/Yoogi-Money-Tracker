@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Sparkles, Plus, ChevronDown } from 'lucide-react';
 import { parseLoanInfo } from '../../utils/aiService';
 
@@ -115,8 +116,8 @@ const AddEditModal = ({
 
     const monthList = getMonthsList(formData.startDate, formData.term);
 
-    return (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    return createPortal(
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
                 <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 sticky top-0 z-10">
                     <h3 className="font-bold text-lg text-slate-800 dark:text-white">{editingItem ? "Cập nhật" : "Thêm mới"}</h3>
@@ -279,7 +280,8 @@ const AddEditModal = ({
                     <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl mt-2 shadow-lg shadow-indigo-200 dark:shadow-none">Lưu lại</button>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
