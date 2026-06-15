@@ -50,7 +50,7 @@ const AddDebtModal = ({ isOpen, onClose, user, wallets, payers, onAddPayer }) =>
             const transactionData = {
                 type: 'loan_given',
                 amount: amountNum,
-                description: `Cho ${form.personName} mượn: ${form.notes}`,
+                description: `${form.personName} mượn: ${form.notes}`,
                 categoryId: 'loan_given', // We can use a virtual category or rely on type
                 subcategoryId: '',
                 date: new Date(form.date).toISOString(),

@@ -169,12 +169,12 @@ const TransactionsPage = ({ user, transactions, categories, wallets, debts }) =>
 
             if (txn.type === 'loan_given') {
                 // Update transaction
-                const personMatch = txn.description?.match(/Cho (.+?) mượn/);
+                const personMatch = txn.description?.match(/(?:Cho )?(.+?) mượn/);
                 const personName = personMatch ? personMatch[1] : '';
                 await updateTransaction(user.uid, txn.id, {
                     amount: amountNum,
                     walletId: loanEditForm.walletId,
-                    description: `Cho ${personName} mượn${loanEditForm.notes ? ': ' + loanEditForm.notes : ''}`
+                    description: `${personName} mượn${loanEditForm.notes ? ': ' + loanEditForm.notes : ''}`
                 });
 
                 // Sync with debt if linked

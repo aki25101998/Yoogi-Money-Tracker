@@ -239,7 +239,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                     type: result.type,
                     amount: amountNum,
                     description: result.type === 'loan_given' 
-                        ? `Cho ${personName} mượn${result.debtNotes ? ': ' + result.debtNotes : ''}` 
+                        ? `${personName} mượn${result.debtNotes ? ': ' + result.debtNotes : ''}` 
                         : `${personName} trả nợ${result.debtNotes ? ': ' + result.debtNotes : ''}`,
                     categoryId: result.type,
                     subcategoryId: '',

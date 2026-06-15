@@ -51,7 +51,7 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                 await updateTransaction(user.uid, txn.id, {
                     amount: amountNum,
                     walletId: editForm.walletId,
-                    description: `Cho ${debt.personName} mượn: ${editForm.notes}`
+                    description: `${debt.personName} mượn: ${editForm.notes}`
                 });
             }
             
