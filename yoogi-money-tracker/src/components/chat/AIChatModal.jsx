@@ -96,6 +96,15 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
         }, 100);
     };
 
+    const handleClearChat = () => {
+        if (!window.confirm('Xóa toàn bộ lịch sử chat? Hành động này không thể hoàn tác.')) return;
+        if (user && activeWallet) {
+            const historyKey = `ai_chat_history_${user.uid}_${activeWallet.id}`;
+            localStorage.removeItem(historyKey);
+        }
+        setMessages([{ id: 'welcome', type: 'bot', text: 'Xin chào! 👋 Hãy bắt đầu thêm giao dịch của bạn tại đây nhé!', timestamp: Date.now() }]);
+    };
+
     const handleTransferSave = async (transferData) => {
         try {
             const transferTxn = {
@@ -388,6 +397,16 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                         </div>
                     </div>
 
+                    <div className="flex items-center gap-1.5">
+                    {/* Clear Chat Button */}
+                    <button
+                        onClick={handleClearChat}
+                        className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-full transition-colors"
+                        title="Xóa lịch sử chat"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+
                     {/* Wallet Selector in Header */}
                     <div className="relative group">
                         <button className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 shadow-sm rounded-full text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
@@ -411,6 +430,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                                 ))}
                             </div>
                         </div>
+                    </div>
                     </div>
                 </div>
 
