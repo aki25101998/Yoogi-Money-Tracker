@@ -80,13 +80,13 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
 
                     <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-lg">
                         <button 
-                            onClick={() => setActiveTab('active')}
+                            onClick={() => { setActiveTab('active'); setEditingDebtId(null); }}
                             className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'active' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                         >
                             Đang nợ ({activeDebts.length})
                         </button>
                         <button 
-                            onClick={() => setActiveTab('paid')}
+                            onClick={() => { setActiveTab('paid'); setEditingDebtId(null); }}
                             className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'paid' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                         >
                             Đã hoàn thành ({paidDebts.length})
