@@ -8,7 +8,9 @@ const AddEditModal = ({
     onSave,
     editingItem,
     uniqueOwners,
-    onAddPayer
+    onAddPayer,
+    lenders,
+    onAddLender
 }) => {
     const [formData, setFormData] = useState({
         name: '',
@@ -17,6 +19,7 @@ const AddEditModal = ({
         rate: 0,
         startDate: new Date().toISOString().split('T')[0],
         owner: 'Tôi',
+        lender: '',
         paidMonths: []
     });
 
@@ -32,6 +35,7 @@ const AddEditModal = ({
                 rate: editingItem.rate,
                 startDate: editingItem.startDate,
                 owner: editingItem.owner || 'Tôi',
+                lender: editingItem.lender || '',
                 paidMonths: editingItem.paidMonths || []
             });
             setAiPrompt('');
@@ -43,6 +47,7 @@ const AddEditModal = ({
                 rate: 0,
                 startDate: new Date().toISOString().split('T')[0],
                 owner: 'Tôi',
+                lender: '',
                 paidMonths: []
             });
             setAiPrompt('');
@@ -179,6 +184,41 @@ const AddEditModal = ({
                                 }}
                                 className="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-colors flex items-center justify-center"
                                 title="Thêm người trả mới"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Đơn vị cho vay</label>
+                        <div className="flex gap-2">
+                            <div className="relative flex-1">
+                                <select
+                                    className="w-full h-full px-4 py-2 pr-10 appearance-none border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-indigo-500 focus:outline-none cursor-pointer"
+                                    value={formData.lender}
+                                    onChange={e => setFormData({ ...formData, lender: e.target.value })}
+                                >
+                                    <option value="">Khác (Không xác định)</option>
+                                    {lenders && lenders.map(l => (
+                                        <option key={l.id} value={l.name}>{l.name}</option>
+                                    ))}
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                                    <ChevronDown className="w-4 h-4" />
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    if (onAddLender) {
+                                        const newLender = await onAddLender();
+                                        if (newLender) {
+                                            setFormData({ ...formData, lender: newLender });
+                                        }
+                                    }
+                                }}
+                                className="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-colors flex items-center justify-center"
+                                title="Thêm đơn vị mới"
                             >
                                 <Plus className="w-5 h-5" />
                             </button>

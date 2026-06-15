@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 
 import { db, APP_ID } from '../config/firebase';
-import { addPayer, deletePayer } from '../utils/firebaseHelpers';
+import { addPayer, deletePayer, addLender, deleteLender } from '../utils/firebaseHelpers';
 import { formatCurrency } from '../utils/formatters';
 import { calculateLoan, calculateItemStats, getYearMonth } from '../utils/calculations';
 
@@ -20,7 +20,7 @@ import InstallmentItem from '../components/InstallmentItem';
 import AddEditModal from '../components/modals/AddEditModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 
-const InstallmentsPage = ({ user, items, payers, isLoading }) => {
+const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     // Modal States
     const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
@@ -225,6 +225,7 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
             term, rate,
             startDate: formData.startDate,
             owner: formData.owner || 'Tôi',
+            lender: formData.lender || '',
             monthlyPayment,
             totalPayable: monthlyPayment * term,
             paidMonths: formData.paidMonths || [],
@@ -328,6 +329,40 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         setConfirmModalState({ ...confirmModalState, isOpen: false });
     };
 
+    const confirmDeleteLender = (lenderName) => {
+        const lenderObj = lenders?.find(l => l.name === lenderName);
+        if (!lenderObj) return;
+
+        setConfirmModalState({
+            isOpen: true,
+            type: 'delete_lender',
+            data: { lenderId: lenderObj.id, lenderName },
+            title: 'Xóa đơn vị này?',
+            description: `Bạn có chắc muốn xóa đơn vị "${lenderName}" không? LƯU Ý: Các khoản trả góp của đơn vị này sẽ không bị xóa, nhưng sẽ bị mất tên đơn vị.`,
+            confirmVariant: 'danger',
+            icon: AlertTriangle,
+            iconColorClass: "text-rose-600",
+            iconBgClass: "bg-rose-100"
+        });
+    };
+
+    const executeDeleteLender = async () => {
+        const { lenderId, lenderName } = confirmModalState.data;
+        if (!lenderId) return;
+        setIsProcessing(true);
+        if (user) {
+            try {
+                await deleteLender(user.uid, lenderId);
+                // We optionally could update items to remove lender name, but it's fine.
+            } catch (err) {
+                console.error(err);
+                alert("Lỗi khi xóa đơn vị: " + err.message);
+            }
+        }
+        setIsProcessing(false);
+        setConfirmModalState({ ...confirmModalState, isOpen: false });
+    };
+
     const handleExportJSON = () => {
         const dataStr = JSON.stringify(items, null, 2);
         const blob = new Blob([dataStr], { type: "application/json" });
@@ -401,6 +436,7 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
         if (confirmModalState.type === 'delete') executeDelete();
         else if (confirmModalState.type === 'import') executeImport();
         else if (confirmModalState.type === 'delete_payer') executeDeletePayer();
+        else if (confirmModalState.type === 'delete_lender') executeDeleteLender();
     };
 
     const handleAnalyzeFinances = async () => {
@@ -441,6 +477,64 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
             }
         }
         return null;
+    };
+
+    const handleQuickAddLender = async () => {
+        const name = window.prompt('Nhập tên đơn vị cho vay mới (Vd: TP Bank):');
+        if (name && name.trim()) {
+            try {
+                await addLender(user.uid, { name: name.trim() });
+                return name.trim();
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+        return null;
+    };
+
+    // --- Render Helpers ---
+    const renderGroupedItems = (itemsList, isCompleted) => {
+        if (itemsList.length === 0) {
+            return (
+                <div className="text-center py-10 bg-slate-100/50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center">
+                    <p className="text-slate-400 dark:text-slate-500 text-sm">Chưa có mục nào.</p>
+                </div>
+            );
+        }
+        
+        // Group by lender
+        const groups = {};
+        itemsList.forEach(wrapper => {
+            const lenderName = wrapper.item.lender || 'Khác';
+            if (!groups[lenderName]) groups[lenderName] = [];
+            groups[lenderName].push(wrapper);
+        });
+
+        return Object.entries(groups).map(([lenderName, itemsInGroup]) => (
+            <div key={lenderName} className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        {lenderName}
+                    </span>
+                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700"></div>
+                </div>
+                <div className="space-y-3">
+                    {itemsInGroup.map(wrapper => (
+                        <InstallmentItem
+                            key={`${wrapper.item.id}-${wrapper.monthStr}`}
+                            item={wrapper.item}
+                            onEdit={() => { setEditingItem(wrapper.item); setIsAddEditModalOpen(true); }}
+                            onDelete={confirmDelete}
+                            referenceDate={wrapper.refDate}
+                            isPaid={isCompleted}
+                            onTogglePaid={(item) => togglePaidForMonth(item, wrapper.monthStr)}
+                            isReadOnly={false}
+                            kyIndex={wrapper.index}
+                        />
+                    ))}
+                </div>
+            </div>
+        ));
     };
 
     if (isLoading) {
@@ -574,34 +668,22 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                 >
                     Lịch sử thanh toán
                 </button>
+                <button 
+                    onClick={() => setActiveTab('lenders')}
+                    className={`pb-4 px-6 font-bold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'lenders' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                >
+                    Đơn vị cho vay
+                </button>
             </div>
 
             {/* Main Content Area */}
             {activeTab === 'list' ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                        <h2 className="text-sm font-semibold text-indigo-400 border-l-4 border-indigo-400 pl-2 tracking-wider flex items-center justify-between">
+                        <h2 className="text-sm font-semibold text-indigo-400 border-l-4 border-indigo-400 pl-2 tracking-wider flex items-center justify-between mb-4">
                             <span>Đang chờ thanh toán ({inProgressItems.length})</span>
                         </h2>
-                        {inProgressItems.map(wrapper => (
-                            <InstallmentItem
-                                key={`${wrapper.item.id}-${wrapper.monthStr}`}
-                                item={wrapper.item}
-                                onEdit={() => { setEditingItem(wrapper.item); setIsAddEditModalOpen(true); }}
-                                onDelete={confirmDelete}
-                                referenceDate={wrapper.refDate}
-                                isPaid={false}
-                                onTogglePaid={(item) => togglePaidForMonth(item, wrapper.monthStr)}
-                                isReadOnly={false}
-                                kyIndex={wrapper.index}
-                            />
-                        ))}
-                        {inProgressItems.length === 0 && (
-                            <div className="text-center py-10 bg-slate-100/50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center">
-                                <Sparkles className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-2" />
-                                <p className="text-slate-400 dark:text-slate-500 text-sm">Không có khoản nào đang chờ</p>
-                            </div>
-                        )}
+                        {renderGroupedItems(inProgressItems, false)}
                     </div>
                     
                     <div className="space-y-4">
@@ -628,22 +710,38 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                                 <p className="text-slate-400 dark:text-slate-500 font-medium text-xs">Đã ẩn {completedItems.length} khoản vay hoàn thành.</p>
                             </div>
                         ) : (
-                            <div className="space-y-4">
-                                {completedItems.map(wrapper => {
-                                    return (
-                                        <InstallmentItem
-                                            key={`${wrapper.item.id}-${wrapper.monthStr}`}
-                                            item={wrapper.item}
-                                            onEdit={() => { setEditingItem(wrapper.item); setIsAddEditModalOpen(true); }}
-                                            onDelete={confirmDelete}
-                                            referenceDate={wrapper.refDate}
-                                            isPaid={true}
-                                            onTogglePaid={(item) => togglePaidForMonth(item, wrapper.monthStr)}
-                                            isReadOnly={false}
-                                            kyIndex={wrapper.index}
-                                        />
-                                    );
-                                })}
+                            renderGroupedItems(completedItems, true)
+                        )}
+                    </div>
+                </div>
+            ) : activeTab === 'lenders' ? (
+                <div className="space-y-6">
+                    <div className="flex justify-end">
+                        <button onClick={handleQuickAddLender} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-sm">
+                            <Plus className="w-4 h-4" /> Thêm đơn vị
+                        </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {lenders && lenders.length > 0 ? lenders.map(lender => (
+                            <div key={lender.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm flex items-center justify-between group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-lg">
+                                        {lender.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-slate-800 dark:text-white">{lender.name}</h3>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => confirmDeleteLender(lender.name)}
+                                    className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )) : (
+                            <div className="col-span-full text-center py-20 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                                <p className="text-slate-400 font-medium">Chưa có đơn vị cho vay nào.</p>
                             </div>
                         )}
                     </div>
@@ -734,6 +832,8 @@ const InstallmentsPage = ({ user, items, payers, isLoading }) => {
                 editingItem={editingItem}
                 uniqueOwners={payers}
                 onAddPayer={handleQuickAddPayer}
+                lenders={lenders}
+                onAddLender={handleQuickAddLender}
             />
             <ConfirmModal
                 isOpen={confirmModalState.isOpen}

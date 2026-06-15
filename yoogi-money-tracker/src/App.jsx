@@ -38,7 +38,8 @@ import {
     subscribeDebts,
     subscribeRecurringTransactions,
     addTransaction,
-    updateRecurringTransaction
+    updateRecurringTransaction,
+    subscribeLenders
 } from './utils/firebaseHelpers';
 
 export default function App() {
@@ -61,6 +62,7 @@ export default function App() {
     const [debtors, setDebtors] = useState([]);
     const [debts, setDebts] = useState([]);
     const [recurringTransactions, setRecurringTransactions] = useState([]);
+    const [lenders, setLenders] = useState([]);
     const [isDataLoading, setIsDataLoading] = useState(true);
 
     // --- Navigation ---
@@ -109,6 +111,7 @@ export default function App() {
             setWallets([]);
             setPayers([]);
             setDebtors([]);
+            setLenders([]);
             setIsDataLoading(false);
             return;
         }
@@ -160,6 +163,9 @@ export default function App() {
         // Subscribe to Recurring Transactions
         const unsubRecurring = subscribeRecurringTransactions(user.uid, setRecurringTransactions);
 
+        // Subscribe to Lenders
+        const unsubLenders = subscribeLenders(user.uid, setLenders);
+
         // Mark loading as done after a short delay to allow subscriptions to initialize
         const timer = setTimeout(() => setIsDataLoading(false), 500);
 
@@ -173,6 +179,7 @@ export default function App() {
             unsubDebtors();
             unsubDebts();
             unsubRecurring();
+            unsubLenders();
             clearTimeout(timer);
         };
     }, [user]);
@@ -376,6 +383,7 @@ export default function App() {
                     user={user}
                     items={installments}
                     payers={payers}
+                    lenders={lenders}
                     isLoading={false}
                 />
             );

@@ -607,3 +607,29 @@ export const deleteDebtor = async (userId, debtorId) => {
 export const updateDebtor = async (userId, debtorId, debtorData) => {
     return await updateDoc(getDocRef(userId, 'debtors', debtorId), debtorData);
 };
+
+// ==============================
+// LENDERS (INSTALLMENTS)
+// ==============================
+export const subscribeLenders = (userId, onUpdate) => {
+    const colRef = getCollectionRef(userId, 'lenders');
+    const q = query(colRef, orderBy('name'));
+    return onSnapshot(q, (snapshot) => {
+        onUpdate(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+};
+
+export const addLender = async (userId, lenderData) => {
+    return await addDoc(getCollectionRef(userId, 'lenders'), {
+        ...lenderData,
+        createdAt: new Date().toISOString()
+    });
+};
+
+export const deleteLender = async (userId, lenderId) => {
+    return await deleteDoc(getDocRef(userId, 'lenders', lenderId));
+};
+
+export const updateLender = async (userId, lenderId, lenderData) => {
+    return await updateDoc(getDocRef(userId, 'lenders', lenderId), lenderData);
+};
