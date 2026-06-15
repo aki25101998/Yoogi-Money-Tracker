@@ -424,12 +424,14 @@ const TransactionsPage = ({ user, transactions, categories, wallets, debts }) =>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-slate-800 dark:text-white truncate mb-0.5">
                                                     {txn.type === 'transfer' ? `${wallets?.find(w => w.id === txn.walletId)?.name || '?'} ➝ ${wallets?.find(w => w.id === txn.transferTo)?.name || '?'}` 
-                                                    : (txn.type === 'loan_given' ? `Cho mượn (Ví: ${wallet?.name || '?'})` 
-                                                    : (txn.type === 'loan_repaid' ? `Nhận trả nợ (Ví: ${wallet?.name || '?'})`
+                                                    : (txn.type === 'loan_given' ? `Cho mượn ( Ví: ${wallet?.name || '?'} )` 
+                                                    : (txn.type === 'loan_repaid' ? `Nhận trả nợ ( Ví: ${wallet?.name || '?'} )`
                                                     : `${wallet?.name || 'Chưa phân ví'} • ${cat?.name || '❓ Chưa phân loại'} ${txn.subcategoryId && cat?.subcategories?.find(s => s.id === txn.subcategoryId) ? `> ${cat.subcategories.find(s => s.id === txn.subcategoryId).name}` : ''}`))}
                                                 </p>
                                                 <div className="flex items-center gap-2">
-                                                    <p className="font-medium text-slate-500 dark:text-slate-400 truncate text-sm">{txn.description}</p>
+                                                    <p className="font-medium text-slate-500 dark:text-slate-400 truncate text-sm">
+                                                        {isLoan && txn.description ? txn.description.replace(/^(?:Cho )?.*?(?:mượn|trả nợ):\s*/, '') : txn.description}
+                                                    </p>
                                                 </div>
                                             </div>
 
