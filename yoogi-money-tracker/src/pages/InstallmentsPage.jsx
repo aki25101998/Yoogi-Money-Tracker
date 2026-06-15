@@ -3,7 +3,7 @@ import {
     Plus, CreditCard, Calendar, TrendingUp, Target,
     Loader2, Filter, FileJson, Upload,
     Sparkles, X, AlertTriangle, Trash2,
-    RotateCcw, ChevronUp, ChevronDown, Check
+    RotateCcw, ChevronUp, ChevronDown, Check, ChevronRight
 } from 'lucide-react';
 import {
     collection, addDoc, deleteDoc, updateDoc, doc,
@@ -19,11 +19,15 @@ import Card from '../components/ui/Card';
 import InstallmentItem from '../components/InstallmentItem';
 import AddEditModal from '../components/modals/AddEditModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
+import InstallmentDetailsModal from '../components/modals/InstallmentDetailsModal';
 
 const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     // Modal States
     const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [selectedLenderDetails, setSelectedLenderDetails] = useState(null);
 
     // Confirm Modal States
     const [confirmModalState, setConfirmModalState] = useState({
@@ -121,6 +125,38 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
         return Object.values(groups).sort((a, b) => b.month.localeCompare(a.month));
     }, [filteredItems, filterDate]);
 
+    const groupedLenders = useMemo(() => {
+        const groups = {};
+        
+        filteredItems.forEach(item => {
+            const lenderName = item.lender || 'Khác';
+            if (!groups[lenderName]) {
+                groups[lenderName] = {
+                    lenderName,
+                    totalAmount: 0,
+                    repaidAmount: 0,
+                    items: []
+                };
+            }
+            
+            groups[lenderName].items.push(item);
+            
+            const totalPayable = item.monthlyPayment * item.term;
+            const paidCount = Math.min((item.paidMonths || []).length, item.term);
+            const repaid = item.monthlyPayment * paidCount;
+            
+            groups[lenderName].totalAmount += totalPayable;
+            groups[lenderName].repaidAmount += repaid;
+        });
+        
+        return Object.values(groups).sort((a, b) => {
+            const aActive = a.totalAmount > a.repaidAmount;
+            const bActive = b.totalAmount > b.repaidAmount;
+            if (aActive !== bActive) return aActive ? -1 : 1;
+            return b.totalAmount - a.totalAmount;
+        });
+    }, [filteredItems]);
+
     const { inProgressItems, completedItems } = useMemo(() => {
         const targetDate = activeReferenceDate;
         const targetMonthStr = getYearMonth(targetDate);
@@ -135,7 +171,6 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
             if (monthsDiff < 0) return;
 
             if (filterDate) {
-                // Nếu đang dùng bộ lọc để xem 1 tháng cụ thể: CHỈ HIỆN giao dịch của đúng tháng đó
                 if (monthsDiff < item.term) {
                     const isPaid = item.paidMonths?.includes(targetMonthStr);
                     if (isPaid) {
@@ -145,7 +180,6 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                     }
                 }
             } else {
-                // Nếu ở chế độ mặc định (Tháng hiện tại): CỘNG DỒN tất cả giao dịch chưa trả từ quá khứ
                 const maxCheckMonth = Math.min(monthsDiff, item.term - 1);
                 
                 for (let i = 0; i <= maxCheckMonth; i++) {
@@ -173,15 +207,12 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
         let projectedRemainingTotal = 0;
         const targetDate = activeReferenceDate;
 
-        // Calculate global remaining total based on ALL items
-        // It uses absolute total payments made, ignoring the calendar month
         const today = new Date();
         filteredItems.forEach(item => {
             let effectiveMonths = 0;
             if (Array.isArray(item.paidMonths)) {
                 effectiveMonths = Math.min(item.paidMonths.length, item.term);
             } else {
-                // Fallback for old data without paidMonths array
                 const start = new Date(item.startDate);
                 let monthsPassed = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
                 if (today < start) monthsPassed = 0;
@@ -191,7 +222,6 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
             const paidAmount = effectiveMonths * item.monthlyPayment;
             remainingTotal += (item.totalPayable - paidAmount);
 
-            // Calculate Projected Remaining Debt based strictly on schedule
             const start = new Date(item.startDate);
             const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
             let monthsDiff = (target.getFullYear() - start.getFullYear()) * 12 + (target.getMonth() - start.getMonth());
@@ -202,7 +232,6 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
             projectedRemainingTotal += (item.totalPayable - projectedPaidAmount);
         });
 
-        // Calculate monthly total for the currently viewed month (unpaid items only)
         inProgressItems.forEach(wrapper => {
             monthlyTotal += wrapper.item.monthlyPayment;
         });
@@ -353,7 +382,6 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
         if (user) {
             try {
                 await deleteLender(user.uid, lenderId);
-                // We optionally could update items to remove lender name, but it's fine.
             } catch (err) {
                 console.error(err);
                 alert("Lỗi khi xóa đơn vị: " + err.message);
@@ -492,49 +520,9 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
         return null;
     };
 
-    // --- Render Helpers ---
-    const renderGroupedItems = (itemsList, isCompleted) => {
-        if (itemsList.length === 0) {
-            return (
-                <div className="text-center py-10 bg-slate-100/50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center">
-                    <p className="text-slate-400 dark:text-slate-500 text-sm">Chưa có mục nào.</p>
-                </div>
-            );
-        }
-        
-        // Group by lender
-        const groups = {};
-        itemsList.forEach(wrapper => {
-            const lenderName = wrapper.item.lender || 'Khác';
-            if (!groups[lenderName]) groups[lenderName] = [];
-            groups[lenderName].push(wrapper);
-        });
-
-        return Object.entries(groups).map(([lenderName, itemsInGroup]) => (
-            <div key={lenderName} className="mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                        {lenderName}
-                    </span>
-                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700"></div>
-                </div>
-                <div className="space-y-3">
-                    {itemsInGroup.map(wrapper => (
-                        <InstallmentItem
-                            key={`${wrapper.item.id}-${wrapper.monthStr}`}
-                            item={wrapper.item}
-                            onEdit={() => { setEditingItem(wrapper.item); setIsAddEditModalOpen(true); }}
-                            onDelete={confirmDelete}
-                            referenceDate={wrapper.refDate}
-                            isPaid={isCompleted}
-                            onTogglePaid={(item) => togglePaidForMonth(item, wrapper.monthStr)}
-                            isReadOnly={false}
-                            kyIndex={wrapper.index}
-                        />
-                    ))}
-                </div>
-            </div>
-        ));
+    const openDetailsModal = (group) => {
+        setSelectedLenderDetails(group);
+        setIsDetailsOpen(true);
     };
 
     if (isLoading) {
@@ -678,41 +666,74 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
 
             {/* Main Content Area */}
             {activeTab === 'list' ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                        <h2 className="text-sm font-semibold text-indigo-400 border-l-4 border-indigo-400 pl-2 tracking-wider flex items-center justify-between mb-4">
-                            <span>Đang chờ thanh toán ({inProgressItems.length})</span>
-                        </h2>
-                        {renderGroupedItems(inProgressItems, false)}
-                    </div>
-                    
-                    <div className="space-y-4">
-                        <h2 className="text-sm font-semibold text-emerald-500 border-l-4 border-emerald-500 pl-2 tracking-wider flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                                <span>Đã hoàn thành ({completedItems.length})</span>
-                                {completedItems.length > 0 && (
-                                    <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded text-xs font-bold">
-                                        {formatCurrency(completedItems.reduce((sum, wrapper) => sum + wrapper.item.monthlyPayment, 0))}
-                                    </span>
-                                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {groupedLenders.length === 0 ? (
+                        <div className="col-span-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-10 flex flex-col items-center justify-center text-center">
+                            <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mb-4">
+                                <CreditCard className="w-10 h-10 text-slate-300 dark:text-slate-600" />
                             </div>
-                            <div className="flex items-center gap-1">
-                                <input type="checkbox" id="hideCompleted" checked={hideCompleted} onChange={(e) => setHideCompleted(e.target.checked)} className="rounded border-slate-300 text-emerald-500 focus:ring-emerald-500 dark:bg-slate-700 dark:border-slate-600 dark:checked:bg-emerald-500" />
-                                <label htmlFor="hideCompleted" className="text-xs font-normal text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-300">Ẩn danh sách</label>
-                            </div>
-                        </h2>
-                        {completedItems.length === 0 ? (
-                            <div className="text-center py-10 bg-slate-100/50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center">
-                                <p className="text-slate-400 dark:text-slate-500 text-sm">Chưa có mục nào hoàn thành.</p>
-                            </div>
-                        ) : hideCompleted ? (
-                            <div className="text-center py-6 bg-slate-100/50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex-1 flex items-center justify-center">
-                                <p className="text-slate-400 dark:text-slate-500 font-medium text-xs">Đã ẩn {completedItems.length} khoản vay hoàn thành.</p>
-                            </div>
-                        ) : (
-                            renderGroupedItems(completedItems, true)
-                        )}
-                    </div>
+                            <p className="text-slate-500 dark:text-slate-400 font-medium">Chưa có khoản trả góp nào.</p>
+                        </div>
+                    ) : (
+                        groupedLenders.map(group => {
+                            const remaining = group.totalAmount - group.repaidAmount;
+                            const progress = group.totalAmount > 0 ? Math.round((group.repaidAmount / group.totalAmount) * 100) : 0;
+                            const isPaid = remaining <= 0 && group.totalAmount > 0;
+
+                            return (
+                                <div 
+                                    key={group.lenderName} 
+                                    className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group/card"
+                                >
+                                    <div 
+                                        className="p-5 pb-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700"
+                                        onClick={() => openDetailsModal(group)}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xl group-hover/card:bg-indigo-200 transition-colors">
+                                                {group.lenderName.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-slate-800 dark:text-white text-lg group-hover/card:text-indigo-600 transition-colors">{group.lenderName}</h3>
+                                                <p className="text-xs text-slate-500">Bấm để xem chi tiết ({group.items.length} khoản)</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div 
+                                        className="p-5 pt-4 cursor-pointer flex-1 flex flex-col justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                                        onClick={() => openDetailsModal(group)}
+                                    >
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-baseline">
+                                                <span className="text-sm text-slate-500">Đã mượn</span>
+                                                <span className="font-bold text-slate-800 dark:text-white text-lg">{formatCurrency(group.totalAmount)}</span>
+                                            </div>
+
+                                            <div>
+                                                <div className="flex justify-between text-xs mb-1.5">
+                                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">Đã trả: {formatCurrency(group.repaidAmount)}</span>
+                                                    <span className="font-medium text-slate-500">{progress}%</span>
+                                                </div>
+                                                <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                                                    <div className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+                                                </div>
+                                            </div>
+
+                                            {!isPaid && (
+                                                <div className="pt-2 flex gap-2 border-t border-slate-100 dark:border-slate-700">
+                                                    <div className="flex-1">
+                                                        <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-0.5">Còn nợ</span>
+                                                        <span className="font-bold text-orange-500">{formatCurrency(remaining)}</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
                 </div>
             ) : activeTab === 'lenders' ? (
                 <div className="space-y-6">
@@ -758,7 +779,6 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                             const [y, m] = group.month.split('-');
                             return (
                                 <div key={group.month} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                                    {/* Group Header */}
                                     <div className="bg-slate-50 dark:bg-slate-900/50 px-5 py-3 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                                         <h3 className="font-bold text-slate-700 dark:text-slate-300">
                                             Kỳ tháng {m}/{y}
@@ -768,7 +788,6 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                                         </div>
                                     </div>
                                     
-                                    {/* Group Items */}
                                     <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
                                         {group.items.map(txn => {
                                             const paidCount = Array.isArray(txn.item.paidMonths) ? Math.min(txn.item.paidMonths.length, txn.item.term) : 0;
@@ -780,24 +799,17 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                                                 className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer"
                                                 onClick={() => { setEditingItem(txn.item); setIsAddEditModalOpen(true); }}
                                             >
-                                                {/* Icon */}
                                                 <div className="w-10 h-10 rounded-full flex flex-shrink-0 items-center justify-center text-xl bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-sm">
                                                     💳
                                                 </div>
-                                                
-                                                {/* Info */}
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-bold text-slate-800 dark:text-white truncate text-base">{txn.itemName}</p>
                                                     <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                                                         <span>Người trả: {txn.owner}</span>
                                                         <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></span>
                                                         <span className="font-medium text-indigo-600 dark:text-indigo-400">Đã trả: {paidCount}/{txn.item.term} kỳ ({progress}%)</span>
-                                                        <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></span>
-                                                        <span className="font-medium text-rose-500">Còn lại: {remaining} kỳ</span>
                                                     </div>
                                                 </div>
-
-                                                {/* Amount & Actions */}
                                                 <div className="flex items-center gap-4">
                                                     <div className="text-right">
                                                         <p className="font-bold text-lg whitespace-nowrap text-emerald-600 dark:text-emerald-400">
@@ -807,7 +819,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button 
                                                             onClick={(e) => { e.stopPropagation(); togglePaidForMonth(txn.item, txn.month); }}
-                                                            title="Hoàn tác (Đánh dấu chưa trả)"
+                                                            title="Hoàn tác"
                                                             className="p-2 text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/30 rounded-lg transition-colors shadow-sm border border-slate-200 dark:border-slate-700"
                                                         >
                                                             <RotateCcw className="w-4 h-4" />
@@ -847,6 +859,17 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                 Icon={confirmModalState.icon}
                 iconColorClass={confirmModalState.iconColorClass}
                 iconBgClass={confirmModalState.iconBgClass}
+            />
+            <InstallmentDetailsModal
+                isOpen={isDetailsOpen}
+                onClose={() => setIsDetailsOpen(false)}
+                groupedLender={selectedLenderDetails}
+                onEditItem={(item) => {
+                    setEditingItem(item);
+                    setIsAddEditModalOpen(true);
+                }}
+                onDeleteItem={confirmDelete}
+                onTogglePaid={togglePaidForMonth}
             />
         </>
     );
