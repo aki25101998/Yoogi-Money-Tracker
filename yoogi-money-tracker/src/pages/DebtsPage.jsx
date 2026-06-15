@@ -115,6 +115,25 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
         }
     };
 
+    const handleEditDebtor = async (payer) => {
+        const newName = window.prompt('Nhập tên người mượn mới:', payer.name);
+        if (newName && newName.trim() && newName.trim() !== payer.name) {
+            try {
+                // Update the debtor
+                await updateDebtor(user.uid, payer.id, { name: newName.trim() });
+                
+                // Update all debts that match the old name
+                const oldKey = payer.name.trim().toLowerCase();
+                if (groupedDebtsObj[oldKey]) {
+                    const debtsToUpdate = groupedDebtsObj[oldKey].debts;
+                    await Promise.all(debtsToUpdate.map(d => updateDebt(user.uid, d.id, { personName: newName.trim() })));
+                }
+            } catch (error) {
+                alert('Lỗi khi sửa tên: ' + error.message);
+            }
+        }
+    };
+
     return (
         <div className="space-y-6 max-w-5xl mx-auto pb-10">
             {/* Header section */}
@@ -325,15 +344,23 @@ const DebtsPage = ({ user, debts, wallets, categories, payers }) => {
                         </div>
                     ) : (
                         payers.map(payer => (
-                            <div key={payer.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm flex items-center justify-between group">
+                            <div 
+                                key={payer.id} 
+                                onClick={() => handleEditDebtor(payer)}
+                                className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm flex items-center justify-between group cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:shadow-md transition-all"
+                            >
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-lg">
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-lg group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/30 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                                         {payer.name.charAt(0).toUpperCase()}
                                     </div>
-                                    <h3 className="font-bold text-slate-800 dark:text-white">{payer.name}</h3>
+                                    <div>
+                                        <h3 className="font-bold text-slate-800 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{payer.name}</h3>
+                                        <p className="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity absolute mt-0.5">Bấm để sửa tên</p>
+                                    </div>
                                 </div>
                                 <button
-                                    onClick={async () => {
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
                                         if (window.confirm(`Xóa người mượn "${payer.name}"?\n(Các khoản nợ cũ vẫn sẽ được giữ lại)`)) {
                                             try {
                                                 await deleteDebtor(user.uid, payer.id);
