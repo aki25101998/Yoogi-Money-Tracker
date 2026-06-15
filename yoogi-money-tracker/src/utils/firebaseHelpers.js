@@ -152,6 +152,38 @@ export const ensureRequiredCategories = async (userId) => {
         updated = true;
     }
 
+    // Ensure loan categories exist
+    const hasLoanGiven = categories.some(c => c.id === 'loan_given');
+    const hasLoanRepaid = categories.some(c => c.id === 'loan_repaid');
+
+    if (!hasLoanGiven) {
+        const docRef = doc(catRef);
+        batch.set(docRef, {
+            id: 'loan_given',
+            name: 'Cho mượn',
+            icon: '📤',
+            type: 'loan_given',
+            order: 1,
+            subcategories: [],
+            createdAt: new Date().toISOString(),
+        });
+        updated = true;
+    }
+
+    if (!hasLoanRepaid) {
+        const docRef = doc(catRef);
+        batch.set(docRef, {
+            id: 'loan_repaid',
+            name: 'Nhận trả nợ',
+            icon: '📥',
+            type: 'loan_repaid',
+            order: 2,
+            subcategories: [],
+            createdAt: new Date().toISOString(),
+        });
+        updated = true;
+    }
+
     if (updated) {
         await batch.commit();
     }

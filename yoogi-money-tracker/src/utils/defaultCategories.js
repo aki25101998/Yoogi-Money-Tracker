@@ -124,4 +124,22 @@ export const DEFAULT_CATEGORIES = [
         order: 1,
         subcategories: [],
     },
+
+    // --- CHO MƯỢN / NHẬN TRẢ NỢ (LOAN) ---
+    {
+        id: 'loan_given',
+        name: 'Cho mượn',
+        icon: '📤',
+        type: 'loan_given',
+        order: 1,
+        subcategories: [],
+    },
+    {
+        id: 'loan_repaid',
+        name: 'Nhận trả nợ',
+        icon: '📥',
+        type: 'loan_repaid',
+        order: 2,
+        subcategories: [],
+    },
 ];

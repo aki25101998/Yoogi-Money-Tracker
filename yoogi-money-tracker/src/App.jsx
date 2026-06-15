@@ -367,6 +367,7 @@ export default function App() {
                     categories={categories}
                     aiMemories={aiMemories}
                     wallets={wallets}
+                    debts={debts}
                 />
             );
         } else if (activePage === 'installments') {

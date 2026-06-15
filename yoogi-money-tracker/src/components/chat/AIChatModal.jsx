@@ -472,7 +472,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                                         </div>
                                         
                                         {/* Category Selection / Edit */}
-                                        {msg.transaction.type !== 'transfer' && (
+                                        {msg.transaction.type !== 'transfer' && msg.transaction.type !== 'loan_given' && msg.transaction.type !== 'loan_repaid' && (
                                         <div 
                                             className="border-t border-slate-100 dark:border-slate-700 pt-3 flex flex-col gap-2"
                                             onClick={(e) => e.stopPropagation()}
