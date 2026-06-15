@@ -65,8 +65,13 @@ const TransactionsPage = ({ user, transactions, categories, wallets }) => {
                 if (selectedWalletIds.includes(t.walletId)) groups[dateKey].totalExpense += t.amount;
             }
         });
+        // Sort items within each group by createdAt descending (newest first)
+        const result = Object.values(groups);
+        result.forEach(group => {
+            group.items.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        });
         // Sort dates descending
-        return Object.values(groups).sort((a, b) => b.date.localeCompare(a.date));
+        return result.sort((a, b) => b.date.localeCompare(a.date));
     }, [filteredTransactions, selectedWalletIds]);
 
     const summaryStats = useMemo(() => {
