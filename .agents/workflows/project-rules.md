@@ -38,6 +38,7 @@ description: Bộ quy tắc chuẩn, liệt kê kiến trúc core và các đi�
   - Phục vụ cho tính năng **Sổ Nợ** (DebtsPage).
   - Liên kết với `transaction` loại `loan_given` và `loan_repaid`.
   - Mỗi người mượn có thể có nhiều khoản nợ. Khoản nợ lưu ở collection `debts`. Tiến độ trả nợ được tính bằng tổng tiền đã nhận trả (`repaidAmount`) so với tổng tiền đã cho mượn (`totalAmount`).
+  - **Quy tắc chỉnh sửa:** Mọi khoản nợ (kể cả đang nợ hay đã trả xong) đều có thể được chỉnh sửa (số tiền, ví, ghi chú). Khi sửa nợ, BẮT BUỘC phải đồng bộ thông tin sang `transaction` (loại `loan_given`) tương ứng để ví tiền tự động được tính toán lại. Đồng thời, `status` của nợ phải được đánh giá lại (thành `paid` hoặc `active`) dựa trên số tiền mới.
 - **Người trả góp (Payers):**
   - Collection: `payers`.
   - Phục vụ cho tính năng **Trả Góp** (InstallmentsPage).

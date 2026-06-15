@@ -33,10 +33,13 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
         setIsSaving(true);
         try {
             const amountNum = parseFloat(editForm.amount) || 0;
+            const currentRepaid = debt.repaidAmount || 0;
+            const newStatus = currentRepaid >= amountNum ? 'paid' : 'active';
             
             await updateDebt(user.uid, debt.id, {
                 totalAmount: amountNum,
-                notes: editForm.notes
+                notes: editForm.notes,
+                status: newStatus
             });
 
             const txn = await getTransactionByDebtId(user.uid, debt.id);
@@ -167,15 +170,13 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                                                         Đã trả xong
                                                     </div>
                                                 )}
-                                                {debt.status === 'active' && (
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); startEdit(debt); }}
-                                                        className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                                                        title="Sửa khoản nợ này"
-                                                    >
-                                                        <Pencil className="w-4 h-4" />
-                                                    </button>
-                                                )}
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); startEdit(debt); }}
+                                                    className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                                    title="Sửa khoản nợ này"
+                                                >
+                                                    <Pencil className="w-4 h-4" />
+                                                </button>
                                                 <button 
                                                     onClick={(e) => { e.stopPropagation(); onDeleteDebt(debt.id); }}
                                                     className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
