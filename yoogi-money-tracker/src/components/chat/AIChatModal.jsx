@@ -466,12 +466,14 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                                 )}
 
                                 {/* Transaction Card */}
-                                {msg.transaction && (
+                                {msg.transaction && (() => {
+                                    const showCategorySelect = msg.transaction.type !== 'transfer' && msg.transaction.type !== 'loan_given' && msg.transaction.type !== 'loan_repaid';
+                                    return (
                                     <div 
                                         className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm min-w-[260px] cursor-pointer hover:border-emerald-500 transition-colors"
                                         onClick={() => openEditModal(msg.transaction)}
                                     >
-                                        <div className={`flex justify-between items-center ${msg.transaction.type !== 'transfer' ? 'mb-3' : ''}`}>
+                                        <div className={`flex justify-between items-center ${showCategorySelect ? 'mb-3' : ''}`}>
                                             <div className="flex items-center gap-2">
                                                 <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm">
                                                     {categories.find(c => c.id === msg.transaction.categoryId)?.icon || '❓'}
@@ -492,7 +494,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                                         </div>
                                         
                                         {/* Category Selection / Edit */}
-                                        {msg.transaction.type !== 'transfer' && msg.transaction.type !== 'loan_given' && msg.transaction.type !== 'loan_repaid' && (
+                                        {showCategorySelect && (
                                         <div 
                                             className="border-t border-slate-100 dark:border-slate-700 pt-3 flex flex-col gap-2"
                                             onClick={(e) => e.stopPropagation()}
@@ -539,7 +541,8 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                                         </div>
                                         )}
                                     </div>
-                                )}
+                                    );
+                                })()}
                             </div>
                         </div>
                     </div>
