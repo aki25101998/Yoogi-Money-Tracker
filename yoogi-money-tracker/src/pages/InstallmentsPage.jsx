@@ -521,7 +521,14 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     };
 
     const openDetailsModal = (group) => {
-        setSelectedLenderDetails(group);
+        const groupActiveItems = inProgressItems.filter(w => (w.item.lender || 'Khác') === group.lenderName);
+        const groupPaidItems = completedItems.filter(w => (w.item.lender || 'Khác') === group.lenderName);
+
+        setSelectedLenderDetails({
+            lenderName: group.lenderName,
+            activeItems: groupActiveItems,
+            paidItems: groupPaidItems
+        });
         setIsDetailsOpen(true);
     };
 

@@ -21,13 +21,11 @@ const InstallmentDetailsModal = ({
     const activeItems = [];
     const paidItems = [];
 
-    groupedLender.items.forEach(wrapper => {
-        const stats = calculateItemStats(wrapper.item);
-        if (stats.isCompleted) {
-            paidItems.push(wrapper);
-        } else {
-            activeItems.push(wrapper);
-        }
+    groupedLender.activeItems.forEach(wrapper => {
+        activeItems.push(wrapper);
+    });
+    groupedLender.paidItems.forEach(wrapper => {
+        paidItems.push(wrapper);
     });
 
     const handleTabChange = (tab) => {
