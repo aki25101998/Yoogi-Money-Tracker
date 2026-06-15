@@ -27,23 +27,25 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt }) => {
 
                         return (
                             <div key={debt.id} className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 relative overflow-hidden">
-                                {debt.status === 'paid' && (
-                                    <div className="absolute top-3 right-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                                        Đã trả xong
-                                    </div>
-                                )}
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-2 text-slate-500">
                                         <Calendar className="w-4 h-4" />
                                         <span className="text-xs font-medium">{new Date(debt.createdAt).toLocaleDateString('vi-VN')}</span>
                                     </div>
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); onDeleteDebt(debt.id); }}
-                                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                                        title="Xóa khoản nợ này"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        {debt.status === 'paid' && (
+                                            <div className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                                                Đã trả xong
+                                            </div>
+                                        )}
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); onDeleteDebt(debt.id); }}
+                                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                            title="Xóa khoản nợ này"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-baseline">
