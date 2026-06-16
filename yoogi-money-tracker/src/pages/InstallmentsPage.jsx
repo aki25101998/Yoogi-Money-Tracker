@@ -20,7 +20,6 @@ import InstallmentItem from '../components/InstallmentItem';
 import AddEditModal from '../components/modals/AddEditModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import InstallmentDetailsModal from '../components/modals/InstallmentDetailsModal';
-import DateRangeSelector from '../components/DateRangeSelector';
 
 const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     // Modal States
@@ -49,13 +48,14 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
 
     // Filter State
     const [filterOwner, setFilterOwner] = useState('all');
-    const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
+    const [filterDate, setFilterDate] = useState('');
     const [hideZeroLenders, setHideZeroLenders] = useState(false);
     const [hideCompleted, setHideCompleted] = useState(false);
     const [activeTab, setActiveTab] = useState('list'); // 'list' | 'history'
 
     // Refs
     const fileInputRef = useRef(null);
+    const dateInputRef = useRef(null);
 
     // --- Derived State ---
     const uniqueOwners = useMemo(() => {
@@ -80,11 +80,12 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     }, [items, user]);
 
     const activeReferenceDate = useMemo(() => {
-        if (dateRange.start) {
-            return new Date(dateRange.start);
+        if (filterDate && filterDate.length === 7) {
+            const [y, m] = filterDate.split('-').map(Number);
+            return new Date(y, m - 1, 1);
         }
         return new Date();
-    }, [dateRange]);
+    }, [filterDate]);
 
     const filteredItems = useMemo(() => {
         let result = items;
@@ -99,13 +100,11 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
         filteredItems.forEach(item => {
             if (Array.isArray(item.paidMonths)) {
                 item.paidMonths.forEach(month => {
-                    let match = true;
-                    if (dateRange.start || dateRange.end) {
-                        const startMonth = dateRange.start ? dateRange.start.substring(0, 7) : null;
-                        const endMonth = dateRange.end ? dateRange.end.substring(0, 7) : null;
-                        if (startMonth && month < startMonth) match = false;
-                        if (endMonth && month > endMonth) match = false;
-                    }
+                    let match = false;
+                    if (!filterDate) match = true;
+                    else if (filterDate.length === 4) match = month.startsWith(filterDate);
+                    else if (filterDate.length === 7) match = month === filterDate;
+                    
                     if (match) {
                         history.push({
                             id: `${item.id}-${month}`,
@@ -130,7 +129,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
         });
         
         return Object.values(groups).sort((a, b) => b.month.localeCompare(a.month));
-    }, [filteredItems, dateRange]);
+    }, [filteredItems, filterDate]);
 
     const groupedLenders = useMemo(() => {
         const groups = {};
@@ -181,7 +180,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
             
             if (monthsDiff < 0) return;
 
-            if (dateRange.mode === 'month' && dateRange.start) {
+            if (filterDate && filterDate.length === 7) {
                 if (monthsDiff < item.term) {
                     const isPaid = item.paidMonths?.includes(targetMonthStr);
                     if (isPaid) {
@@ -198,20 +197,10 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                     const mStr = getYearMonth(d);
                     const isPaid = item.paidMonths?.includes(mStr);
                     
-                    let inRange = true;
-                    if (dateRange.start || dateRange.end) {
-                        const startMonth = dateRange.start ? dateRange.start.substring(0, 7) : null;
-                        const endMonth = dateRange.end ? dateRange.end.substring(0, 7) : null;
-                        if (startMonth && mStr < startMonth) inRange = false;
-                        if (endMonth && mStr > endMonth) inRange = false;
-                    }
-
-                    if (inRange) {
-                        if (isPaid && mStr === targetMonthStr) {
-                            completed.push({ item, monthStr: mStr, index: i + 1, refDate: d });
-                        } else if (!isPaid) {
-                            inProgress.push({ item, monthStr: mStr, index: i + 1, refDate: d });
-                        }
+                    if (isPaid && mStr === targetMonthStr) {
+                        completed.push({ item, monthStr: mStr, index: i + 1, refDate: d });
+                    } else if (!isPaid) {
+                        inProgress.push({ item, monthStr: mStr, index: i + 1, refDate: d });
                     }
                 }
             }
@@ -220,12 +209,13 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
         inProgress.sort((a, b) => a.monthStr.localeCompare(b.monthStr));
         
         return { inProgressItems: inProgress, completedItems: completed };
-    }, [filteredItems, activeReferenceDate, dateRange]);
+    }, [filteredItems, activeReferenceDate, filterDate]);
 
     const totalStats = useMemo(() => {
         let monthlyTotal = 0;
         let remainingTotal = 0;
         let projectedRemainingTotal = 0;
+        let periodPaidTotal = 0;
         const targetDate = activeReferenceDate;
 
         const today = new Date();
@@ -233,6 +223,17 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
             let effectiveMonths = 0;
             if (Array.isArray(item.paidMonths)) {
                 effectiveMonths = Math.min(item.paidMonths.length, item.term);
+                
+                item.paidMonths.forEach(month => {
+                    let match = false;
+                    if (!filterDate) match = true;
+                    else if (filterDate.length === 4) match = month.startsWith(filterDate);
+                    else if (filterDate.length === 7) match = month === filterDate;
+                    
+                    if (match) {
+                        periodPaidTotal += item.monthlyPayment;
+                    }
+                });
             } else {
                 const start = new Date(item.startDate);
                 let monthsPassed = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
@@ -257,8 +258,8 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
             monthlyTotal += wrapper.item.monthlyPayment;
         });
 
-        return { monthlyTotal, remainingTotal, projectedRemainingTotal };
-    }, [filteredItems, inProgressItems, activeReferenceDate]);
+        return { monthlyTotal, remainingTotal, projectedRemainingTotal, periodPaidTotal };
+    }, [filteredItems, inProgressItems, activeReferenceDate, filterDate]);
 
     const currentLenderDetails = useMemo(() => {
         if (!selectedLenderName) return null;
@@ -610,10 +611,56 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                 </div>
 
                 <div className="flex gap-2 ml-auto items-center">
-                    <DateRangeSelector 
-                        initialMode="month" 
-                        onChange={(range) => setDateRange(range)} 
-                    />
+                    <div className="relative flex items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg p-0.5 transition-colors">
+                        <select 
+                            value={!filterDate ? 'all' : filterDate.length === 4 ? 'year' : 'month'}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === 'all') setFilterDate('');
+                                else if (val === 'year') setFilterDate(new Date().getFullYear().toString());
+                                else setFilterDate(getYearMonth(new Date()));
+                            }}
+                            className="bg-transparent text-xs font-medium text-slate-600 dark:text-slate-300 outline-none cursor-pointer border-r border-slate-200 dark:border-slate-700 py-1.5 px-2"
+                        >
+                            <option value="month">Theo tháng</option>
+                            <option value="year">Theo năm</option>
+                            <option value="all">Mọi thời gian</option>
+                        </select>
+
+                        {!filterDate && (
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-400">
+                                <Calendar className="w-3.5 h-3.5" />
+                                <span>Tất cả</span>
+                            </div>
+                        )}
+                        
+                        {filterDate && filterDate.length === 7 && (
+                            <div className="relative flex items-center gap-1.5 px-3 py-1.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 rounded-r-md transition-colors" onClick={() => dateInputRef.current?.showPicker()}>
+                                <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                                <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                                    Tháng {filterDate.split('-').reverse().join('/')}
+                                </span>
+                                <input ref={dateInputRef} type="month" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="absolute start-0 bottom-0 w-0 h-0 opacity-0 -z-10 border-0 p-0 m-0" />
+                            </div>
+                        )}
+                        
+                        {filterDate && filterDate.length === 4 && (
+                            <div className="relative flex items-center gap-1.5 px-2 py-1.5">
+                                <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                                <select 
+                                    value={filterDate} 
+                                    onChange={(e) => setFilterDate(e.target.value)}
+                                    className="bg-transparent text-xs font-medium text-indigo-600 dark:text-indigo-400 outline-none cursor-pointer pr-1"
+                                >
+                                    {Array.from({length: 10}, (_, i) => new Date().getFullYear() - 5 + i).map(y => (
+                                        <option key={y} value={y.toString()}>Năm {y}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
                     <button onClick={handleOpenAdd} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium transition-colors shadow-sm shadow-indigo-200 dark:shadow-none"><Plus className="w-3.5 h-3.5" /> Thêm mới</button>
                 </div>
@@ -623,10 +670,19 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 <Card className="p-5 bg-gradient-to-br from-indigo-600 to-violet-600 border-none text-white relative overflow-hidden shadow-lg">
                     <div className="relative z-10 flex items-start justify-between">
-                        <div>
-                            <p className="text-indigo-100 text-xs uppercase tracking-wider font-bold mb-1 opacity-90">Phải trả tháng này</p>
-                            <h2 className="text-3xl font-bold tracking-tight">{formatCurrency(totalStats.monthlyTotal)}</h2>
-                        </div>
+                        {filterDate && filterDate.length === 7 ? (
+                            <div>
+                                <p className="text-indigo-100 text-xs uppercase tracking-wider font-bold mb-1 opacity-90">Phải trả tháng này</p>
+                                <h2 className="text-3xl font-bold tracking-tight">{formatCurrency(totalStats.monthlyTotal)}</h2>
+                            </div>
+                        ) : (
+                            <div>
+                                <p className="text-indigo-100 text-xs uppercase tracking-wider font-bold mb-1 opacity-90">
+                                    {!filterDate ? 'Tổng đã thanh toán' : `Đã thanh toán năm ${filterDate}`}
+                                </p>
+                                <h2 className="text-3xl font-bold tracking-tight">{formatCurrency(totalStats.periodPaidTotal)}</h2>
+                            </div>
+                        )}
                         <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-sm"><Calendar className="w-6 h-6 text-white" /></div>
                     </div>
                 </Card>
