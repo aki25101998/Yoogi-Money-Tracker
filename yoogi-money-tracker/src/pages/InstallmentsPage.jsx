@@ -881,6 +881,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                 }}
                 onDeleteItem={confirmDelete}
                 onTogglePaid={togglePaidForMonth}
+                referenceDate={activeReferenceDate}
             />
         </>
     );
