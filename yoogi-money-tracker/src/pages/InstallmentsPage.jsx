@@ -49,6 +49,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     // Filter State
     const [filterOwner, setFilterOwner] = useState('all');
     const [filterDate, setFilterDate] = useState('');
+    const [hideZeroLenders, setHideZeroLenders] = useState(false);
     const [hideCompleted, setHideCompleted] = useState(false);
     const [activeTab, setActiveTab] = useState('list'); // 'list' | 'history'
 
@@ -583,6 +584,13 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                     >
                         <Plus className="w-3.5 h-3.5" />
                     </button>
+                    <label className="flex items-center gap-1.5 cursor-pointer group ml-1 sm:ml-2">
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${hideZeroLenders ? 'bg-indigo-500 border-indigo-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 group-hover:border-indigo-400'}`}>
+                            {hideZeroLenders && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <input type="checkbox" className="hidden" checked={hideZeroLenders} onChange={(e) => setHideZeroLenders(e.target.checked)} />
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors whitespace-nowrap">Ẩn 0đ</span>
+                    </label>
                 </div>
 
                 <div className="flex gap-2 ml-auto items-center">
@@ -596,10 +604,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                     </div>
 
                     <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-                    <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleImportJSON} />
-                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 px-2 py-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-medium transition-colors"><Upload className="w-3.5 h-3.5" /><span className="hidden md:inline">Nạp</span></button>
-                    <button onClick={handleExportJSON} className="flex items-center gap-1 px-2 py-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-medium transition-colors"><FileJson className="w-3.5 h-3.5" /><span className="hidden md:inline">Sao lưu</span></button>
-                    <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+
                     <button onClick={handleOpenAdd} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium transition-colors shadow-sm shadow-indigo-200 dark:shadow-none"><Plus className="w-3.5 h-3.5" /> Thêm mới</button>
                 </div>
             </div>
@@ -682,15 +687,23 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
             {/* Main Content Area */}
             {activeTab === 'list' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {groupedLenders.length === 0 ? (
-                        <div className="col-span-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-10 flex flex-col items-center justify-center text-center">
-                            <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mb-4">
-                                <CreditCard className="w-10 h-10 text-slate-300 dark:text-slate-600" />
-                            </div>
-                            <p className="text-slate-500 dark:text-slate-400 font-medium">Chưa có khoản trả góp nào.</p>
-                        </div>
-                    ) : (
-                        groupedLenders.map(group => {
+                    {(() => {
+                        const displayLenders = hideZeroLenders 
+                            ? groupedLenders.filter(group => group.totalAmount > 0)
+                            : groupedLenders;
+
+                        if (displayLenders.length === 0) {
+                            return (
+                                <div className="col-span-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-10 flex flex-col items-center justify-center text-center">
+                                    <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mb-4">
+                                        <CreditCard className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+                                    </div>
+                                    <p className="text-slate-500 dark:text-slate-400 font-medium">Chưa có khoản trả góp nào.</p>
+                                </div>
+                            );
+                        }
+
+                        return displayLenders.map(group => {
                             const remaining = group.totalAmount - group.repaidAmount;
                             const progress = group.totalAmount > 0 ? Math.round((group.repaidAmount / group.totalAmount) * 100) : 0;
                             const isPaid = group.status === 'paid';
@@ -747,8 +760,8 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                                     </div>
                                 </div>
                             );
-                        })
-                    )}
+                        });
+                    })()}
                 </div>
             ) : activeTab === 'lenders' ? (
                 <div className="space-y-6">
