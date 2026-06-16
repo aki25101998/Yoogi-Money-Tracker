@@ -135,7 +135,8 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                     lenderName,
                     totalAmount: 0,
                     repaidAmount: 0,
-                    items: []
+                    items: [],
+                    status: 'paid'
                 };
             }
             
@@ -145,13 +146,16 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
             const paidCount = Math.min((item.paidMonths || []).length, item.term);
             const repaid = item.monthlyPayment * paidCount;
             
-            groups[lenderName].totalAmount += totalPayable;
-            groups[lenderName].repaidAmount += repaid;
+            if (paidCount < item.term) {
+                groups[lenderName].totalAmount += totalPayable;
+                groups[lenderName].repaidAmount += repaid;
+                groups[lenderName].status = 'active';
+            }
         });
         
         return Object.values(groups).sort((a, b) => {
-            const aActive = a.totalAmount > a.repaidAmount;
-            const bActive = b.totalAmount > b.repaidAmount;
+            const aActive = a.status === 'active';
+            const bActive = b.status === 'active';
             if (aActive !== bActive) return aActive ? -1 : 1;
             return b.totalAmount - a.totalAmount;
         });
@@ -689,7 +693,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                         groupedLenders.map(group => {
                             const remaining = group.totalAmount - group.repaidAmount;
                             const progress = group.totalAmount > 0 ? Math.round((group.repaidAmount / group.totalAmount) * 100) : 0;
-                            const isPaid = remaining <= 0 && group.totalAmount > 0;
+                            const isPaid = group.status === 'paid';
 
                             return (
                                 <div 
