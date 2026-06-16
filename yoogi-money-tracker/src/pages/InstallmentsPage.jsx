@@ -20,6 +20,7 @@ import InstallmentItem from '../components/InstallmentItem';
 import AddEditModal from '../components/modals/AddEditModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import InstallmentDetailsModal from '../components/modals/InstallmentDetailsModal';
+import DateRangeSelector from '../components/DateRangeSelector';
 
 const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     // Modal States
@@ -48,14 +49,13 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
 
     // Filter State
     const [filterOwner, setFilterOwner] = useState('all');
-    const [filterDate, setFilterDate] = useState('');
+    const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
     const [hideZeroLenders, setHideZeroLenders] = useState(false);
     const [hideCompleted, setHideCompleted] = useState(false);
     const [activeTab, setActiveTab] = useState('list'); // 'list' | 'history'
 
     // Refs
     const fileInputRef = useRef(null);
-    const dateInputRef = useRef(null);
 
     // --- Derived State ---
     const uniqueOwners = useMemo(() => {
@@ -80,12 +80,11 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     }, [items, user]);
 
     const activeReferenceDate = useMemo(() => {
-        if (filterDate) {
-            const [y, m] = filterDate.split('-').map(Number);
-            return new Date(y, m - 1, 1);
+        if (dateRange.start) {
+            return new Date(dateRange.start);
         }
         return new Date();
-    }, [filterDate]);
+    }, [dateRange]);
 
     const filteredItems = useMemo(() => {
         let result = items;
@@ -100,7 +99,14 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
         filteredItems.forEach(item => {
             if (Array.isArray(item.paidMonths)) {
                 item.paidMonths.forEach(month => {
-                    if (!filterDate || month === filterDate) {
+                    let match = true;
+                    if (dateRange.start || dateRange.end) {
+                        const startMonth = dateRange.start ? dateRange.start.substring(0, 7) : null;
+                        const endMonth = dateRange.end ? dateRange.end.substring(0, 7) : null;
+                        if (startMonth && month < startMonth) match = false;
+                        if (endMonth && month > endMonth) match = false;
+                    }
+                    if (match) {
                         history.push({
                             id: `${item.id}-${month}`,
                             item: item,
@@ -124,7 +130,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
         });
         
         return Object.values(groups).sort((a, b) => b.month.localeCompare(a.month));
-    }, [filteredItems, filterDate]);
+    }, [filteredItems, dateRange]);
 
     const groupedLenders = useMemo(() => {
         const groups = {};
@@ -175,7 +181,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
             
             if (monthsDiff < 0) return;
 
-            if (filterDate) {
+            if (dateRange.mode === 'month' && dateRange.start) {
                 if (monthsDiff < item.term) {
                     const isPaid = item.paidMonths?.includes(targetMonthStr);
                     if (isPaid) {
@@ -192,10 +198,20 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                     const mStr = getYearMonth(d);
                     const isPaid = item.paidMonths?.includes(mStr);
                     
-                    if (isPaid && mStr === targetMonthStr) {
-                        completed.push({ item, monthStr: mStr, index: i + 1, refDate: d });
-                    } else if (!isPaid) {
-                        inProgress.push({ item, monthStr: mStr, index: i + 1, refDate: d });
+                    let inRange = true;
+                    if (dateRange.start || dateRange.end) {
+                        const startMonth = dateRange.start ? dateRange.start.substring(0, 7) : null;
+                        const endMonth = dateRange.end ? dateRange.end.substring(0, 7) : null;
+                        if (startMonth && mStr < startMonth) inRange = false;
+                        if (endMonth && mStr > endMonth) inRange = false;
+                    }
+
+                    if (inRange) {
+                        if (isPaid && mStr === targetMonthStr) {
+                            completed.push({ item, monthStr: mStr, index: i + 1, refDate: d });
+                        } else if (!isPaid) {
+                            inProgress.push({ item, monthStr: mStr, index: i + 1, refDate: d });
+                        }
                     }
                 }
             }
@@ -204,7 +220,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
         inProgress.sort((a, b) => a.monthStr.localeCompare(b.monthStr));
         
         return { inProgressItems: inProgress, completedItems: completed };
-    }, [filteredItems, activeReferenceDate, filterDate]);
+    }, [filteredItems, activeReferenceDate, dateRange]);
 
     const totalStats = useMemo(() => {
         let monthlyTotal = 0;
@@ -594,16 +610,10 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                 </div>
 
                 <div className="flex gap-2 ml-auto items-center">
-                    <div className="relative group">
-                        <div onClick={() => dateInputRef.current?.showPicker()} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer select-none ${filterDate ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-                            <Calendar className={`w-3.5 h-3.5 ${filterDate ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`} />
-                            <span>{filterDate ? `Tháng ${filterDate.split('-').reverse().join('/')}` : 'Chọn tháng'}</span>
-                        </div>
-                        <input ref={dateInputRef} type="month" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="absolute start-0 bottom-0 w-0 h-0 opacity-0 -z-10 border-0 p-0 m-0" />
-                        {filterDate && <button onClick={(e) => { e.stopPropagation(); setFilterDate(''); }} className="absolute -right-2 -top-2 z-20 bg-white dark:bg-slate-700 text-slate-400 hover:text-rose-500 rounded-full p-0.5 shadow-sm border border-slate-200 dark:border-slate-600 hover:scale-110 transition-transform"><X className="w-3 h-3" /></button>}
-                    </div>
-
-                    <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                    <DateRangeSelector 
+                        initialMode="month" 
+                        onChange={(range) => setDateRange(range)} 
+                    />
 
                     <button onClick={handleOpenAdd} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium transition-colors shadow-sm shadow-indigo-200 dark:shadow-none"><Plus className="w-3.5 h-3.5" /> Thêm mới</button>
                 </div>
