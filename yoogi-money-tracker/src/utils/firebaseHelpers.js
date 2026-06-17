@@ -33,7 +33,7 @@ export const seedDefaultCategories = async (userId) => {
     const batch = writeBatch(db);
 
     for (const cat of DEFAULT_CATEGORIES) {
-        const docRef = doc(catRef); // Auto-generate ID
+        const docRef = doc(catRef, cat.id); // Use explicit ID to prevent race conditions
         batch.set(docRef, {
             ...cat,
             createdAt: new Date().toISOString(),
@@ -77,12 +77,30 @@ export const ensureRequiredCategories = async (userId) => {
 
     const categories = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
 
-    const hasUncategorizedExpense = categories.some(c => c.id === 'uncategorized_expense' || c.name === 'Chưa phân loại' || c.name === '❓ Chưa phân loại');
-    const hasUncategorizedIncome = categories.some(c => c.id === 'uncategorized_income' || c.name === 'Chưa phân loại' || c.name === '❓ Chưa phân loại');
+    const hasUncategorizedExpense = categories.some(c => c.type === 'expense' && (c.id === 'uncategorized_expense' || c.name === 'Chưa phân loại' || c.name === '❓ Chưa phân loại'));
+    const hasUncategorizedIncome = categories.some(c => c.type === 'income' && (c.id === 'uncategorized_income' || c.name === 'Chưa phân loại' || c.name === '❓ Chưa phân loại'));
     const hasTransfer = categories.some(c => c.id === 'transfer');
 
     const batch = writeBatch(db);
     let updated = false;
+
+    // --- Cleanup phase: find and delete duplicates ---
+    // If there are multiple uncategorized categories, keep the oldest one and delete the rest
+    const cleanupDuplicates = (typeFilter, idFilter) => {
+        const matches = categories.filter(c => c.type === typeFilter && (c.id === idFilter || c.name === 'Chưa phân loại' || c.name === '❓ Chưa phân loại'));
+        if (matches.length > 1) {
+            // Sort by createdAt ascending (fallback to docId)
+            matches.sort((a, b) => (a.createdAt || a.docId).localeCompare(b.createdAt || b.docId));
+            // Delete all except the first one
+            for (let i = 1; i < matches.length; i++) {
+                const docRef = getDocRef(userId, 'categories', matches[i].docId);
+                batch.delete(docRef);
+                updated = true;
+            }
+        }
+    };
+    cleanupDuplicates('expense', 'uncategorized_expense');
+    cleanupDuplicates('income', 'uncategorized_income');
 
     // Check if we need to rename existing ones or clear their subcategories
     for (const cat of categories) {
@@ -111,7 +129,7 @@ export const ensureRequiredCategories = async (userId) => {
 
     // Add missing ones if they were somehow deleted
     if (!hasUncategorizedExpense) {
-        const docRef = doc(catRef);
+        const docRef = doc(catRef, 'uncategorized_expense');
         batch.set(docRef, {
             id: 'uncategorized_expense',
             name: 'Chưa phân loại',
@@ -125,7 +143,7 @@ export const ensureRequiredCategories = async (userId) => {
     }
 
     if (!hasUncategorizedIncome) {
-        const docRef = doc(catRef);
+        const docRef = doc(catRef, 'uncategorized_income');
         batch.set(docRef, {
             id: 'uncategorized_income',
             name: 'Chưa phân loại',
@@ -139,7 +157,7 @@ export const ensureRequiredCategories = async (userId) => {
     }
 
     if (!hasTransfer) {
-        const docRef = doc(catRef);
+        const docRef = doc(catRef, 'transfer');
         batch.set(docRef, {
             id: 'transfer',
             name: 'Chuyển tiền',
@@ -157,7 +175,7 @@ export const ensureRequiredCategories = async (userId) => {
     const hasLoanRepaid = categories.some(c => c.id === 'loan_repaid');
 
     if (!hasLoanGiven) {
-        const docRef = doc(catRef);
+        const docRef = doc(catRef, 'loan_given');
         batch.set(docRef, {
             id: 'loan_given',
             name: 'Cho mượn',
@@ -171,7 +189,7 @@ export const ensureRequiredCategories = async (userId) => {
     }
 
     if (!hasLoanRepaid) {
-        const docRef = doc(catRef);
+        const docRef = doc(catRef, 'loan_repaid');
         batch.set(docRef, {
             id: 'loan_repaid',
             name: 'Nhận trả nợ',
