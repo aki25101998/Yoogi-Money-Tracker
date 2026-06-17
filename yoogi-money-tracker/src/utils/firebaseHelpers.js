@@ -633,3 +633,58 @@ export const deleteLender = async (userId, lenderId) => {
 export const updateLender = async (userId, lenderId, lenderData) => {
     return await updateDoc(getDocRef(userId, 'lenders', lenderId), lenderData);
 };
+
+// ==============================
+// DATA EXPORT/IMPORT (SYNC)
+// ==============================
+
+export const exportUserData = async (userId) => {
+    const collectionsToExport = [
+        'categories', 'transactions', 'debts', 'recurring_transactions',
+        'ai_memory', 'installments', 'wallets', 'payers', 'debtors', 'lenders'
+    ];
+
+    const data = {};
+
+    for (const colName of collectionsToExport) {
+        const snapshot = await getDocs(getCollectionRef(userId, colName));
+        data[colName] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    return data;
+};
+
+export const importUserData = async (userId, data) => {
+    const validCollections = [
+        'categories', 'transactions', 'debts', 'recurring_transactions',
+        'ai_memory', 'installments', 'wallets', 'payers', 'debtors', 'lenders'
+    ];
+
+    let batch = writeBatch(db);
+    let operationCount = 0;
+
+    for (const [colName, docs] of Object.entries(data)) {
+        if (!validCollections.includes(colName)) continue;
+
+        for (const docData of docs) {
+            const { id, ...rest } = docData;
+            const docRef = id 
+                ? getDocRef(userId, colName, id) 
+                : doc(getCollectionRef(userId, colName));
+            
+            batch.set(docRef, rest);
+            operationCount++;
+
+            // Firestore batch has a limit of 500 operations
+            if (operationCount >= 450) {
+                await batch.commit();
+                batch = writeBatch(db);
+                operationCount = 0;
+            }
+        }
+    }
+
+    if (operationCount > 0) {
+        await batch.commit();
+    }
+};

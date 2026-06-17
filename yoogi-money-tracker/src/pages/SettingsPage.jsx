@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Wallet, Users, FolderTree, Brain } from 'lucide-react';
+import { Settings, Wallet, Users, FolderTree, Brain, Database } from 'lucide-react';
 
 import WalletsSettings from '../components/settings/WalletsSettings';
 import PayersSettings from '../components/settings/PayersSettings';
 import CategoriesPage from './CategoriesPage'; // Reusing existing page as a component
 import AINotesPage from './AINotesPage'; // Reusing existing page as a component
+import DataSyncSettings from '../components/settings/DataSyncSettings';
 
 const SettingsPage = ({ user, categories, aiMemories, wallets, payers, initialTab = 'wallets' }) => {
     const [activeTab, setActiveTab] = useState(initialTab);
@@ -20,6 +21,7 @@ const SettingsPage = ({ user, categories, aiMemories, wallets, payers, initialTa
         { id: 'categories', label: 'Danh mục', icon: FolderTree },
         { id: 'ai', label: 'Ví ngữ cảnh', icon: Brain },
         { id: 'payers', label: 'Người trả', icon: Users },
+        { id: 'sync', label: 'Dữ liệu', icon: Database },
     ];
 
     return (
@@ -60,6 +62,7 @@ const SettingsPage = ({ user, categories, aiMemories, wallets, payers, initialTa
                 {activeTab === 'categories' && <CategoriesPage user={user} categories={categories} hideHeader={true} />}
                 {activeTab === 'ai' && <AINotesPage user={user} aiMemories={aiMemories} categories={categories} hideHeader={true} />}
                 {activeTab === 'payers' && <PayersSettings user={user} payers={payers} />}
+                {activeTab === 'sync' && <DataSyncSettings user={user} />}
             </div>
         </div>
     );
