@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">yoogi-money-tracker</string>
+    <string name="title_activity_main">yoogi-money-tracker</string>
+    <string name="package_name">com.yoogi.moneytracker</string>
+    <string name="custom_url_scheme">com.yoogi.moneytracker</string>
+</resources>
