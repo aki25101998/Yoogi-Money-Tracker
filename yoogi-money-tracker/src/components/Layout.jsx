@@ -30,11 +30,7 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
             <aside className={`fixed left-0 top-0 h-full z-30 hidden lg:flex flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 ${sidebarCollapsed ? 'w-[72px]' : 'w-[240px]'}`}>
                 {/* Logo */}
                 <div className={`flex items-center gap-3 px-4 h-16 border-b border-slate-100 dark:border-slate-700 ${sidebarCollapsed ? 'justify-center' : ''}`}>
-                    <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-2 rounded-xl shadow-lg shadow-emerald-200 dark:shadow-none flex-shrink-0">
-                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
+                    <img src="/logo.jpg" alt="Yoogi" className="w-9 h-9 rounded-xl shadow-lg shadow-emerald-200 dark:shadow-none flex-shrink-0 object-cover" />
                     {!sidebarCollapsed && (
                         <div className="overflow-hidden">
                             <h1 className="text-sm font-bold text-slate-800 dark:text-white whitespace-nowrap">Yoogi Money Tracker</h1>
@@ -115,11 +111,7 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
             <header className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="flex items-center justify-between px-4 h-14">
                     <div className="flex items-center gap-2">
-                        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-1.5 rounded-lg">
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
+                        <img src="/logo.jpg" alt="Yoogi" className="w-7 h-7 rounded-lg object-cover" />
                         <h1 className="text-sm font-bold text-slate-800 dark:text-white">Yoogi</h1>
                     </div>
                     <div className="flex items-center gap-2">

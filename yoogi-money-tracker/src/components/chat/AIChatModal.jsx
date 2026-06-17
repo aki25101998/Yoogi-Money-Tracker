@@ -399,8 +399,8 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                         
                         <div className="flex items-center gap-2">
                             <div className="relative">
-                                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-tr from-emerald-100 to-teal-50 dark:from-emerald-900/40 dark:to-teal-900/20 rounded-full flex items-center justify-center shadow-sm">
-                                    <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
+                                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-tr from-emerald-100 to-teal-50 dark:from-emerald-900/40 dark:to-teal-900/20 rounded-full flex items-center justify-center shadow-sm overflow-hidden">
+                                    <img src="/logo.jpg" alt="AI Avatar" className="w-full h-full object-cover" />
                                 </div>
                                 <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-emerald-500 border border-white dark:border-slate-900 rounded-full flex items-center justify-center">
                                     <CheckCircle2 className="w-2 h-2 text-white" />
@@ -463,8 +463,8 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                                         {user?.photoURL ? <img src={user.photoURL} alt="user" className="w-8 h-8 rounded-full" /> : <User className="w-4 h-4 text-cyan-600" />}
                                     </div>
                                 ) : (
-                                    <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                                        <Bot className="w-5 h-5 text-emerald-600" />
+                                    <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center overflow-hidden">
+                                        <img src="/logo.jpg" alt="AI Avatar" className="w-full h-full object-cover" />
                                     </div>
                                 )}
                             </div>
@@ -568,8 +568,8 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                     <div className="flex justify-start">
                         <div className="max-w-[85%] flex gap-2 flex-row">
                             <div className="flex-shrink-0 mt-auto mb-1">
-                                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                                    <Bot className="w-5 h-5 text-emerald-600" />
+                                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center overflow-hidden">
+                                    <img src="/logo.jpg" alt="AI Avatar" className="w-full h-full object-cover" />
                                 </div>
                             </div>
                             <div className="px-4 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-bl-sm flex items-center gap-2 shadow-sm">
@@ -624,7 +624,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                         onClick={onOpenContextWallet}
                         className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
                     >
-                        <Bot className="w-4 h-4" />
+                        <img src="/logo.jpg" alt="Context" className="w-5 h-5 rounded-full object-cover" />
                         <span>Ví ngữ cảnh của Yoogi</span>
                     </button>
                 </div>
