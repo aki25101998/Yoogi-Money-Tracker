@@ -786,7 +786,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                             {hideZeroLenders && <Check className="w-3 h-3 text-white" />}
                         </div>
                         <input type="checkbox" className="hidden" checked={hideZeroLenders} onChange={(e) => setHideZeroLenders(e.target.checked)} />
-                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors whitespace-nowrap">Ẩn 0đ</span>
+                        <span className="text-sm font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors whitespace-nowrap">Ẩn 0 đ</span>
                     </label>
                 )}
             </div>
