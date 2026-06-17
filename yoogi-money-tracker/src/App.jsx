@@ -166,8 +166,7 @@ export default function App() {
         // Subscribe to Lenders
         const unsubLenders = subscribeLenders(user.uid, setLenders);
 
-        // Mark loading as done after a short delay to allow subscriptions to initialize
-        const timer = setTimeout(() => setIsDataLoading(false), 500);
+        setIsDataLoading(false);
 
         return () => {
             unsubInst();
@@ -180,7 +179,6 @@ export default function App() {
             unsubDebts();
             unsubRecurring();
             unsubLenders();
-            clearTimeout(timer);
         };
     }, [user]);
 
