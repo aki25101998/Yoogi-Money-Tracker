@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 
 import { db, APP_ID } from '../config/firebase';
-import { addPayer, deletePayer, addLender, deleteLender } from '../utils/firebaseHelpers';
+import { addPayer, deletePayer, addLender, deleteLender, updateLender } from '../utils/firebaseHelpers';
 import { formatCurrency } from '../utils/formatters';
 import { calculateLoan, calculateItemStats, getYearMonth } from '../utils/calculations';
 
@@ -553,6 +553,43 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
         return null;
     };
 
+    const handleRenameLender = async (e, group) => {
+        e.stopPropagation();
+        
+        if (group.lenderName === 'Khác') {
+            alert('Không thể đổi tên đơn vị "Khác".');
+            return;
+        }
+
+        const newName = window.prompt(`Nhập tên mới cho đơn vị "${group.lenderName}":`, group.lenderName);
+        if (!newName || newName.trim() === '' || newName.trim() === group.lenderName) return;
+
+        const trimmedName = newName.trim();
+        setIsProcessing(true);
+        if (user) {
+            try {
+                // 1. Tìm lender id
+                const lenderObj = lenders?.find(l => l.name === group.lenderName);
+                if (lenderObj) {
+                    await updateLender(user.uid, lenderObj.id, { name: trimmedName });
+                } else {
+                    await addLender(user.uid, { name: trimmedName });
+                }
+
+                // 2. Cập nhật tất cả các khoản trả góp của lender cũ sang lender mới
+                const itemsToUpdate = items.filter(item => (item.lender || 'Khác') === group.lenderName);
+                for (const item of itemsToUpdate) {
+                    const docRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', item.id);
+                    await updateDoc(docRef, { lender: trimmedName, updatedAt: new Date().toISOString() });
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Lỗi khi đổi tên đơn vị: " + err.message);
+            }
+        }
+        setIsProcessing(false);
+    };
+
     const openDetailsModal = (group) => {
         setSelectedLenderName(group.lenderName);
         setIsDetailsOpen(true);
@@ -781,7 +818,8 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                                 >
                                     <div 
                                         className="p-5 pb-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700"
-                                        onClick={() => openDetailsModal(group)}
+                                        onClick={(e) => handleRenameLender(e, group)}
+                                        title="Bấm để đổi tên đơn vị"
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xl group-hover/card:bg-indigo-200 transition-colors">
@@ -789,7 +827,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                                             </div>
                                             <div>
                                                 <h3 className="font-bold text-slate-800 dark:text-white text-lg group-hover/card:text-indigo-600 transition-colors">{group.lenderName}</h3>
-                                                <p className="text-xs text-slate-500">Bấm để xem chi tiết ({group.items.length} khoản)</p>
+                                                <p className="text-xs text-slate-500">Bấm để đổi tên đơn vị</p>
                                             </div>
                                         </div>
                                     </div>
