@@ -49,7 +49,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     // Filter State
     const [filterOwner, setFilterOwner] = useState('all');
     const [filterDate, setFilterDate] = useState(() => getYearMonth(new Date()));
-    const [hideZeroLenders, setHideZeroLenders] = useState(false);
+    const [hideZeroLenders, setHideZeroLenders] = useState(true);
     const [hideCompleted, setHideCompleted] = useState(false);
     const [activeTab, setActiveTab] = useState('list'); // 'list' | 'history'
 
@@ -638,13 +638,6 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                     >
                         <Plus className="w-3.5 h-3.5" />
                     </button>
-                    <label className="flex items-center gap-1.5 cursor-pointer group ml-1 sm:ml-2">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${hideZeroLenders ? 'bg-indigo-500 border-indigo-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 group-hover:border-indigo-400'}`}>
-                            {hideZeroLenders && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                        <input type="checkbox" className="hidden" checked={hideZeroLenders} onChange={(e) => setHideZeroLenders(e.target.checked)} />
-                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors whitespace-nowrap">Ẩn 0đ</span>
-                    </label>
                 </div>
 
                 <div className="flex gap-2 ml-auto items-center">
@@ -766,25 +759,36 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
             )}
 
             {/* Tab Navigation */}
-            <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto hide-scrollbar">
-                <button 
-                    onClick={() => setActiveTab('list')}
-                    className={`pb-4 px-6 font-bold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'list' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                >
-                    Danh sách trả góp
-                </button>
-                <button 
-                    onClick={() => setActiveTab('history')}
-                    className={`pb-4 px-6 font-bold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'history' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                >
-                    Lịch sử thanh toán
-                </button>
-                <button 
-                    onClick={() => setActiveTab('lenders')}
-                    className={`pb-4 px-6 font-bold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'lenders' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                >
-                    Đơn vị cho vay
-                </button>
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 mb-6">
+                <div className="flex overflow-x-auto hide-scrollbar">
+                    <button 
+                        onClick={() => setActiveTab('list')}
+                        className={`pb-4 px-6 font-bold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'list' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                    >
+                        Danh sách trả góp
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('history')}
+                        className={`pb-4 px-6 font-bold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'history' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                    >
+                        Lịch sử thanh toán
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('lenders')}
+                        className={`pb-4 px-6 font-bold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'lenders' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                    >
+                        Đơn vị cho vay
+                    </button>
+                </div>
+                {activeTab === 'list' && (
+                    <label className="flex items-center gap-1.5 cursor-pointer group ml-4 pb-3">
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${hideZeroLenders ? 'bg-indigo-500 border-indigo-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 group-hover:border-indigo-400'}`}>
+                            {hideZeroLenders && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <input type="checkbox" className="hidden" checked={hideZeroLenders} onChange={(e) => setHideZeroLenders(e.target.checked)} />
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors whitespace-nowrap">Ẩn 0đ</span>
+                    </label>
+                )}
             </div>
 
             {/* Main Content Area */}
