@@ -48,7 +48,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
 
     // Filter State
     const [filterOwner, setFilterOwner] = useState('all');
-    const [filterDate, setFilterDate] = useState('');
+    const [filterDate, setFilterDate] = useState(() => getYearMonth(new Date()));
     const [hideZeroLenders, setHideZeroLenders] = useState(false);
     const [hideCompleted, setHideCompleted] = useState(false);
     const [activeTab, setActiveTab] = useState('list'); // 'list' | 'history'
