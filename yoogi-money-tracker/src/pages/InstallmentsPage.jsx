@@ -815,6 +815,9 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                             const progress = group.totalAmount > 0 ? Math.round((group.repaidAmount / group.totalAmount) * 100) : 0;
                             const isPaid = group.status === 'paid';
                             
+                            const activeCount = inProgressItems.filter(wrapper => (wrapper.item.lender || 'Khác') === group.lenderName).length;
+                            const paidCount = completedItems.filter(wrapper => (wrapper.item.lender || 'Khác') === group.lenderName).length;
+
                             const amountDueThisMonth = inProgressItems
                                 .filter(wrapper => (wrapper.item.lender || 'Khác') === group.lenderName)
                                 .reduce((sum, wrapper) => sum + wrapper.item.monthlyPayment, 0);
@@ -834,8 +837,15 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                                                 {group.lenderName.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-slate-800 dark:text-white text-lg group-hover/card:text-indigo-600 transition-colors">{group.lenderName}</h3>
-                                                <p className="text-xs text-slate-500">Bấm để đổi tên đơn vị</p>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <h3 className="font-bold text-slate-800 dark:text-white text-lg group-hover/card:text-indigo-600 transition-colors">{group.lenderName}</h3>
+                                                    {(activeCount > 0 || paidCount > 0) && (
+                                                        <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-[10px] font-semibold border border-indigo-100 dark:border-indigo-500/20 whitespace-nowrap">
+                                                            Đang nợ {activeCount} / {activeCount + paidCount} khoản
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-slate-500 mt-0.5">Bấm để đổi tên đơn vị</p>
                                             </div>
                                         </div>
                                     </div>
