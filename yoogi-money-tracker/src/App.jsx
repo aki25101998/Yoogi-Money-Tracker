@@ -24,6 +24,7 @@ import SettingsPage from './pages/SettingsPage';
 // Modals
 import AIChatModal from './components/chat/AIChatModal';
 import TransactionModal from './components/modals/TransactionModal';
+import AIContextModal from './components/modals/AIContextModal';
 
 // Helpers
 import {
@@ -56,6 +57,7 @@ export default function App() {
     // Global Modals State
     const [isGlobalFabOpen, setIsGlobalFabOpen] = useState(false);
     const [isGlobalAIChatOpen, setIsGlobalAIChatOpen] = useState(false);
+    const [isGlobalContextWalletOpen, setIsGlobalContextWalletOpen] = useState(false);
     const [isGlobalTransactionOpen, setIsGlobalTransactionOpen] = useState(false);
     const [wallets, setWallets] = useState([]);
     const [payers, setPayers] = useState([]);
@@ -472,6 +474,15 @@ export default function App() {
                         payers={payers}
                         debtors={debtors}
                         recurringTransactions={recurringTransactions}
+                        onOpenContextWallet={() => setIsGlobalContextWalletOpen(true)}
+                    />
+
+                    <AIContextModal
+                        isOpen={isGlobalContextWalletOpen}
+                        onClose={() => setIsGlobalContextWalletOpen(false)}
+                        user={user}
+                        aiMemories={aiMemories}
+                        categories={categories}
                     />
                 </>
             )}
