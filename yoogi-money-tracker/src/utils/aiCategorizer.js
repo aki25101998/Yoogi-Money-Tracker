@@ -67,6 +67,11 @@ export const parseInput = (text) => {
     // If no description, use the original text
     if (!description) description = cleaned;
 
+    // Capitalize first letter for better UI formatting (e.g. "ăn tối" -> "Ăn tối")
+    if (description.length > 0) {
+        description = description.charAt(0).toUpperCase() + description.slice(1);
+    }
+
     return { description, amount: Math.round(amount) };
 };
 
