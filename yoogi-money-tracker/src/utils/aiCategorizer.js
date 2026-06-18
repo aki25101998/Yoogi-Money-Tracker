@@ -178,7 +178,8 @@ Hãy phân tích giao dịch trên và phân loại vào MỘT trong các nhóm 
    - transferTo: ví đích (được cộng tiền).
 
 3. Vay mượn (loan_given: cho người khác mượn / loan_repaid: người khác trả nợ):
-   - Ví dụ: "cho mẹ mượn 50k từ atm để nạp điện thoại", "tuấn trả nợ 200k vào bidv khoản ăn sáng".
+   - QUAN TRỌNG: Nếu câu có chứa từ "nợ", "mượn", hoặc "vay" (ví dụ: "phát nợ 105k tiền vé xem phim"), BẮT BUỘC phải phân loại vào nhóm Vay mượn này, KHÔNG được phân loại vào Chi tiêu hay Thu nhập.
+   - Ví dụ: "cho mẹ mượn 50k từ atm để nạp điện thoại", "tuấn trả nợ 200k vào bidv khoản ăn sáng", "phát nợ 105k tiền vé phim".
    - personName: tên người mượn/trả. Nếu tên này có trong danh sách Người mượn nợ dưới đây, hãy dùng chính xác tên đó. Nếu chưa có, BẮT BUỘC trả về tên đã được viết hoa chữ cái đầu mỗi từ (ví dụ "phúc" -> "Phúc", "anh tú" -> "Anh Tú").
    - walletId: ví bị trừ tiền (nếu cho mượn) hoặc ví được cộng tiền (nếu nhận trả nợ).
    - debtNotes: Trích xuất ngắn gọn lý do hoặc mô tả của khoản mượn/trả. BẮT BUỘC phải định dạng lại cho đẹp, viết hoa chữ cái đầu (ví dụ "nạp điện thoại" -> "Nạp điện thoại", "ăn sáng" -> "Ăn sáng", "nạp 4g" -> "Nạp 4G"). Nếu không có thì để trống.
