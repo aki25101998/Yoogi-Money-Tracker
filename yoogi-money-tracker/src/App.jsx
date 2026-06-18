@@ -246,14 +246,20 @@ export default function App() {
         return () => clearInterval(intervalId);
     }, [user, recurringTransactions]);
 
-    // --- Auth Handlers ---
     const handleGoogleLogin = async () => {
         if (!auth) {
             alert("Chế độ Offline: Chưa cấu hình Firebase. Vui lòng cập nhật file .env để đăng nhập.");
             return;
         }
         try {
-            await signInWithPopup(auth, googleProvider);
+            // In Capacitor WebView, signInWithPopup opens external browser which loses context.
+            // Using signInWithRedirect + allowNavigation + overrideUserAgent fixes it.
+            if (window.Capacitor || navigator.userAgent.includes('Capacitor')) {
+                const { signInWithRedirect } = await import('firebase/auth');
+                await signInWithRedirect(auth, googleProvider);
+            } else {
+                await signInWithPopup(auth, googleProvider);
+            }
         } catch (error) {
             console.error("Login Error:", error);
             alert("Đăng nhập thất bại: " + error.message);
