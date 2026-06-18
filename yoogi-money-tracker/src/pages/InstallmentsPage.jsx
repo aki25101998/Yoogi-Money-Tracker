@@ -814,6 +814,10 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                             const remaining = group.totalAmount - group.repaidAmount;
                             const progress = group.totalAmount > 0 ? Math.round((group.repaidAmount / group.totalAmount) * 100) : 0;
                             const isPaid = group.status === 'paid';
+                            
+                            const amountDueThisMonth = inProgressItems
+                                .filter(wrapper => (wrapper.item.lender || 'Khác') === group.lenderName)
+                                .reduce((sum, wrapper) => sum + wrapper.item.monthlyPayment, 0);
 
                             return (
                                 <div 
@@ -862,6 +866,12 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                                                         <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-0.5">Còn nợ</span>
                                                         <span className="font-bold text-orange-500">{formatCurrency(remaining)}</span>
                                                     </div>
+                                                    {amountDueThisMonth > 0 && (
+                                                        <div className="flex-1 text-right">
+                                                            <span className="text-[10px] uppercase tracking-wider text-indigo-400 dark:text-indigo-500 font-bold block mb-0.5">Tháng này</span>
+                                                            <span className="font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(amountDueThisMonth)}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
