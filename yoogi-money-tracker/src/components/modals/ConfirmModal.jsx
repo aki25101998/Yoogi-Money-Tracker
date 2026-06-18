@@ -11,10 +11,10 @@ const ConfirmModal = ({
     icon: Icon,
     iconColorClass = "text-indigo-600",
     iconBgClass = "bg-indigo-100",
-    confirmLabel = "Đồng ý",
+    confirmText = "Đồng ý",
     cancelLabel = "Hủy",
     confirmVariant = "primary", // 'primary' | 'danger'
-    isLoading = false,
+    isProcessing = false,
     loadingText = "Đang xử lý..."
 }) => {
     if (!isOpen) return null;
@@ -35,7 +35,7 @@ const ConfirmModal = ({
                 <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">{title}</h3>
                 <div className="text-slate-500 dark:text-slate-400 text-sm mb-6">{description}</div>
 
-                {isLoading ? (
+                {isProcessing ? (
                     <div className={`flex items-center justify-center gap-2 ${iconColorClass} font-medium py-2`}>
                         <Loader2 className="w-5 h-5 animate-spin" /> {loadingText}
                     </div>
@@ -51,7 +51,7 @@ const ConfirmModal = ({
                             onClick={onConfirm}
                             className={`flex-1 px-4 py-2 rounded-xl font-medium shadow-lg shadow-indigo-200 dark:shadow-none ${btnClasses[confirmVariant] || btnClasses.primary}`}
                         >
-                            {confirmLabel}
+                            {confirmText}
                         </button>
                     </div>
                 )}
