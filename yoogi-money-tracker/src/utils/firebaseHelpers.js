@@ -218,8 +218,8 @@ export const subscribeCategories = (userId, callback) => {
 
     return onSnapshot(q, (snapshot) => {
         const categories = snapshot.docs.map(doc => ({
-            id: doc.id,
             ...doc.data(),
+            id: doc.id,
         }));
         callback(categories);
     });
@@ -265,8 +265,8 @@ export const subscribeTransactions = (userId, callback) => {
 
     return onSnapshot(q, (snapshot) => {
         const transactions = snapshot.docs.map(doc => ({
-            id: doc.id,
             ...doc.data(),
+            id: doc.id,
         }));
         // Sort by date descending (newest first)
         transactions.sort((a, b) => {
@@ -347,8 +347,8 @@ export const subscribeDebts = (userId, callback) => {
     const q = query(getCollectionRef(userId, 'debts'), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snapshot) => {
         const items = snapshot.docs.map(doc => ({
-            id: doc.id,
             ...doc.data(),
+            id: doc.id,
         }));
         callback(items);
     });
@@ -381,8 +381,8 @@ export const subscribeRecurringTransactions = (userId, callback) => {
     const q = query(getCollectionRef(userId, 'recurring_transactions'));
     return onSnapshot(q, (snapshot) => {
         const items = snapshot.docs.map(doc => ({
-            id: doc.id,
             ...doc.data(),
+            id: doc.id,
         }));
         callback(items);
     });
@@ -419,8 +419,8 @@ export const subscribeAIMemory = (userId, callback) => {
 
     return onSnapshot(q, (snapshot) => {
         const memories = snapshot.docs.map(doc => ({
-            id: doc.id,
             ...doc.data(),
+            id: doc.id,
         }));
         memories.sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0));
         callback(memories);
@@ -530,8 +530,8 @@ export const subscribeWallets = (userId, callback) => {
     const q = query(getCollectionRef(userId, 'wallets'));
     return onSnapshot(q, (snapshot) => {
         const wallets = snapshot.docs.map(doc => ({
-            id: doc.id,
             ...doc.data(),
+            id: doc.id,
         }));
         // Sort by order ascending, fallback to createdAt or id
         wallets.sort((a, b) => {
@@ -581,7 +581,7 @@ export const subscribePayers = (userId, onUpdate) => {
     const colRef = getCollectionRef(userId, 'payers');
     const q = query(colRef, orderBy('name'));
     return onSnapshot(q, (snapshot) => {
-        onUpdate(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        onUpdate(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
     });
 };
 
@@ -607,7 +607,7 @@ export const subscribeDebtors = (userId, onUpdate) => {
     const colRef = getCollectionRef(userId, 'debtors');
     const q = query(colRef, orderBy('name'));
     return onSnapshot(q, (snapshot) => {
-        onUpdate(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        onUpdate(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
     });
 };
 
@@ -633,7 +633,7 @@ export const subscribeLenders = (userId, onUpdate) => {
     const colRef = getCollectionRef(userId, 'lenders');
     const q = query(colRef, orderBy('name'));
     return onSnapshot(q, (snapshot) => {
-        onUpdate(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        onUpdate(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
     });
 };
 
@@ -666,7 +666,7 @@ export const exportUserData = async (userId) => {
 
     for (const colName of collectionsToExport) {
         const snapshot = await getDocs(getCollectionRef(userId, colName));
-        data[colName] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        data[colName] = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
     }
 
     return data;
