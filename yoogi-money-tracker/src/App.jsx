@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, LogIn, Sparkles, CreditCard, Plus, PenSquare, Bot } from 'lucide-react';
 import {
-    signInWithPopup, signOut,
-    onAuthStateChanged
+    signInWithPopup, signInWithRedirect, getRedirectResult, signOut,
+    onAuthStateChanged, signInWithCredential, GoogleAuthProvider
 } from 'firebase/auth';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import {
     collection, onSnapshot, query
 } from 'firebase/firestore';
@@ -96,6 +97,27 @@ export default function App() {
             setIsAuthLoading(false);
             return;
         }
+
+        // Initialize GoogleAuth plugin for Capacitor
+        if (window.Capacitor || navigator.userAgent.includes('Capacitor')) {
+            GoogleAuth.initialize({
+                clientId: '634476807825-pa9k25klhpspqupgdgs2b9q3utjdk663.apps.googleusercontent.com',
+                scopes: ['profile', 'email'],
+                grantOfflineAccess: true,
+            });
+        }
+
+        // Handle redirect result (for mobile WebView sign-in)
+        getRedirectResult(auth).then((result) => {
+            if (result?.user) {
+                console.log('Redirect sign-in successful:', result.user.uid);
+            }
+        }).catch((error) => {
+            if (error.code !== 'auth/redirect-cancelled-by-user') {
+                console.error('Redirect result error:', error);
+            }
+        });
+
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             setUser(currentUser);
             setIsAuthLoading(false);
@@ -246,23 +268,42 @@ export default function App() {
         return () => clearInterval(intervalId);
     }, [user, recurringTransactions]);
 
+    const isMobileOrWebView = () => {
+        return /Android|webOS|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent)
+            || window.innerWidth <= 768
+            || 'ontouchstart' in window;
+    };
+
     const handleGoogleLogin = async () => {
         if (!auth) {
             alert("Chế độ Offline: Chưa cấu hình Firebase. Vui lòng cập nhật file .env để đăng nhập.");
             return;
         }
         try {
-            // In Capacitor WebView, signInWithPopup opens external browser which loses context.
-            // Using signInWithRedirect + allowNavigation + overrideUserAgent fixes it.
-            if (window.Capacitor || navigator.userAgent.includes('Capacitor')) {
-                const { signInWithRedirect } = await import('firebase/auth');
-                await signInWithRedirect(auth, googleProvider);
+            if (isMobileOrWebView()) {
+                // Use Native Google Sign-In via Capacitor Plugin
+                const googleUser = await GoogleAuth.signIn();
+                if (googleUser && googleUser.authentication) {
+                    const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken);
+                    await signInWithCredential(auth, credential);
+                } else {
+                    throw new Error("Không lấy được token xác thực từ Google.");
+                }
             } else {
                 await signInWithPopup(auth, googleProvider);
             }
         } catch (error) {
             console.error("Login Error:", error);
-            alert("Đăng nhập thất bại: " + error.message);
+            // If popup fails, fallback to redirect (only for non-capacitor mobile web)
+            if (error.code === 'auth/popup-blocked' || error.code === 'auth/network-request-failed') {
+                try {
+                    await signInWithRedirect(auth, googleProvider);
+                } catch (redirectError) {
+                    alert("Đăng nhập thất bại: " + redirectError.message);
+                }
+            } else {
+                alert("Đăng nhập thất bại: " + error.message);
+            }
         }
     };
 

@@ -6,11 +6,18 @@
     "url": "https://yoogi-money-tracker.web.app",
     "cleartext": true,
     "allowNavigation": [
-      "accounts.google.com",
-      "*.firebaseapp.com"
+      "*.google.com",
+      "*.googleapis.com",
+      "*.firebaseapp.com",
+      "*.gstatic.com",
+      "yoogi-money-tracker.web.app"
     ]
   },
-  "android": {
-    "overrideUserAgent": "Mozilla/5.0 (Linux; Android 13; Pixel 7 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36"
+  "plugins": {
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "serverClientId": "634476807825-pa9k25klhpspqupgdgs2b9q3utjdk663.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    }
   }
 }

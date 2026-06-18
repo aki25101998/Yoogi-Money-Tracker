@@ -4,4 +4,5 @@
     <string name="title_activity_main">Yoogi Money Tracker</string>
     <string name="package_name">com.yoogi.moneytracker</string>
     <string name="custom_url_scheme">com.yoogi.moneytracker</string>
+    <string name="server_client_id">634476807825-pa9k25klhpspqupgdgs2b9q3utjdk663.apps.googleusercontent.com</string>
 </resources>

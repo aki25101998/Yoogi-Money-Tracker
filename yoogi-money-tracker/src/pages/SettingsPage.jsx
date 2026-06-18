@@ -26,12 +26,27 @@ const SettingsPage = ({ user, categories, aiMemories, wallets, payers, initialTa
 
     return (
         <div className="space-y-6">
-            <div>
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                    <Settings className="w-6 h-6 text-slate-500" />
-                    Cài đặt
-                </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Tùy chỉnh sổ quỹ của bạn</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <Settings className="w-6 h-6 text-slate-500" />
+                        Cài đặt
+                    </h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Tùy chỉnh sổ quỹ của bạn</p>
+                </div>
+                {user && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg w-fit border border-slate-200 dark:border-slate-700">
+                        <Database className="w-4 h-4 text-slate-400" />
+                        <span className="text-xs font-mono text-slate-600 dark:text-slate-300">ID: {user.uid}</span>
+                        <div className="w-1 h-4 bg-slate-300 dark:bg-slate-600 rounded-full mx-1"></div>
+                        <div className="flex items-center gap-1.5">
+                            <div className={`w-2 h-2 rounded-full ${navigator.onLine ? "bg-emerald-500" : "bg-rose-500"}`}></div>
+                            <span className={`text-xs font-medium ${navigator.onLine ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                {navigator.onLine ? "Online" : "Offline"}
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Tabs */}
