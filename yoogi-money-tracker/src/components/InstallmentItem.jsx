@@ -38,12 +38,14 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                             )}
                         </div>
                         <h4 className={`font-bold text-base sm:text-lg line-clamp-1 mb-1 ${isPaid ? 'text-slate-500 dark:text-slate-400' : 'text-slate-800 dark:text-white'}`}>{item.name}</h4>
-                        <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-3">
+                        <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <span>{new Date(item.startDate).toLocaleDateString('vi-VN')}</span>
                             <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></span>
                             <span>{item.term} kỳ</span>
                             <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></span>
                             <span className="text-rose-500 font-medium">{item.rate}% lãi</span>
+                            <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full hidden sm:block"></span>
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">Gốc: {formatCurrency(item.monthlyPayment * item.term)}</span>
                         </div>
                     </div>
                     <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
