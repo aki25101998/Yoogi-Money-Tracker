@@ -840,7 +840,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <h3 className="font-bold text-slate-800 dark:text-white text-lg group-hover/card:text-indigo-600 transition-colors">{group.lenderName}</h3>
                                                     {(activeCount > 0 || paidCount > 0) && (
-                                                        <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-[10px] font-semibold border border-indigo-100 dark:border-indigo-500/20 whitespace-nowrap">
+                                                        <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-semibold border border-indigo-100 dark:border-indigo-500/20 whitespace-nowrap">
                                                             Đang nợ {activeCount} / {activeCount + paidCount} khoản
                                                         </span>
                                                     )}
