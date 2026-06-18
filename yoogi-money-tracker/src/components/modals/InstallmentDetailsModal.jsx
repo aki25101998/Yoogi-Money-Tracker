@@ -75,6 +75,8 @@ const InstallmentDetailsModal = ({
     paidItems.sort((a, b) => b.monthStr.localeCompare(a.monthStr));
     historyItems.sort((a, b) => b.monthStr.localeCompare(a.monthStr));
 
+    const amountDueThisMonth = activeItems.reduce((sum, wrapper) => sum + wrapper.item.monthlyPayment, 0);
+
     const handleTabChange = (tab) => {
         setActiveTab(tab);
     };
@@ -94,11 +96,16 @@ const InstallmentDetailsModal = ({
                     <div className="flex justify-between items-center">
                         <div>
                             <h3 className="font-bold text-xl text-slate-800 dark:text-white">Chi tiết trả góp</h3>
-                            <div className="flex items-center gap-2 mt-0.5">
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                 <span className="text-sm text-slate-500 font-bold uppercase tracking-wider">{groupedLender.lenderName}</span>
                                 <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-semibold border border-indigo-100 dark:border-indigo-500/20">
                                     Đang nợ {activeItems.length} / {activeItems.length + paidItems.length} khoản
                                 </span>
+                                {amountDueThisMonth > 0 && (
+                                    <span className="px-2 py-0.5 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-full text-xs font-semibold border border-orange-100 dark:border-orange-500/20">
+                                        Cần đóng: {formatCurrency(amountDueThisMonth)}
+                                    </span>
+                                )}
                             </div>
                         </div>
                         <button onClick={onClose} className="p-1 -mr-2"><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
