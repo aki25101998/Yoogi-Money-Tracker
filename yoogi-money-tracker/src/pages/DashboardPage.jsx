@@ -93,7 +93,18 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, re
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     // --- State ---
-    const [selectedWalletIds, setSelectedWalletIds] = useState([]);
+    const [selectedWalletIds, setSelectedWalletIds] = useState(() => {
+        try {
+            const saved = localStorage.getItem('yoogi_selected_wallet_ids');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            return [];
+        }
+    });
+
+    useEffect(() => {
+        localStorage.setItem('yoogi_selected_wallet_ids', JSON.stringify(selectedWalletIds));
+    }, [selectedWalletIds]);
     
     // UI States
     const [isAIContextOpen, setIsAIContextOpen] = useState(false);

@@ -12,7 +12,18 @@ import MultiSelectDropdown from '../components/MultiSelectDropdown';
 const TransactionsPage = ({ user, transactions, categories, wallets, debts }) => {
     // --- Filters ---
     const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
-    const [selectedWalletIds, setSelectedWalletIds] = useState([]);
+    const [selectedWalletIds, setSelectedWalletIds] = useState(() => {
+        try {
+            const saved = localStorage.getItem('yoogi_selected_wallet_ids');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            return [];
+        }
+    });
+
+    React.useEffect(() => {
+        localStorage.setItem('yoogi_selected_wallet_ids', JSON.stringify(selectedWalletIds));
+    }, [selectedWalletIds]);
     const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
     const [selectedSubcategoryIds, setSelectedSubcategoryIds] = useState([]);
 
