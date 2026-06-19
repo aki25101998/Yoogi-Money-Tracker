@@ -84,6 +84,13 @@ description: Bộ quy tắc chuẩn, liệt kê kiến trúc core và các đi�
 - **Micro-interactions:** Bắt buộc dùng `transition-all`, `hover:`, `active:scale-95` cho các nút bấm để tạo cảm giác mượt mà (Glassmorphism, bóng đổ shadow-lg).
 - **Responsive:** Mọi Modal, Chart, Layout BẮT BUỘC phải responsive tốt trên Mobile (dùng `sm:`, `md:`).
 
+### 3.4. Auto-Deploy & Workflow (QUY TẮC BẮT BUỘC)
+- **Quy tắc:** Mọi thay đổi về code sau khi hoàn thành (hoặc sau mỗi tác vụ User yêu cầu) BẮT BUỘC AI phải tự động thực hiện quy trình Backup và Deploy mà KHÔNG CẦN User phải nhắc nhở.
+- **Quy trình chuẩn:**
+  1. Commit & Push lên GitHub: `git add .`, `git commit -m "..."`, `git push`.
+  2. Build và Deploy lên Firebase: Chạy lệnh build và deploy (VD: `cmd.exe /c "npm run build && npx firebase-tools deploy"`).
+- Việc này giúp tiết kiệm thời gian của User và đảm bảo bản web luôn là bản cập nhật mới nhất.
+
 ---
 
 ## 4. Những điều CẤM (Anti-patterns)

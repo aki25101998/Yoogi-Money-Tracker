@@ -164,15 +164,17 @@ const DateRangeSelector = ({ initialMode = 'month', onChange }) => {
 const YEARS = [2025, 2026, 2027, 2028];
 
     return (
-        <div className="flex flex-wrap items-center gap-2 relative">
+        <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-2 relative w-full md:w-auto">
             {/* Tầng 1: Chọn Chế độ (Mode) */}
-            <div className="relative" ref={modeRef}>
+            <div className="relative w-full md:w-auto" ref={modeRef}>
                 <button 
                     onClick={() => setIsModeOpen(!isModeOpen)}
-                    className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-slate-800 dark:text-white font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                    className="flex items-center justify-between md:justify-start gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-slate-800 dark:text-white font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm w-full md:w-auto"
                 >
-                    <span className="text-slate-500 dark:text-slate-400 font-semibold">{MODE_LABELS[mode]}</span>
-                    <Calendar size={18} className="text-slate-800 dark:text-white stroke-[2.5]" />
+                    <div className="flex items-center gap-2">
+                        <span className="text-slate-500 dark:text-slate-400 font-semibold">{MODE_LABELS[mode]}</span>
+                        <Calendar size={18} className="text-slate-800 dark:text-white stroke-[2.5]" />
+                    </div>
                     <ChevronDown size={16} className="text-slate-400 ml-1" />
                 </button>
 
@@ -198,8 +200,8 @@ const YEARS = [2025, 2026, 2027, 2028];
 
             {/* Tầng 2: Chọn Giá trị (Value) */}
             {mode !== 'all' && mode !== 'custom' && (
-                <div className="relative group">
-                    <button className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-slate-800 dark:text-white font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm relative overflow-hidden">
+                <div className="relative group w-full md:w-auto">
+                    <button className="flex items-center justify-between md:justify-start gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-slate-800 dark:text-white font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm relative overflow-hidden w-full md:w-auto">
                         <span>
                             {mode === 'month' && getMonthLabel(currentDate)}
                             {mode === 'day' && getDayLabel(currentDate)}
@@ -243,7 +245,7 @@ const YEARS = [2025, 2026, 2027, 2028];
             {mode === 'custom' && (
                 <button 
                     onClick={() => setIsCustomModalOpen(true)}
-                    className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-slate-800 dark:text-white font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                    className="flex items-center justify-center md:justify-start gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-slate-800 dark:text-white font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm w-full md:w-auto"
                 >
                     <span>{customRange.start && customRange.end ? `${customRange.start} - ${customRange.end}` : 'Chọn phạm vi...'}</span>
                 </button>

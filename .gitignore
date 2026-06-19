@@ -22,3 +22,8 @@ Desktop.ini
 # Logs
 *.log
 npm-debug.log*
+.gradle/
+android-sdk/
+jdk-*/
+*.apk
+build_no_space.bat  

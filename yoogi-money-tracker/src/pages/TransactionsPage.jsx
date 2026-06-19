@@ -300,17 +300,17 @@ const TransactionsPage = ({ user, transactions, categories, wallets, debts }) =>
             </div>
 
             {/* Filter Bar */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm sticky top-0 z-20">
-                <div className="flex flex-wrap items-center justify-center gap-3">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm relative md:sticky top-0 z-20">
+                <div className="flex flex-col md:flex-row flex-wrap md:items-center justify-center gap-3">
                     <MultiSelectDropdown
                         placeholder="🏦 Tất cả ví"
                         options={wallets || []}
                         selectedIds={selectedWalletIds}
                         onChange={setSelectedWalletIds}
-                        widthClass="min-w-[160px]"
+                        widthClass="w-full md:min-w-[160px] md:w-auto"
                     />
 
-                    <div className="flex flex-wrap justify-center gap-3">
+                    <div className="flex flex-col md:flex-row flex-wrap justify-center gap-3 w-full md:w-auto">
                         <MultiSelectDropdown
                             placeholder="📂 Tất cả danh mục chính"
                             isGrouped={true}
@@ -323,7 +323,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets, debts }) =>
                                 setSelectedCategoryIds(ids);
                                 setSelectedSubcategoryIds([]);
                             }}
-                            widthClass="min-w-[180px]"
+                            widthClass="w-full md:min-w-[180px] md:w-auto"
                         />
 
                         <MultiSelectDropdown
@@ -347,14 +347,16 @@ const TransactionsPage = ({ user, transactions, categories, wallets, debts }) =>
                             })()}
                             selectedIds={selectedSubcategoryIds}
                             onChange={setSelectedSubcategoryIds}
-                            widthClass="min-w-[160px]"
+                            widthClass="w-full md:min-w-[160px] md:w-auto"
                         />
                     </div>
+                    <div className="w-full md:w-auto flex justify-center">
                         <DateRangeSelector 
                             initialMode="month" 
                             onChange={(range) => setDateRange(range)} 
                         />
                     </div>
+                </div>
             </div>
 
             {/* Summary Banner */}
