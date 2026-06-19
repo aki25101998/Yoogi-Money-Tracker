@@ -78,10 +78,6 @@ const TransactionsPage = ({ user, transactions, categories, wallets, debts }) =>
             groups[dateKey].items.push(t);
             if (t.type === 'income' || t.type === 'loan_repaid') groups[dateKey].totalIncome += t.amount;
             else if (t.type === 'expense' || t.type === 'loan_given') groups[dateKey].totalExpense += t.amount;
-            else if (t.type === 'transfer' && selectedWalletIds.length > 0) {
-                if (selectedWalletIds.includes(t.transferTo)) groups[dateKey].totalIncome += t.amount;
-                if (selectedWalletIds.includes(t.walletId)) groups[dateKey].totalExpense += t.amount;
-            }
         });
         // Sort items within each group by createdAt descending (newest first)
         const result = Object.values(groups);
@@ -98,13 +94,9 @@ const TransactionsPage = ({ user, transactions, categories, wallets, debts }) =>
         filteredTransactions.forEach(t => {
             if (t.type === 'income') income += (t.amount || 0);
             else if (t.type === 'expense') expense += (t.amount || 0);
-            else if (t.type === 'transfer' && selectedWalletIds.length > 0) {
-                if (selectedWalletIds.includes(t.transferTo)) income += (t.amount || 0);
-                if (selectedWalletIds.includes(t.walletId)) expense += (t.amount || 0);
-            }
         });
         return { income, expense, balance: income - expense };
-    }, [filteredTransactions, selectedWalletIds]);
+    }, [filteredTransactions]);
 
     // --- Handlers ---
     const handleSaveTransaction = async (formData) => {
@@ -403,8 +395,8 @@ const TransactionsPage = ({ user, transactions, categories, wallets, debts }) =>
                                 {group.items.map(txn => {
                                     const cat = categories.find(c => c.id === txn.categoryId);
                                     const wallet = wallets?.find(w => w.id === txn.walletId);
-                                    const isIncome = txn.type === 'income' || txn.type === 'loan_repaid' || (txn.type === 'transfer' && selectedWalletIds.length > 0 && selectedWalletIds.includes(txn.transferTo));
-                                    const isExpense = txn.type === 'expense' || txn.type === 'loan_given' || (txn.type === 'transfer' && selectedWalletIds.length > 0 && selectedWalletIds.includes(txn.walletId));
+                                    const isIncome = txn.type === 'income' || txn.type === 'loan_repaid';
+                                    const isExpense = txn.type === 'expense' || txn.type === 'loan_given';
                                     const isLoan = txn.type === 'loan_given' || txn.type === 'loan_repaid';
 
                                     return (
@@ -451,7 +443,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets, debts }) =>
                                             {/* Amount & Actions */}
                                             <div className="flex items-center gap-4">
                                                 <div className="text-right min-w-[120px]">
-                                                    <p className={`font-bold text-base whitespace-nowrap flex items-center justify-end gap-1.5 ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : (isExpense ? 'text-rose-600 dark:text-rose-400' : 'text-rose-500')}`}>
+                                                    <p className={`font-bold text-base whitespace-nowrap flex items-center justify-end gap-1.5 ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : (isExpense ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400')}`}>
                                                         <span className="flex-shrink-0 w-4 flex items-center justify-center">
                                                             {isIncome ? <ArrowUpRight className="w-4 h-4" /> : (isExpense ? <ArrowDownRight className="w-4 h-4" /> : '⇄')}
                                                         </span>

@@ -651,8 +651,8 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, re
                     ) : (
                         recentTransactions.map(txn => {
                             const cat = categories.find(c => c.id === txn.categoryId);
-                            const isIncome = txn.type === 'income' || (txn.type === 'transfer' && selectedWalletIds.length > 0 && selectedWalletIds.includes(txn.transferTo) && !selectedWalletIds.includes(txn.walletId));
-                            const isExpense = txn.type === 'expense' || (txn.type === 'transfer' && selectedWalletIds.length > 0 && selectedWalletIds.includes(txn.walletId) && !selectedWalletIds.includes(txn.transferTo));
+                            const isIncome = txn.type === 'income';
+                            const isExpense = txn.type === 'expense';
                             
                             return (
                                 <div key={txn.id} className="px-5 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer" onClick={() => { 
