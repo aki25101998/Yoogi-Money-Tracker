@@ -8,6 +8,16 @@ const CategoryTransactionsModal = ({ isOpen, onClose, category, transactions, ca
 
     const totalAmount = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
+    const subCategoryList = Object.entries(
+        transactions.reduce((acc, txn) => {
+            const name = txn.description || 'Khác';
+            acc[name] = (acc[name] || 0) + (txn.amount || 0);
+            return acc;
+        }, {})
+    )
+    .map(([name, amount]) => ({ name, amount }))
+    .sort((a, b) => b.amount - a.amount);
+
     return createPortal(
         <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[32px] md:rounded-3xl shadow-2xl flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
@@ -33,7 +43,30 @@ const CategoryTransactionsModal = ({ isOpen, onClose, category, transactions, ca
                 </div>
 
                 {/* Body - Transaction List */}
-                <div className="flex-1 overflow-y-auto p-2">
+                <div className="flex-1 overflow-y-auto p-2 flex flex-col">
+                    {subCategoryList.length > 0 && (
+                        <div className="mx-2 mt-2 mb-4 px-4 py-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Chi tiết danh mục phụ</h3>
+                            <div className="space-y-3">
+                                {subCategoryList.map((sub, index) => {
+                                    const percentage = totalAmount > 0 ? ((sub.amount / totalAmount) * 100).toFixed(1) : 0;
+                                    return (
+                                        <div key={index} className="flex items-center justify-between text-sm">
+                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400"></div>
+                                                <span className="text-slate-600 dark:text-slate-400 truncate font-medium">{sub.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-bold text-slate-700 dark:text-slate-300">{formatCurrency(sub.amount)}</span>
+                                                <span className="text-xs font-bold text-slate-400 w-10 text-right">{percentage}%</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                     {transactions.length === 0 ? (
                         <div className="text-center py-10 text-slate-500">
                             Không có giao dịch nào.
