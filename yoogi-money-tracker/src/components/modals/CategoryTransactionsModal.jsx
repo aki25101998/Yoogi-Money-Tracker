@@ -10,7 +10,13 @@ const CategoryTransactionsModal = ({ isOpen, onClose, category, transactions, ca
 
     const subCategoryList = Object.entries(
         transactions.reduce((acc, txn) => {
-            const name = txn.description || 'Khác';
+            let name = 'Khác';
+            if (txn.subcategoryId && category?.subcategories) {
+                const subCat = category.subcategories.find(s => s.id === txn.subcategoryId);
+                if (subCat) {
+                    name = subCat.name;
+                }
+            }
             acc[name] = (acc[name] || 0) + (txn.amount || 0);
             return acc;
         }, {})
