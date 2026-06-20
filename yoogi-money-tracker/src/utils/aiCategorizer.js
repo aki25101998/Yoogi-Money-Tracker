@@ -67,9 +67,9 @@ export const parseInput = (text) => {
     // If no description, use the original text
     if (!description) description = cleaned;
 
-    // Capitalize first letter for better UI formatting (e.g. "ăn tối" -> "Ăn tối")
+    // Capitalize first letter of each word (e.g. "ăn tối" -> "Ăn Tối")
     if (description.length > 0) {
-        description = description.charAt(0).toUpperCase() + description.slice(1);
+        description = description.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
     }
 
     return { description, amount: Math.round(amount) };
@@ -181,8 +181,8 @@ Hãy phân tích giao dịch trên và phân loại vào MỘT trong các nhóm 
    - QUAN TRỌNG: Nếu câu có chứa từ "nợ", "mượn", hoặc "vay" (ví dụ: "phát nợ 105k tiền vé xem phim"), BẮT BUỘC phải phân loại vào nhóm Vay mượn này, KHÔNG được phân loại vào Chi tiêu hay Thu nhập.
    - Ví dụ: "cho mẹ mượn 50k từ atm để nạp điện thoại", "tuấn trả nợ 200k vào bidv khoản ăn sáng", "phát nợ 105k tiền vé phim".
    - personName: tên người mượn/trả. Nếu tên này có trong danh sách Người mượn nợ dưới đây, hãy dùng chính xác tên đó. Nếu chưa có, BẮT BUỘC trả về tên đã được viết hoa chữ cái đầu mỗi từ (ví dụ "phúc" -> "Phúc", "anh tú" -> "Anh Tú").
+   - debtNotes: Trích xuất ngắn gọn lý do hoặc mô tả của khoản mượn/trả. BẮT BUỘC phải định dạng lại cho đẹp, viết hoa chữ cái đầu CỦA MỖI TỪ (ví dụ "nạp điện thoại" -> "Nạp Điện Thoại", "ăn sáng" -> "Ăn Sáng", "nạp 4g" -> "Nạp 4G"). Nếu không có thì để trống.
    - walletId: ví bị trừ tiền (nếu cho mượn) hoặc ví được cộng tiền (nếu nhận trả nợ).
-   - debtNotes: Trích xuất ngắn gọn lý do hoặc mô tả của khoản mượn/trả. BẮT BUỘC phải định dạng lại cho đẹp, viết hoa chữ cái đầu (ví dụ "nạp điện thoại" -> "Nạp điện thoại", "ăn sáng" -> "Ăn sáng", "nạp 4g" -> "Nạp 4G"). Nếu không có thì để trống.
 
 Danh sách Ví (Wallets):
 ${JSON.stringify(walletContext, null, 2)}
@@ -210,7 +210,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (KHÔNG markdown, KHÔNG back
 }
 Lưu ý: 
 - Nếu thuộc tính nào không áp dụng (ví dụ personName cho expense), hãy để chuỗi rỗng "".
-- YÊU CẦU QUAN TRỌNG VỀ ĐỊNH DẠNG: Thuộc tính \`formattedDescription\` (áp dụng cho expense/income/transfer) phải là một mô tả giao dịch được định dạng đẹp, viết hoa chữ cái đầu (ví dụ: "ăn sáng" -> "Ăn sáng", "đổ xăng" -> "Đổ xăng", "nạp 4g" -> "Nạp 4G"). Thuộc tính \`debtNotes\` cũng phải được định dạng tương tự.`;
+- YÊU CẦU QUAN TRỌNG VỀ ĐỊNH DẠNG: Thuộc tính \`formattedDescription\` (áp dụng cho expense/income/transfer) phải là một mô tả giao dịch được định dạng đẹp, viết hoa chữ cái đầu CỦA MỖI TỪ (ví dụ: "ăn sáng" -> "Ăn Sáng", "đổ xăng" -> "Đổ Xăng", "nạp 4g" -> "Nạp 4G"). Thuộc tính \`debtNotes\` cũng phải được định dạng tương tự.\`;
 
     try {
         const response = await fetch(

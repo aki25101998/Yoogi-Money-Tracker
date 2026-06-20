@@ -186,15 +186,21 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
         if (!input.trim() || !user || !activeWallet) return;
 
         const userMsgText = input.trim();
-        const userMsg = { id: Date.now().toString(), type: 'user', text: userMsgText, timestamp: Date.now() };
-        setMessages(prev => [...prev, userMsg]);
         setInput('');
-        setIsTyping(true);
+        
+        const transactionInputs = userMsgText.split(',').map(s => s.trim()).filter(Boolean);
 
-        try {
-            const result = await categorizeTransaction(userMsgText, categories, aiMemories, wallets, payers, debtors);
-            
-            let docRef;
+        for (let i = 0; i < transactionInputs.length; i++) {
+            const singleInput = transactionInputs[i];
+            const timestamp = Date.now();
+            const userMsg = { id: timestamp.toString() + '-user-' + i, type: 'user', text: singleInput, timestamp };
+            setMessages(prev => [...prev, userMsg]);
+            setIsTyping(true);
+
+            try {
+                const result = await categorizeTransaction(singleInput, categories, aiMemories, wallets, payers, debtors);
+                
+                let docRef;
             let finalWalletId = result.walletId || activeWallet.id;
             let transactionData;
 
@@ -297,25 +303,28 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                 await incrementMemoryUsage(user.uid, result.memoryId);
             }
 
+            const botTimestamp = Date.now();
             const botMsg = {
-                id: (Date.now() + 1).toString(),
+                id: botTimestamp.toString() + '-bot-' + i,
                 type: 'bot',
                 text: 'Tuyệt vời! Đã ghi nhận giao dịch của bạn.',
-                transaction: { ...transactionData, id: docRef.id, originalInput: userMsgText },
-                timestamp: Date.now()
+                transaction: { ...transactionData, id: docRef.id, originalInput: singleInput },
+                timestamp: botTimestamp
             };
 
             setMessages(prev => [...prev, botMsg]);
         } catch (error) {
+            const botTimestamp = Date.now();
             const errorMsg = {
-                id: (Date.now() + 1).toString(),
+                id: botTimestamp.toString() + '-err-' + i,
                 type: 'bot',
                 text: `❌ Lỗi: ${error.message}`,
-                timestamp: Date.now()
+                timestamp: botTimestamp
             };
             setMessages(prev => [...prev, errorMsg]);
         } finally {
             setIsTyping(false);
+        }
         }
     };
 
