@@ -210,7 +210,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (KHÔNG markdown, KHÔNG back
 }
 Lưu ý: 
 - Nếu thuộc tính nào không áp dụng (ví dụ personName cho expense), hãy để chuỗi rỗng "".
-- YÊU CẦU QUAN TRỌNG VỀ ĐỊNH DẠNG: Thuộc tính \`formattedDescription\` (áp dụng cho expense/income/transfer) phải là một mô tả giao dịch được định dạng đẹp, viết hoa chữ cái đầu CỦA MỖI TỪ (ví dụ: "ăn sáng" -> "Ăn Sáng", "đổ xăng" -> "Đổ Xăng", "nạp 4g" -> "Nạp 4G"). Thuộc tính \`debtNotes\` cũng phải được định dạng tương tự.\`;
+- YÊU CẦU QUAN TRỌNG VỀ ĐỊNH DẠNG: Thuộc tính \`formattedDescription\` (áp dụng cho expense/income/transfer) phải là một mô tả giao dịch được định dạng đẹp, viết hoa chữ cái đầu CỦA MỖI TỪ (ví dụ: "ăn sáng" -> "Ăn Sáng", "đổ xăng" -> "Đổ Xăng", "nạp 4g" -> "Nạp 4G"). Thuộc tính \`debtNotes\` cũng phải được định dạng tương tự.`;
 
     try {
         const response = await fetch(
