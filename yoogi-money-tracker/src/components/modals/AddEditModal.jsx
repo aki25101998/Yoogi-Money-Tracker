@@ -11,7 +11,8 @@ const AddEditModal = ({
     uniqueOwners,
     onAddPayer,
     lenders,
-    onAddLender
+    onAddLender,
+    initialLender
 }) => {
     const [formData, setFormData] = useState({
         name: '',
@@ -48,12 +49,12 @@ const AddEditModal = ({
                 rate: 0,
                 startDate: new Date().toISOString().split('T')[0],
                 owner: 'Tôi',
-                lender: '',
+                lender: initialLender || '',
                 paidMonths: []
             });
             setAiPrompt('');
         }
-    }, [editingItem, isOpen]);
+    }, [editingItem, isOpen, initialLender]);
 
     if (!isOpen) return null;
 

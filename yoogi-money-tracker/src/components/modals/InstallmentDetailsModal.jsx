@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, Trash2, Pencil, RefreshCw, ChevronDown } from 'lucide-react';
+import { X, Calendar, Trash2, Pencil, RefreshCw, ChevronDown, Plus } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import InstallmentItem from '../InstallmentItem';
 import { calculateItemStats, getYearMonth } from '../../utils/calculations';
@@ -12,7 +12,8 @@ const InstallmentDetailsModal = ({
     onEditItem, 
     onDeleteItem, 
     onTogglePaid,
-    referenceDate
+    referenceDate,
+    onAddNewItem
 }) => {
     const [activeTab, setActiveTab] = useState('active'); // active, paid, history
 
@@ -108,7 +109,16 @@ const InstallmentDetailsModal = ({
                                 )}
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-1 -mr-2"><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => onAddNewItem && onAddNewItem(groupedLender.lenderName)} 
+                                className="p-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-800/50 rounded-lg transition-colors"
+                                title="Thêm khoản mới cho đơn vị này"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                            <button onClick={onClose} className="p-1 -mr-2"><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
+                        </div>
                     </div>
 
                     <div className="relative group w-full">

@@ -25,6 +25,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     // Modal States
     const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [initialLender, setInitialLender] = useState('');
 
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [selectedLenderName, setSelectedLenderName] = useState(null);
@@ -273,8 +274,13 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
     }, [selectedLenderName, filteredItems]);
 
     // --- Handlers ---
-    const handleOpenAdd = () => { setEditingItem(null); setIsAddEditModalOpen(true); };
-    const handleOpenEdit = (item) => { setEditingItem(item); setIsAddEditModalOpen(true); };
+    const handleOpenAdd = () => { setEditingItem(null); setInitialLender(''); setIsAddEditModalOpen(true); };
+    const handleOpenEdit = (item) => { setEditingItem(item); setInitialLender(''); setIsAddEditModalOpen(true); };
+    const handleOpenAddWithLender = (lenderName) => {
+        setEditingItem(null);
+        setInitialLender(lenderName);
+        setIsAddEditModalOpen(true);
+    };
 
     const handleSaveItem = async (formData) => {
         const amount = parseFloat(formData.amount);
@@ -1002,6 +1008,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                 onAddPayer={handleQuickAddPayer}
                 lenders={lenders}
                 onAddLender={handleQuickAddLender}
+                initialLender={initialLender}
             />
             <ConfirmModal
                 isOpen={confirmModalState.isOpen}
@@ -1022,11 +1029,13 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                 groupedLender={currentLenderDetails}
                 onEditItem={(item) => {
                     setEditingItem(item);
+                    setInitialLender('');
                     setIsAddEditModalOpen(true);
                 }}
                 onDeleteItem={confirmDelete}
                 onTogglePaid={togglePaidForMonth}
                 referenceDate={activeReferenceDate}
+                onAddNewItem={handleOpenAddWithLender}
             />
         </>
     );
