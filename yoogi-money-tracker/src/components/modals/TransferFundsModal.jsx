@@ -130,9 +130,10 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
                             />
                             {amount && !isNaN(amount) && parseFloat(amount) > 0 && (
                                 <div className="flex gap-2 mt-2 overflow-x-auto pb-1 hide-scrollbar">
-                                    {[1000, 10000, 100000]
+                                    {[10, 100, 1000, 10000, 100000, 1000000]
                                         .map(multiplier => parseFloat(amount) * multiplier)
-                                        .filter(val => val <= 99999999)
+                                        .filter(val => val >= 1000 && val <= 99999999)
+                                        .slice(0, 4)
                                         .map(suggestedValue => (
                                             <button
                                                 key={suggestedValue}

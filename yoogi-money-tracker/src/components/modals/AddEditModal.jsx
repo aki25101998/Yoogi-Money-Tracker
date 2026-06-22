@@ -247,9 +247,10 @@ const AddEditModal = ({
                         />
                         {formData.amount && !isNaN(formData.amount) && parseFloat(formData.amount) > 0 && (
                             <div className="flex gap-2 mt-2 overflow-x-auto pb-1 hide-scrollbar">
-                                {[1000, 10000, 100000]
+                                {[10, 100, 1000, 10000, 100000, 1000000]
                                     .map(multiplier => parseFloat(formData.amount) * multiplier)
-                                    .filter(val => val <= 99999999)
+                                    .filter(val => val >= 1000 && val <= 99999999)
+                                    .slice(0, 4)
                                     .map(suggestedValue => (
                                         <button
                                             key={suggestedValue}
