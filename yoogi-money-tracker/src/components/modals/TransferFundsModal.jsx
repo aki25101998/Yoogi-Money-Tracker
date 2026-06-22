@@ -54,7 +54,6 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
                 </div>
                 <div className="px-6 py-4 flex justify-between items-center sticky top-0 bg-white dark:bg-slate-800 z-10">
                     <div className="flex flex-col items-center w-full relative">
-                        <div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mb-4"></div>
                         <h3 className="font-bold text-xl text-slate-800 dark:text-white">
                             {initialData ? 'Chỉnh sửa chuyển nhượng' : 'Di chuyển Quỹ'}
                         </h3>
