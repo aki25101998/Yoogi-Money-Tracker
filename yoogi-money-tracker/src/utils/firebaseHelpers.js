@@ -659,7 +659,7 @@ export const updateLender = async (userId, lenderId, lenderData) => {
 export const exportUserData = async (userId) => {
     const collectionsToExport = [
         'categories', 'transactions', 'debts', 'recurring_transactions',
-        'ai_memory', 'installments', 'wallets', 'payers', 'debtors', 'lenders'
+        'ai_memory', 'installments', 'wallets', 'payers', 'debtors', 'lenders', 'ai_chat_history'
     ];
 
     const data = {};
@@ -675,7 +675,7 @@ export const exportUserData = async (userId) => {
 export const importUserData = async (userId, data) => {
     const validCollections = [
         'categories', 'transactions', 'debts', 'recurring_transactions',
-        'ai_memory', 'installments', 'wallets', 'payers', 'debtors', 'lenders'
+        'ai_memory', 'installments', 'wallets', 'payers', 'debtors', 'lenders', 'ai_chat_history'
     ];
 
     let batch = writeBatch(db);
@@ -705,4 +705,29 @@ export const importUserData = async (userId, data) => {
     if (operationCount > 0) {
         await batch.commit();
     }
+};
+
+// ==============================
+// AI CHAT HISTORY
+// ==============================
+
+export const subscribeAIChatHistory = (userId, walletId, onUpdate) => {
+    const docRef = getDocRef(userId, 'ai_chat_history', walletId);
+    return onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            onUpdate(docSnap.data().messages || []);
+        } else {
+            onUpdate(null);
+        }
+    });
+};
+
+export const updateAIChatHistory = async (userId, walletId, messages) => {
+    const docRef = getDocRef(userId, 'ai_chat_history', walletId);
+    return await setDoc(docRef, { messages, updatedAt: new Date().toISOString() }, { merge: true });
+};
+
+export const clearAIChatHistory = async (userId, walletId) => {
+    const docRef = getDocRef(userId, 'ai_chat_history', walletId);
+    return await deleteDoc(docRef);
 };

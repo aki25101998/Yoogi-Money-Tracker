@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Bot, User, Loader2, Pencil, Trash2, CheckCircle2, ChevronRight, ChevronDown, Settings, CalendarClock, ArrowRightLeft } from 'lucide-react';
 import { categorizeTransaction } from '../../utils/aiCategorizer';
-import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransaction, deleteTransaction, addDebt, updateDebt, addDebtor } from '../../utils/firebaseHelpers';
+import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransaction, deleteTransaction, addDebt, updateDebt, addDebtor, subscribeAIChatHistory, updateAIChatHistory, clearAIChatHistory } from '../../utils/firebaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
 import { APP_ID, db } from '../../config/firebase';
 import { collection, addDoc, query, where, getDocs, limit } from 'firebase/firestore';
@@ -15,6 +15,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
     const [isTyping, setIsTyping] = useState(false);
     const [activeWallet, setActiveWallet] = useState(null);
     const messagesEndRef = useRef(null);
+    const isLocalUpdateRef = useRef(false);
     
     const [isContextWalletOpen, setIsContextWalletOpen] = useState(false);
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -39,17 +40,34 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
     useEffect(() => {
         if (!isOpen || !activeWallet || !user) return;
         
-        const historyKey = `ai_chat_history_${user.uid}_${activeWallet.id}`;
-        const savedHistory = localStorage.getItem(historyKey);
-        
         const welcomeMessage = { id: 'welcome', type: 'bot', text: 'Xin chào! 👋 Hãy bắt đầu thêm giao dịch của bạn tại đây nhé!', timestamp: Date.now() };
 
+        // Attempt to migrate from localStorage first if Firebase is empty
+        const historyKey = `ai_chat_history_${user.uid}_${activeWallet.id}`;
+        const savedHistory = localStorage.getItem(historyKey);
+        let localMessages = null;
         if (savedHistory) {
             try {
-                const parsed = JSON.parse(savedHistory);
+                localMessages = JSON.parse(savedHistory);
+            } catch (e) {
+                console.error("Failed to parse local history", e);
+            }
+        }
+
+        const unsubscribe = subscribeAIChatHistory(user.uid, activeWallet.id, async (firebaseMessages) => {
+            if (firebaseMessages === null) {
+                // No firebase document exists, check local storage
+                if (localMessages && localMessages.length > 0) {
+                    setMessages(localMessages);
+                    await updateAIChatHistory(user.uid, activeWallet.id, localMessages);
+                } else {
+                    setMessages([welcomeMessage]);
+                }
+            } else {
+                // Use firebase messages
                 
                 // Fix bad transaction IDs from previous bug
-                parsed.forEach(m => {
+                firebaseMessages.forEach(m => {
                     if (m.transaction && m.transaction.id && typeof m.transaction.id === 'object') {
                         const obj = m.transaction.id;
                         if (obj.id) {
@@ -65,7 +83,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
 
                 // Filter messages younger than 48h
                 const now = Date.now();
-                const filtered = parsed.filter(m => (now - m.timestamp) < 48 * 60 * 60 * 1000);
+                const filtered = firebaseMessages.filter(m => (now - m.timestamp) < 48 * 60 * 60 * 1000);
                 
                 const userMessages = filtered.filter(m => m.type === 'user');
                 if (userMessages.length > 0) {
@@ -73,22 +91,30 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                 } else {
                     setMessages([welcomeMessage]);
                 }
-            } catch (e) {
-                setMessages([welcomeMessage]);
             }
-        } else {
-            setMessages([welcomeMessage]);
-        }
+            
+            // Clean up localStorage after migration attempt
+            if (savedHistory) {
+                localStorage.removeItem(historyKey);
+            }
+        });
+
+        return () => unsubscribe();
     }, [isOpen, activeWallet, user]);
 
-    // Save history when messages change
+    // Save history when messages change, but skip the initial load
     useEffect(() => {
-        if (messages.length > 0 && user && activeWallet) {
-            const historyKey = `ai_chat_history_${user.uid}_${activeWallet.id}`;
-            localStorage.setItem(historyKey, JSON.stringify(messages));
+        if (!isOpen || !activeWallet || !user) return;
+        
+        if (isLocalUpdateRef.current) {
+            isLocalUpdateRef.current = false;
+            // Ensure we don't save just the welcome message unless there are user messages
+            if (messages.length > 1 || (messages.length === 1 && messages[0].id !== 'welcome')) {
+                 updateAIChatHistory(user.uid, activeWallet.id, messages);
+            }
         }
         scrollToBottom();
-    }, [messages, user, activeWallet]);
+    }, [messages, user, activeWallet, isOpen]);
 
     const scrollToBottom = () => {
         setTimeout(() => {
@@ -96,11 +122,10 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
         }, 100);
     };
 
-    const handleClearChat = () => {
+    const handleClearChat = async () => {
         if (!window.confirm('Xóa toàn bộ lịch sử chat? Hành động này không thể hoàn tác.')) return;
         if (user && activeWallet) {
-            const historyKey = `ai_chat_history_${user.uid}_${activeWallet.id}`;
-            localStorage.removeItem(historyKey);
+            await clearAIChatHistory(user.uid, activeWallet.id);
         }
         setMessages([{ id: 'welcome', type: 'bot', text: 'Xin chào! 👋 Hãy bắt đầu thêm giao dịch của bạn tại đây nhé!', timestamp: Date.now() }]);
     };
@@ -128,6 +153,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                 transaction: { ...transferTxn, id: docRef.id, originalInput: transferData.description || 'Chuyển tiền' },
                 timestamp: Date.now()
             };
+            isLocalUpdateRef.current = true;
             setMessages(prev => [...prev, aiMsg]);
             
         } catch (error) {
@@ -139,6 +165,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
         if (!user || !editingTransaction) return;
         try {
             await updateTransaction(user.uid, editingTransaction.id, formData);
+            isLocalUpdateRef.current = true;
             setMessages(prev => prev.map(msg => {
                 if (msg.transaction && msg.transaction.id === editingTransaction.id) {
                     return { ...msg, transaction: { ...msg.transaction, ...formData } };
@@ -157,6 +184,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
         if (!user || !id) return;
         try {
             await deleteTransaction(user.uid, id);
+            isLocalUpdateRef.current = true;
             setMessages(prev => prev.filter(msg => !(msg.transaction && msg.transaction.id === id)));
             setIsEditModalOpen(false);
             setIsEditTransferModalOpen(false);
@@ -194,6 +222,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
             const singleInput = transactionInputs[i];
             const timestamp = Date.now();
             const userMsg = { id: timestamp.toString() + '-user-' + i, type: 'user', text: singleInput, timestamp };
+            isLocalUpdateRef.current = true;
             setMessages(prev => [...prev, userMsg]);
             setIsTyping(true);
 
@@ -312,6 +341,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                 timestamp: botTimestamp
             };
 
+            isLocalUpdateRef.current = true;
             setMessages(prev => [...prev, botMsg]);
         } catch (error) {
             const botTimestamp = Date.now();
@@ -321,6 +351,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                 text: `❌ Lỗi: ${error.message}`,
                 timestamp: botTimestamp
             };
+            isLocalUpdateRef.current = true;
             setMessages(prev => [...prev, errorMsg]);
         } finally {
             setIsTyping(false);
@@ -345,6 +376,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                 await learnFromCorrection(user.uid, originalInput, newCategoryId, '');
             }
 
+            isLocalUpdateRef.current = true;
             setMessages(prev => prev.map(m => {
                 if (m.id === msgId && m.transaction) {
                     return {
@@ -376,6 +408,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                 await learnFromCorrection(user.uid, originalInput, categoryId, newSubcategoryId);
             }
 
+            isLocalUpdateRef.current = true;
             setMessages(prev => prev.map(m => {
                 if (m.id === msgId && m.transaction) {
                     return {
