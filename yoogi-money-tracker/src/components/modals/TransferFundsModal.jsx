@@ -159,14 +159,14 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
                         </div>
                     </div>
 
-                    <div className="flex gap-3 pt-2 flex-col sm:flex-row">
+                    <div className="flex gap-3 pt-4">
                         <button
-                            type="submit"
-                            className="w-full py-4 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-bold text-lg transition-colors shadow-lg shadow-teal-500/30"
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 py-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                         >
-                            Lưu
+                            Hủy bỏ
                         </button>
-                        
                         {initialData && onDelete && (
                             <button
                                 type="button"
@@ -175,20 +175,18 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
                                         onDelete(initialData.id);
                                     }
                                 }}
-                                className="w-full py-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-lg transition-colors shadow-lg shadow-rose-500/30"
+                                className="flex-1 py-3.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold transition-colors shadow-lg shadow-rose-500/30"
                             >
-                                Xóa Chuyển
+                                Xóa
                             </button>
                         )}
+                        <button
+                            type="submit"
+                            className="flex-1 py-3.5 bg-teal-500 hover:bg-teal-600 text-white rounded-xl font-bold shadow-lg shadow-teal-500/30 transition-colors"
+                        >
+                            Lưu
+                        </button>
                     </div>
-                    
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="w-full py-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium"
-                    >
-                        Hủy
-                    </button>
                 </form>
             </div>
         </div>,

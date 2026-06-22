@@ -226,7 +226,6 @@ const AddRecurringTransactionModal = ({ isOpen, onClose, categories, user, walle
                                     onChange={e => setForm({ ...form, intervalUnit: e.target.value })}
                                     className="w-full pl-4 pr-10 py-3 appearance-none border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none cursor-pointer"
                                 >
-                                    <option value="Phút">Phút</option>
                                     <option value="Ngày">Ngày</option>
                                     <option value="Tuần">Tuần</option>
                                     <option value="Tháng">Tháng</option>

@@ -500,7 +500,7 @@ export default function App() {
                                     onClick={() => { setIsGlobalFabOpen(false); setIsGlobalTransactionOpen(true); }}
                                     className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors"
                                 >
-                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Giao dịch thường</span>
+                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Nhập thủ công</span>
                                     <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
                                         <PenSquare className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                                     </div>
