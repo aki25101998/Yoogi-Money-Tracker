@@ -94,6 +94,23 @@ const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, walle
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Số tiền</label>
                         <input type="number" required value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none" />
+                        {form.amount && !isNaN(form.amount) && parseFloat(form.amount) > 0 && (
+                            <div className="flex gap-2 mt-2 overflow-x-auto pb-1 hide-scrollbar">
+                                {[1000, 10000, 100000].map(multiplier => {
+                                    const suggestedValue = parseFloat(form.amount) * multiplier;
+                                    return (
+                                        <button
+                                            key={multiplier}
+                                            type="button"
+                                            onClick={() => setForm({ ...form, amount: suggestedValue })}
+                                            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-400 dark:hover:border-emerald-800 transition-colors"
+                                        >
+                                            {formatCurrency(suggestedValue)}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     <div>
