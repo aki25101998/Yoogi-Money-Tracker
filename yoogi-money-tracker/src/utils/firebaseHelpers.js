@@ -64,6 +64,13 @@ export const seedDefaultCategories = async (userId) => {
         });
     }
 
+    // Seed default settings
+    const settingsRef = getDocRef(userId, 'settings', 'preferences');
+    await setDoc(settingsRef, {
+        monthStartDay: 1,
+        createdAt: new Date().toISOString(),
+    }, { merge: true });
+
     return true;
 };
 
@@ -572,6 +579,26 @@ export const updateWalletOrder = async (userId, orderedWalletIds) => {
 
 export const deleteWallet = async (userId, walletId) => {
     return await deleteDoc(getDocRef(userId, 'wallets', walletId));
+};
+
+// ==============================
+// USER SETTINGS
+// ==============================
+
+export const subscribeUserSettings = (userId, onUpdate) => {
+    const docRef = getDocRef(userId, 'settings', 'preferences');
+    return onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            onUpdate(docSnap.data());
+        } else {
+            onUpdate({ monthStartDay: 1 }); // Default fallback
+        }
+    });
+};
+
+export const updateUserSettings = async (userId, settings) => {
+    const docRef = getDocRef(userId, 'settings', 'preferences');
+    return await setDoc(docRef, { ...settings, updatedAt: new Date().toISOString() }, { merge: true });
 };
 
 // ==============================

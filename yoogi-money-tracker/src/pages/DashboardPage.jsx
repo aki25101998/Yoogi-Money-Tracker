@@ -88,7 +88,7 @@ const SortableWalletCard = ({ w, isSelected, onClick, onClickEdit, onLongPress }
 
 const COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#2dd4bf', '#fb923c', '#94a3b8'];
 
-const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, recurringTransactions, payers, onNavigate }) => {
+const DashboardPage = ({ user, userSettings, transactions, categories, aiMemories, wallets, recurringTransactions, payers, onNavigate }) => {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -444,6 +444,7 @@ const DashboardPage = ({ user, transactions, categories, aiMemories, wallets, re
                     <DateRangeSelector 
                         initialMode="month" 
                         onChange={(range) => setDateRange(range)} 
+                        userSettings={userSettings}
                     />
                 </div>
 

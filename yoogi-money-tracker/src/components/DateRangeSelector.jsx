@@ -24,7 +24,9 @@ const formatDateToLocal = (date) => {
     return d.toISOString().split('T')[0];
 };
 
-const DateRangeSelector = ({ initialMode = 'month', onChange }) => {
+const DateRangeSelector = ({ initialMode = 'month', onChange, userSettings }) => {
+    const startDay = parseInt(userSettings?.monthStartDay) || 1;
+
     const [mode, setMode] = useState(initialMode);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [customRange, setCustomRange] = useState({ start: '', end: '' });
@@ -33,6 +35,7 @@ const DateRangeSelector = ({ initialMode = 'month', onChange }) => {
     const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
 
     const modeRef = useRef(null);
+    const hasAdjustedInitialDate = useRef(false);
 
     // Format helpers
     const getMonthLabel = (d) => `tháng ${d.getMonth() + 1} năm ${d.getFullYear()}`;
@@ -47,6 +50,23 @@ const DateRangeSelector = ({ initialMode = 'month', onChange }) => {
         end.setDate(end.getDate() + 6);
         return `${start.getDate()} thg ${start.getMonth() + 1} - ${end.getDate()} thg ${end.getMonth() + 1}`;
     };
+
+    useEffect(() => {
+        if (userSettings && !hasAdjustedInitialDate.current) {
+            hasAdjustedInitialDate.current = true;
+            if (startDay > 1) {
+                const now = new Date();
+                // Adjust if we are still on the initial current month
+                if (currentDate.getMonth() === now.getMonth() && currentDate.getFullYear() === now.getFullYear()) {
+                    if (now.getDate() < startDay) {
+                        const newD = new Date(now);
+                        newD.setMonth(newD.getMonth() - 1);
+                        setCurrentDate(newD);
+                    }
+                }
+            }
+        }
+    }, [userSettings, currentDate]);
 
     // Calculate start and end strings based on current state
     useEffect(() => {
@@ -73,11 +93,16 @@ const DateRangeSelector = ({ initialMode = 'month', onChange }) => {
                 label = getWeekLabel(d);
                 break;
             case 'month':
-                const startM = new Date(y, m, 1);
-                const endM = new Date(y, m + 1, 0);
+                const startM = new Date(y, m, startDay);
+                const endM = new Date(y, m + 1, startDay - 1);
                 startStr = formatDateToLocal(startM);
                 endStr = formatDateToLocal(endM);
-                label = getMonthLabel(d);
+                if (startDay === 1) {
+                    label = getMonthLabel(d);
+                } else {
+                    const formatD = (date) => `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    label = `Tháng ${m + 1} (${formatD(startM)} - ${formatD(endM)})`;
+                }
                 break;
             case 'year':
                 const startY = new Date(y, 0, 1);
@@ -103,7 +128,7 @@ const DateRangeSelector = ({ initialMode = 'month', onChange }) => {
         if (onChange) {
             onChange({ start: startStr, end: endStr, mode, label });
         }
-    }, [mode, currentDate, customRange]);
+    }, [mode, currentDate, customRange, userSettings]);
 
     // Handle clicks outside dropdowns
     useEffect(() => {
@@ -123,8 +148,12 @@ const DateRangeSelector = ({ initialMode = 'month', onChange }) => {
             end = new Date(start);
             end.setDate(end.getDate() + 6);
         } else if (type === 'this_month') {
-            start = new Date(now.getFullYear(), now.getMonth(), 1);
-            end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            start = new Date(now.getFullYear(), now.getMonth(), startDay);
+            end = new Date(now.getFullYear(), now.getMonth() + 1, startDay - 1);
+            if (now.getDate() < startDay) {
+                start.setMonth(start.getMonth() - 1);
+                end.setMonth(end.getMonth() - 1);
+            }
         } else if (type === 'last_30') {
             end = new Date(now);
             start = new Date(now);
@@ -202,13 +231,17 @@ const YEARS = [2025, 2026, 2027, 2028];
             {mode !== 'all' && mode !== 'custom' && (
                 <div className="relative group w-full md:w-auto">
                     <button className="flex items-center justify-between md:justify-start gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-slate-800 dark:text-white font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm relative overflow-hidden w-full md:w-auto">
-                        <span>
-                            {mode === 'month' && getMonthLabel(currentDate)}
-                            {mode === 'day' && getDayLabel(currentDate)}
-                            {mode === 'week' && getWeekLabel(currentDate)}
-                            {mode === 'year' && getYearLabel(currentDate)}
-                        </span>
-                        <ChevronDown size={16} className="text-slate-400 ml-1" />
+                        {/* Hidden Native Inputs for quick picking without custom calendar UI */}
+                        {mode === 'month' && (
+                            <span className="truncate">
+                                {startDay === 1 ? getMonthLabel(currentDate) : `Tháng ${currentDate.getMonth() + 1} năm ${currentDate.getFullYear()}`}
+                            </span>
+                        )}
+                        {mode === 'day' && <span>{getDayLabel(currentDate)}</span>}
+                        {mode === 'week' && <span>{getWeekLabel(currentDate)}</span>}
+                        {mode === 'year' && <span>{getYearLabel(currentDate)}</span>}
+                        
+                        <ChevronDown size={16} className="text-slate-400 ml-1 shrink-0" />
                         
                         {/* Hidden Native Inputs for quick picking without custom calendar UI */}
                         {mode === 'month' && (

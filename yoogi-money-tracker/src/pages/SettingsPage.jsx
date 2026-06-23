@@ -6,8 +6,9 @@ import PayersSettings from '../components/settings/PayersSettings';
 import CategoriesPage from './CategoriesPage'; // Reusing existing page as a component
 import AINotesPage from './AINotesPage'; // Reusing existing page as a component
 import DataSyncSettings from '../components/settings/DataSyncSettings';
+import GeneralSettings from '../components/settings/GeneralSettings';
 
-const SettingsPage = ({ user, categories, aiMemories, wallets, payers, initialTab = 'wallets' }) => {
+const SettingsPage = ({ user, userSettings, categories, aiMemories, wallets, payers, initialTab = 'general' }) => {
     const [activeTab, setActiveTab] = useState(initialTab);
 
     useEffect(() => {
@@ -17,6 +18,7 @@ const SettingsPage = ({ user, categories, aiMemories, wallets, payers, initialTa
     }, [initialTab]);
 
     const tabs = [
+        { id: 'general', label: 'Chung', icon: Settings },
         { id: 'wallets', label: 'Ví tiền', icon: Wallet },
         { id: 'categories', label: 'Danh mục', icon: FolderTree },
         { id: 'ai', label: 'Ví ngữ cảnh', icon: Brain },
@@ -73,6 +75,7 @@ const SettingsPage = ({ user, categories, aiMemories, wallets, payers, initialTa
 
             {/* Content */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
+                {activeTab === 'general' && <GeneralSettings user={user} userSettings={userSettings} />}
                 {activeTab === 'wallets' && <WalletsSettings user={user} wallets={wallets} />}
                 {activeTab === 'categories' && <CategoriesPage user={user} categories={categories} hideHeader={true} />}
                 {activeTab === 'ai' && <AINotesPage user={user} aiMemories={aiMemories} categories={categories} hideHeader={true} />}

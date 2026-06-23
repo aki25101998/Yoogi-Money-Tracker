@@ -9,7 +9,7 @@ import TransferFundsModal from '../components/modals/TransferFundsModal';
 import DateRangeSelector from '../components/DateRangeSelector';
 import MultiSelectDropdown from '../components/MultiSelectDropdown';
 
-const TransactionsPage = ({ user, transactions, categories, wallets, debts }) => {
+const TransactionsPage = ({ user, userSettings, transactions, categories, wallets, debts }) => {
     // --- Filters ---
     const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
     const [selectedWalletIds, setSelectedWalletIds] = useState(() => {
@@ -346,6 +346,7 @@ const TransactionsPage = ({ user, transactions, categories, wallets, debts }) =>
                         <DateRangeSelector 
                             initialMode="month" 
                             onChange={(range) => setDateRange(range)} 
+                            userSettings={userSettings}
                         />
                     </div>
                 </div>

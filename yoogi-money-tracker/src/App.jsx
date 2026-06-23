@@ -43,7 +43,8 @@ import {
     subscribeRecurringTransactions,
     addTransaction,
     updateRecurringTransaction,
-    subscribeLenders
+    subscribeLenders,
+    subscribeUserSettings
 } from './utils/firebaseHelpers';
 
 export default function App() {
@@ -70,6 +71,7 @@ export default function App() {
     const [debts, setDebts] = useState([]);
     const [recurringTransactions, setRecurringTransactions] = useState([]);
     const [lenders, setLenders] = useState([]);
+    const [userSettings, setUserSettings] = useState({ monthStartDay: 1 });
     const [isDataLoading, setIsDataLoading] = useState(true);
 
     // --- Navigation ---
@@ -140,6 +142,7 @@ export default function App() {
             setPayers([]);
             setDebtors([]);
             setLenders([]);
+            setUserSettings({ monthStartDay: 1 });
             setIsDataLoading(false);
             return;
         }
@@ -194,6 +197,9 @@ export default function App() {
         // Subscribe to Lenders
         const unsubLenders = subscribeLenders(user.uid, setLenders);
 
+        // Subscribe to User Settings
+        const unsubSettings = subscribeUserSettings(user.uid, setUserSettings);
+
         setIsDataLoading(false);
 
         return () => {
@@ -207,6 +213,7 @@ export default function App() {
             unsubDebts();
             unsubRecurring();
             unsubLenders();
+            unsubSettings();
         };
     }, [user]);
 
@@ -404,6 +411,7 @@ export default function App() {
             return (
                 <DashboardPage 
                     user={user} 
+                    userSettings={userSettings}
                     transactions={transactions} 
                     categories={categories}
                     aiMemories={aiMemories}
@@ -417,6 +425,7 @@ export default function App() {
             return (
                 <TransactionsPage
                     user={user}
+                    userSettings={userSettings}
                     transactions={transactions}
                     categories={categories}
                     aiMemories={aiMemories}
@@ -450,6 +459,7 @@ export default function App() {
             return (
                 <SettingsPage
                     user={user}
+                    userSettings={userSettings}
                     categories={categories}
                     aiMemories={aiMemories}
                     wallets={wallets}
