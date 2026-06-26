@@ -233,6 +233,11 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
             let finalWalletId = result.walletId || activeWallet.id;
             let transactionData;
 
+            const getCurrentTime = () => {
+                const now = new Date();
+                return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            };
+
             if (result.type === 'loan_given' || result.type === 'loan_repaid') {
                 const amountNum = parseFloat(result.amount) || 0;
                 let debtId = null;
@@ -285,11 +290,6 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                         });
                     }
                 }
-
-                const getCurrentTime = () => {
-                    const now = new Date();
-                    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                };
 
                 transactionData = {
                     type: result.type,
