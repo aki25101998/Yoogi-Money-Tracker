@@ -62,6 +62,7 @@ const RepayDebtModal = ({ isOpen, onClose, user, wallets, debt }) => {
                 categoryId: 'loan_repaid',
                 subcategoryId: '',
                 date: new Date(form.date).toISOString(),
+                time: `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`,
                 walletId: form.walletId,
             };
             if (activeDebts.length > 0) {

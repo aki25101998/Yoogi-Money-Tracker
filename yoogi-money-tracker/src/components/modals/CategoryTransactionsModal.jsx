@@ -90,7 +90,7 @@ const CategoryTransactionsModal = ({ isOpen, onClose, category, transactions, ca
                                     >
                                         <div className="flex-1 min-w-0">
                                             <p className="text-base font-bold text-slate-800 dark:text-white truncate">{txn.description}</p>
-                                            <p className="text-xs text-slate-400 mt-0.5">{new Date(txn.date).toLocaleDateString('vi-VN')}</p>
+                                            <p className="text-xs text-slate-400 mt-0.5">{new Date(txn.date).toLocaleDateString('vi-VN')}{txn.time ? ` • ${txn.time}` : ''}</p>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <span className={`text-base font-bold ${isIncome ? 'text-emerald-500' : 'text-rose-500'}`}>

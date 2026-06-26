@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ArrowRightLeft, Check } from 'lucide-react';
+import { X, ArrowRightLeft, Check, Clock } from 'lucide-react';
 
 const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initialData }) => {
+    const getCurrentTime = () => {
+        const now = new Date();
+        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    };
+
     const [fromWallet, setFromWallet] = useState('');
     const [toWallet, setToWallet] = useState('');
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [time, setTime] = useState(getCurrentTime());
 
     useEffect(() => {
         if (isOpen) {
@@ -17,12 +23,14 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
                 setDescription(initialData.description || '');
                 setAmount(initialData.amount || '');
                 setDate(initialData.date || new Date().toISOString().split('T')[0]);
+                setTime(initialData.time || getCurrentTime());
             } else if (wallets?.length > 0) {
                 setFromWallet(wallets[0]?.id);
                 setToWallet(wallets.length > 1 ? wallets[1]?.id : wallets[0]?.id);
                 setDescription('');
                 setAmount('');
                 setDate(new Date().toISOString().split('T')[0]);
+                setTime(getCurrentTime());
             }
         }
     }, [isOpen, wallets, initialData]);
@@ -40,7 +48,8 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
             transferTo: toWallet,
             description,
             amount: parseFloat(amount) || 0,
-            date
+            date,
+            time
         });
         onClose();
     };
@@ -146,14 +155,25 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
                                 </div>
                             )}
                             <div className="relative">
-                                <span className="absolute top-2 left-4 text-xs text-slate-400 font-medium">Ngày</span>
-                                <input
-                                    type="date"
-                                    required
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    className="w-full px-4 pt-6 pb-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none"
-                                />
+                                <span className="absolute top-2 left-4 text-xs text-slate-400 font-medium">Ngày & Giờ</span>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="date"
+                                        required
+                                        value={date}
+                                        onChange={(e) => setDate(e.target.value)}
+                                        className="flex-1 px-4 pt-6 pb-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                                    />
+                                    <div className="relative">
+                                        <input
+                                            type="time"
+                                            value={time}
+                                            onChange={(e) => setTime(e.target.value)}
+                                            className="w-[120px] px-3 pt-6 pb-2 pl-9 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none text-sm"
+                                        />
+                                        <Clock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

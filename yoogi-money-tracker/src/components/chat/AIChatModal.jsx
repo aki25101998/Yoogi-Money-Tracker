@@ -286,6 +286,11 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                     }
                 }
 
+                const getCurrentTime = () => {
+                    const now = new Date();
+                    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                };
+
                 transactionData = {
                     type: result.type,
                     amount: amountNum,
@@ -295,6 +300,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                     categoryId: result.type,
                     subcategoryId: '',
                     date: result.date || new Date().toISOString(),
+                    time: getCurrentTime(),
                     walletId: finalWalletId,
                     debtId: debtId,
                     aiCategorized: result.aiCategorized
@@ -309,6 +315,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                     categoryId: 'transfer',
                     subcategoryId: '',
                     date: result.date || new Date().toISOString(),
+                    time: getCurrentTime(),
                     walletId: finalWalletId,
                     transferTo: result.transferTo,
                     aiCategorized: result.aiCategorized
@@ -322,6 +329,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
                     categoryId: result.categoryId,
                     subcategoryId: result.subcategoryId,
                     date: result.date || new Date().toISOString(),
+                    time: getCurrentTime(),
                     walletId: finalWalletId,
                     aiCategorized: result.aiCategorized,
                 };

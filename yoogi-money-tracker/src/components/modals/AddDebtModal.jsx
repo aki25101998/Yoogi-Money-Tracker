@@ -54,6 +54,7 @@ const AddDebtModal = ({ isOpen, onClose, user, wallets, payers, onAddPayer }) =>
                 categoryId: 'loan_given', // We can use a virtual category or rely on type
                 subcategoryId: '',
                 date: new Date(form.date).toISOString(),
+                time: `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`,
                 walletId: form.walletId,
                 debtId: docRef.id
             };

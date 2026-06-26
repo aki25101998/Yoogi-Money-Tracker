@@ -275,11 +275,19 @@ export const subscribeTransactions = (userId, callback) => {
             ...doc.data(),
             id: doc.id,
         }));
-        // Sort by date descending (newest first)
+        // Sort by date descending (newest first), then by time descending, then by createdAt
         transactions.sort((a, b) => {
             const dateCompare = b.date.localeCompare(a.date);
             if (dateCompare !== 0) return dateCompare;
-            // Same date? Sort by createdAt descending
+            // Same date? Sort by time (HH:mm) descending
+            const timeA = a.time || '';
+            const timeB = b.time || '';
+            if (timeA && timeB) {
+                const timeCompare = timeB.localeCompare(timeA);
+                if (timeCompare !== 0) return timeCompare;
+            } else if (timeB) return 1;
+            else if (timeA) return -1;
+            // Fallback: createdAt descending
             return (b.createdAt || '').localeCompare(a.createdAt || '');
         });
         callback(transactions);

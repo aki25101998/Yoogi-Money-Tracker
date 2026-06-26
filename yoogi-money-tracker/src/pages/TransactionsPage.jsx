@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Filter, Calendar, Pencil, Trash2, AlertTriangle, ArrowDownRight, ArrowUpRight, ChevronDown, X, Check } from 'lucide-react';
+import { Filter, Calendar, Pencil, Trash2, AlertTriangle, ArrowDownRight, ArrowUpRight, ChevronDown, X, Check, Clock } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 import { deleteTransaction, deleteMultipleTransactions, updateTransaction, updateDebt, getTransactionByDebtId } from '../utils/firebaseHelpers';
 import ConfirmModal from '../components/modals/ConfirmModal';
@@ -79,10 +79,19 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
             if (t.type === 'income' || t.type === 'loan_repaid') groups[dateKey].totalIncome += t.amount;
             else if (t.type === 'expense' || t.type === 'loan_given') groups[dateKey].totalExpense += t.amount;
         });
-        // Sort items within each group by createdAt descending (newest first)
+        // Sort items within each group by time descending (newest first), fallback to createdAt
         const result = Object.values(groups);
         result.forEach(group => {
-            group.items.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+            group.items.sort((a, b) => {
+                // Primary sort: time field (HH:mm) descending
+                const timeA = a.time || '';
+                const timeB = b.time || '';
+                if (timeA && timeB) return timeB.localeCompare(timeA);
+                if (timeB) return 1;
+                if (timeA) return -1;
+                // Fallback: createdAt descending
+                return (b.createdAt || '').localeCompare(a.createdAt || '');
+            });
         });
         // Sort dates descending
         return result.sort((a, b) => b.date.localeCompare(a.date));
@@ -435,6 +444,12 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
                                                     : `${wallet?.name || 'Chưa phân ví'} • ${cat?.name || '❓ Chưa phân loại'} ${txn.subcategoryId && cat?.subcategories?.find(s => s.id === txn.subcategoryId) ? `> ${cat.subcategories.find(s => s.id === txn.subcategoryId).name}` : ''}`))}
                                                 </p>
                                                 <div className="flex items-center gap-2">
+                                                    {txn.time && (
+                                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                                                            <Clock className="w-3 h-3" />
+                                                            {txn.time}
+                                                        </span>
+                                                    )}
                                                     <p className="font-medium text-slate-500 dark:text-slate-400 truncate text-sm">
                                                         {isLoan && txn.description ? txn.description.replace(/^(?:Cho )?.*?(?:mượn|trả nợ):\s*/, '') : txn.description}
                                                     </p>

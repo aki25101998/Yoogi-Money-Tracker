@@ -235,6 +235,7 @@ export default function App() {
                             categoryId: rt.categoryId,
                             subcategoryId: rt.subcategoryId || '',
                             date: now.toISOString(),
+                            time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
                             walletId: rt.walletId,
                             isRecurring: true,
                             recurringId: rt.id

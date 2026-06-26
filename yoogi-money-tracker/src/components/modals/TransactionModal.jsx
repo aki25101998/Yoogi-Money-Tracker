@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ArrowDownRight, ArrowUpRight, Check, Trash2 } from 'lucide-react';
+import { X, ArrowDownRight, ArrowUpRight, Check, Trash2, Clock } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
 const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, wallets, initialData = null, defaultWalletId = null }) => {
     const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || wallets?.[0]?.id || '';
     
+    const getCurrentTime = () => {
+        const now = new Date();
+        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    };
+
     const [form, setForm] = useState({
         type: 'expense',
         amount: '',
@@ -13,6 +18,7 @@ const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, walle
         categoryId: '',
         subcategoryId: '',
         date: new Date().toISOString().split('T')[0],
+        time: getCurrentTime(),
         walletId: defaultWallet,
     });
 
@@ -26,6 +32,7 @@ const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, walle
                     categoryId: initialData.categoryId || '',
                     subcategoryId: initialData.subcategoryId || '',
                     date: initialData.date || new Date().toISOString().split('T')[0],
+                    time: initialData.time || getCurrentTime(),
                     walletId: initialData.walletId || defaultWallet,
                 });
             } else {
@@ -36,6 +43,7 @@ const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, walle
                     categoryId: '',
                     subcategoryId: '',
                     date: new Date().toISOString().split('T')[0],
+                    time: getCurrentTime(),
                     walletId: defaultWallet,
                 });
             }
@@ -127,8 +135,19 @@ const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, walle
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Ngày</label>
-                        <input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none" />
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Ngày & Giờ</label>
+                        <div className="flex gap-2">
+                            <input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none" />
+                            <div className="relative">
+                                <input 
+                                    type="time" 
+                                    value={form.time} 
+                                    onChange={e => setForm({ ...form, time: e.target.value })} 
+                                    className="w-[120px] px-3 py-2 pl-9 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none text-sm" 
+                                />
+                                <Clock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
+                        </div>
                     </div>
 
                     <div>
