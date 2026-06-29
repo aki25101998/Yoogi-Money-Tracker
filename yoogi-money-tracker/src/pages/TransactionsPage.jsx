@@ -460,26 +460,14 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
                                                 </div>
                                             </div>
 
-                                            {/* Amount & Actions */}
-                                            <div className="flex items-center gap-3">
-                                                <div className="text-right shrink-0">
-                                                    <p className={`font-bold text-base whitespace-nowrap flex items-center justify-end gap-1.5 ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : (isExpense ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400')}`}>
-                                                        <span className="flex-shrink-0 w-4 flex items-center justify-center">
-                                                            {isIncome ? <ArrowUpRight className="w-4 h-4" /> : (isExpense ? <ArrowDownRight className="w-4 h-4" /> : '⇄')}
-                                                        </span>
-                                                        <span className="tabular-nums">{formatCurrency(txn.amount)}</span>
-                                                    </p>
-                                                </div>
-                                                <div className={`flex items-center justify-end w-9 transition-opacity ${isSelectMode ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}>
-                                                    {!isLoan && (
-                                                        <button 
-                                                            onClick={(e) => openDeleteModal(e, txn.id)} 
-                                                            className="p-2 text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/30 rounded-lg transition-colors shadow-sm border border-slate-200 dark:border-slate-700"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-                                                </div>
+                                            {/* Amount */}
+                                            <div className="text-right shrink-0">
+                                                <p className={`font-bold text-base whitespace-nowrap flex items-center justify-end gap-1.5 ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : (isExpense ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400')}`}>
+                                                    <span className="flex-shrink-0 w-4 flex items-center justify-center">
+                                                        {isIncome ? <ArrowUpRight className="w-4 h-4" /> : (isExpense ? <ArrowDownRight className="w-4 h-4" /> : '⇄')}
+                                                    </span>
+                                                    <span className="tabular-nums">{formatCurrency(txn.amount)}</span>
+                                                </p>
                                             </div>
                                         </div>
                                     );
