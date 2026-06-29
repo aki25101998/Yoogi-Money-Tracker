@@ -443,22 +443,26 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
                                                     : (txn.type === 'loan_repaid' ? `Nhận trả nợ ( Ví: ${wallet?.name || '?'} )`
                                                     : `${wallet?.name || 'Chưa phân ví'} • ${cat?.name || '❓ Chưa phân loại'} ${txn.subcategoryId && cat?.subcategories?.find(s => s.id === txn.subcategoryId) ? `> ${cat.subcategories.find(s => s.id === txn.subcategoryId).name}` : ''}`))}
                                                 </p>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-col gap-1 mt-0.5">
                                                     {txn.time && (
-                                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md flex-shrink-0">
-                                                            <Clock className="w-3 h-3" />
-                                                            {txn.time}
-                                                        </span>
+                                                        <div className="flex items-center">
+                                                            <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md">
+                                                                <Clock className="w-3 h-3" />
+                                                                {txn.time}
+                                                            </span>
+                                                        </div>
                                                     )}
-                                                    <p className="font-medium text-slate-500 dark:text-slate-400 truncate text-sm">
-                                                        {isLoan && txn.description ? txn.description.replace(/^(?:Cho )?.*?(?:mượn|trả nợ):\s*/, '') : txn.description}
-                                                    </p>
+                                                    {txn.description && (
+                                                        <p className="font-medium text-slate-500 dark:text-slate-400 text-xs line-clamp-1">
+                                                            {isLoan && txn.description ? txn.description.replace(/^(?:Cho )?.*?(?:mượn|trả nợ):\s*/, '') : txn.description}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
 
                                             {/* Amount & Actions */}
-                                            <div className="flex items-center gap-4">
-                                                <div className="text-right min-w-[120px]">
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-right shrink-0">
                                                     <p className={`font-bold text-base whitespace-nowrap flex items-center justify-end gap-1.5 ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : (isExpense ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400')}`}>
                                                         <span className="flex-shrink-0 w-4 flex items-center justify-center">
                                                             {isIncome ? <ArrowUpRight className="w-4 h-4" /> : (isExpense ? <ArrowDownRight className="w-4 h-4" /> : '⇄')}
