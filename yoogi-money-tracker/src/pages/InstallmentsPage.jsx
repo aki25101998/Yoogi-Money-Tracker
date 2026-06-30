@@ -1029,13 +1029,13 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets }) 
             />
             <InstallmentDetailsModal
                 isOpen={isDetailsOpen}
-                onClose={() => { setIsDetailsOpen(false); setSelectedLenderName(null); }}
-                lenderName={selectedLenderName}
-                displayItems={detailsItems}
+                onClose={() => setIsDetailsOpen(false)}
+                groupedLender={currentLenderDetails}
                 onEditItem={(item) => {
                     setEditingItem(item);
                     setInitialLender('');
                     setIsAddEditModalOpen(true);
+                    setIsDetailsOpen(false);
                 }}
                 onDeleteItem={confirmDelete}
                 onTogglePaid={togglePaidForMonth}
