@@ -3,6 +3,7 @@ import { Wallet, Plus, Pencil, Trash2, AlertTriangle, GripVertical } from 'lucid
 import { addWallet, updateWallet, deleteWallet, updateWalletOrder } from '../../utils/firebaseHelpers';
 import ConfirmModal from '../modals/ConfirmModal';
 import WalletModal from '../modals/WalletModal';
+import UpgradeProModal from '../modals/UpgradeProModal';
 
 import {
     DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors,
@@ -57,9 +58,10 @@ const SortableWalletItem = ({ wallet, onEdit, onDelete, onSetDefault }) => {
     );
 };
 
-const WalletsSettings = ({ user, wallets }) => {
+const WalletsSettings = ({ user, wallets, userSettings }) => {
     const [editModal, setEditModal] = useState({ isOpen: false, mode: 'add', data: null });
     const [confirmState, setConfirmState] = useState({ isOpen: false, data: null });
+    const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
     const sensors = useSensors(
@@ -69,7 +71,11 @@ const WalletsSettings = ({ user, wallets }) => {
     );
 
     const openAdd = () => {
-        setEditModal({ isOpen: true, mode: 'add', data: null });
+        if (!userSettings?.isPro && wallets?.length >= 2) {
+            setIsUpgradeModalOpen(true);
+        } else {
+            setEditModal({ isOpen: true, mode: 'add', data: null });
+        }
     };
 
     const openEdit = (wallet) => {
@@ -194,6 +200,12 @@ const WalletsSettings = ({ user, wallets }) => {
                 Icon={AlertTriangle}
                 iconColorClass="text-rose-600"
                 iconBgClass="bg-rose-100"
+            />
+
+            <UpgradeProModal
+                isOpen={isUpgradeModalOpen}
+                onClose={() => setIsUpgradeModalOpen(false)}
+                user={user}
             />
         </div>
     );

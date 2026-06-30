@@ -597,9 +597,9 @@ export const subscribeUserSettings = (userId, onUpdate) => {
     const docRef = getDocRef(userId, 'settings', 'preferences');
     return onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
-            onUpdate(docSnap.data());
+            onUpdate({ isPro: false, ...docSnap.data() });
         } else {
-            onUpdate({ monthStartDay: 1 }); // Default fallback
+            onUpdate({ monthStartDay: 1, isPro: false }); // Default fallback
         }
     });
 };

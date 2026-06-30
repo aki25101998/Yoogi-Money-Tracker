@@ -20,8 +20,9 @@ import InstallmentItem from '../components/InstallmentItem';
 import AddEditModal from '../components/modals/AddEditModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import InstallmentDetailsModal from '../components/modals/InstallmentDetailsModal';
+import MinimumPaymentModal from '../components/modals/MinimumPaymentModal';
 
-const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
+const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets }) => {
     // Modal States
     const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
@@ -29,6 +30,9 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
 
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [selectedLenderName, setSelectedLenderName] = useState(null);
+
+    const [isMinPaymentOpen, setIsMinPaymentOpen] = useState(false);
+    const [selectedMinPaymentItem, setSelectedMinPaymentItem] = useState(null);
 
     // Confirm Modal States
     const [confirmModalState, setConfirmModalState] = useState({
@@ -1025,8 +1029,9 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
             />
             <InstallmentDetailsModal
                 isOpen={isDetailsOpen}
-                onClose={() => setIsDetailsOpen(false)}
-                groupedLender={currentLenderDetails}
+                onClose={() => { setIsDetailsOpen(false); setSelectedLenderName(null); }}
+                lenderName={selectedLenderName}
+                displayItems={detailsItems}
                 onEditItem={(item) => {
                     setEditingItem(item);
                     setInitialLender('');
@@ -1036,6 +1041,18 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading }) => {
                 onTogglePaid={togglePaidForMonth}
                 referenceDate={activeReferenceDate}
                 onAddNewItem={handleOpenAddWithLender}
+                onMinimumPayment={(item) => {
+                    setSelectedMinPaymentItem(item);
+                    setIsMinPaymentOpen(true);
+                }}
+            />
+
+            <MinimumPaymentModal
+                isOpen={isMinPaymentOpen}
+                onClose={() => { setIsMinPaymentOpen(false); setSelectedMinPaymentItem(null); }}
+                user={user}
+                wallets={wallets}
+                item={selectedMinPaymentItem}
             />
         </>
     );

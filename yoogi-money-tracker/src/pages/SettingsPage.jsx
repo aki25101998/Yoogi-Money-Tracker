@@ -76,7 +76,7 @@ const SettingsPage = ({ user, userSettings, categories, aiMemories, wallets, pay
             {/* Content */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
                 {activeTab === 'general' && <GeneralSettings user={user} userSettings={userSettings} />}
-                {activeTab === 'wallets' && <WalletsSettings user={user} wallets={wallets} />}
+                {activeTab === 'wallets' && <WalletsSettings user={user} wallets={wallets} userSettings={userSettings} />}
                 {activeTab === 'categories' && <CategoriesPage user={user} categories={categories} hideHeader={true} />}
                 {activeTab === 'ai' && <AINotesPage user={user} aiMemories={aiMemories} categories={categories} hideHeader={true} />}
                 {activeTab === 'payers' && <PayersSettings user={user} payers={payers} />}

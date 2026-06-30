@@ -5,7 +5,7 @@ import Badge from './ui/Badge';
 import { formatCurrency } from '../utils/formatters';
 import { calculateItemStats, monthDiff } from '../utils/calculations';
 
-const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, isReadOnly, kyIndex }) => {
+const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, onMinimumPayment, isReadOnly, kyIndex }) => {
     const stats = calculateItemStats(item, referenceDate);
     const paidCount = Array.isArray(item.paidMonths) ? item.paidMonths.length : stats.effectiveMonths;
     const cannotTickMore = !isPaid && paidCount >= item.term;
@@ -61,7 +61,15 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                     </div>
 
                     {/* Payment Toggle Button */}
-                    <div className="flex-1 flex justify-end items-center">
+                    <div className="flex-1 flex justify-end items-center gap-2">
+                        {!isPaid && !isDisabled && onMinimumPayment && (
+                            <button
+                                onClick={() => onMinimumPayment(item)}
+                                className="px-3 py-2 rounded-lg font-bold text-sm transition-all border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 hover:border-orange-300 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800/50 dark:hover:bg-orange-900/40 active:scale-95"
+                            >
+                                Trả tối thiểu
+                            </button>
+                        )}
                         <button
                             onClick={() => onTogglePaid && onTogglePaid(item)}
                             disabled={isDisabled}

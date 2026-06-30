@@ -10,6 +10,7 @@ import { categorizeTransaction } from '../utils/aiCategorizer';
 import { addTransaction, incrementMemoryUsage, updateWalletOrder, addWallet } from '../utils/firebaseHelpers';
 import TransactionModal from '../components/modals/TransactionModal';
 import WalletModal from '../components/modals/WalletModal';
+import UpgradeProModal from '../components/modals/UpgradeProModal';
 import ReorderWalletsModal from '../components/modals/ReorderWalletsModal';
 import TransferFundsModal from '../components/modals/TransferFundsModal';
 import DateRangeSelector from '../components/DateRangeSelector';
@@ -112,6 +113,7 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+    const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
     const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
 
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
@@ -427,9 +429,13 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                 {/* Thêm ví mới */}
                 <div 
                     onClick={() => {
-                        setWalletModalMode('add');
-                        setEditingWallet(null);
-                        setIsWalletModalOpen(true);
+                        if (!userSettings?.isPro && wallets?.length >= 2) {
+                            setIsUpgradeModalOpen(true);
+                        } else {
+                            setWalletModalMode('add');
+                            setEditingWallet(null);
+                            setIsWalletModalOpen(true);
+                        }
                     }}
                     className="min-w-[140px] flex-shrink-0 rounded-2xl p-4 border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all flex flex-col items-center justify-center text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
                 >
@@ -719,8 +725,14 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                 isOpen={isWalletModalOpen}
                 onClose={() => setIsWalletModalOpen(false)}
                 mode={walletModalMode}
-                initialData={editingWallet}
+                initialData={walletModalMode === 'edit' ? editingWallet : null}
                 onSave={handleSaveWallet}
+            />
+
+            <UpgradeProModal
+                isOpen={isUpgradeModalOpen}
+                onClose={() => setIsUpgradeModalOpen(false)}
+                user={user}
             />
 
             <ReorderWalletsModal

@@ -13,7 +13,8 @@ const InstallmentDetailsModal = ({
     onDeleteItem, 
     onTogglePaid,
     referenceDate,
-    onAddNewItem
+    onAddNewItem,
+    onMinimumPayment
 }) => {
     const [activeTab, setActiveTab] = useState('active'); // active, paid, history
 
@@ -162,6 +163,7 @@ const InstallmentDetailsModal = ({
                                     referenceDate={wrapper.refDate}
                                     isPaid={activeTab === 'paid' || activeTab === 'history'}
                                     onTogglePaid={(item) => onTogglePaid(item, wrapper.monthStr)}
+                                    onMinimumPayment={onMinimumPayment}
                                     isReadOnly={false}
                                     kyIndex={wrapper.index}
                                 />
