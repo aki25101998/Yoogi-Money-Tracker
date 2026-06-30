@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Sparkles, Plus, ChevronDown } from 'lucide-react';
 import { parseLoanInfo } from '../../utils/aiService';
+import AmountInput from '../ui/AmountInput';
 
 const AddEditModal = ({
     isOpen,
@@ -125,8 +126,6 @@ const AddEditModal = ({
                     <button onClick={onClose}><X className="w-6 h-6 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300" /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {/* ... (Existing Inputs) ... */}
-
                     {/* AI Section - Hide if editing */}
                     {!editingItem && (
                         <div className="mb-2 bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100/50 dark:border-indigo-800/30">
@@ -232,37 +231,13 @@ const AddEditModal = ({
                     </div>
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Số tiền vay (Gốc)</label>
-                        <input 
-                            type="text" 
-                            inputMode="numeric"
-                            required 
-                            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-indigo-500 focus:outline-none" 
-                            value={formData.amount ? formData.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''} 
-                            onChange={e => {
-                                const rawValue = e.target.value.replace(/\./g, '');
-                                if (!isNaN(rawValue)) {
-                                    setFormData({ ...formData, amount: rawValue });
-                                }
-                            }} 
+                        <AmountInput
+                            required
+                            value={formData.amount}
+                            onChange={(value) => setFormData({ ...formData, amount: value })}
+                            colorTheme="indigo"
+                            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-indigo-500 focus:outline-none"
                         />
-                        {formData.amount && !isNaN(formData.amount) && parseFloat(formData.amount) > 0 && (
-                            <div className="flex gap-2 mt-2 overflow-x-auto pb-1 hide-scrollbar">
-                                {[10, 100, 1000, 10000, 100000, 1000000]
-                                    .map(multiplier => parseFloat(formData.amount) * multiplier)
-                                    .filter(val => val >= 1000 && val <= 99999999)
-                                    .slice(0, 4)
-                                    .map(suggestedValue => (
-                                        <button
-                                            key={suggestedValue}
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, amount: suggestedValue })}
-                                            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400 dark:hover:border-indigo-800 transition-colors"
-                                        >
-                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(suggestedValue)}
-                                        </button>
-                                    ))}
-                            </div>
-                        )}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import AmountInput from '../ui/AmountInput';
 
 const EMOJI_PICKS = ['💵', '💳', '🏦', '📱', '💰', '💼', '🐖'];
 
@@ -75,10 +76,9 @@ const WalletModal = ({ isOpen, onClose, mode = 'add', initialData = null, onSave
                     </div>
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Số dư ban đầu</label>
-                        <input
-                            type="number"
+                        <AmountInput
                             value={initialBalance}
-                            onChange={(e) => setInitialBalance(e.target.value)}
+                            onChange={setInitialBalance}
                             className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none"
                             placeholder="Vd: 500000"
                         />

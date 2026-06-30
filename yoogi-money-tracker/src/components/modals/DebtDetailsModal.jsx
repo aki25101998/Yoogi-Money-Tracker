@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Calendar, Trash2, Pencil, Check, ChevronDown, RefreshCw } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { updateDebt, updateTransaction, getTransactionByDebtId, deleteTransaction } from '../../utils/firebaseHelpers';
+import AmountInput from '../ui/AmountInput';
 
 const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wallets, transactions }) => {
     const [activeTab, setActiveTab] = useState('active'); // active, paid, history
@@ -241,11 +242,9 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                                                 </div>
                                                 <div>
                                                     <label className="text-[10px] text-slate-400 font-medium block mb-1">Số tiền mượn</label>
-                                                    <input
-                                                        type="number"
-                                                        min="0"
+                                                    <AmountInput
                                                         value={editForm.amount}
-                                                        onChange={e => setEditForm({ ...editForm, amount: e.target.value })}
+                                                        onChange={(value) => setEditForm({ ...editForm, amount: value })}
                                                         className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                                                     />
                                                 </div>
@@ -362,11 +361,9 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                                             </div>
                                             <div>
                                                 <label className="text-[10px] text-slate-400 font-medium block mb-1">Số tiền đã trả</label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
+                                                <AmountInput
                                                     value={paymentEditForm.amount}
-                                                    onChange={e => setPaymentEditForm({ ...paymentEditForm, amount: e.target.value })}
+                                                    onChange={(value) => setPaymentEditForm({ ...paymentEditForm, amount: value })}
                                                     className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                                                 />
                                             </div>

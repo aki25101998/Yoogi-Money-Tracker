@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronDown } from 'lucide-react';
+import { X, Calendar, Wallet, ChevronDown } from 'lucide-react';
 import { addTransaction } from '../../utils/firebaseHelpers';
+import AmountInput from '../ui/AmountInput';
 import { formatCurrency } from '../../utils/formatters';
 
 const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item }) => {
@@ -80,13 +81,12 @@ const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item }) => {
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div>
-                        <input
-                            type="number"
+                        <AmountInput
                             placeholder="Số tiền thanh toán"
                             required
-                            min="1"
                             value={form.amount}
-                            onChange={e => setForm({ ...form, amount: e.target.value })}
+                            onChange={(value) => setForm({ ...form, amount: value })}
+                            colorTheme="orange"
                             className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none placeholder:text-slate-400"
                         />
                     </div>

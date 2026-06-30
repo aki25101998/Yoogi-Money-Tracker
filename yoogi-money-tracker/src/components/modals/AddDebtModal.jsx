@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronDown } from 'lucide-react';
+import AmountInput from '../ui/AmountInput';
 import { addDebt, addTransaction } from '../../utils/firebaseHelpers';
 
 const AddDebtModal = ({ isOpen, onClose, user, wallets, payers, onAddPayer }) => {
@@ -110,13 +111,11 @@ const AddDebtModal = ({ isOpen, onClose, user, wallets, payers, onAddPayer }) =>
                     </div>
 
                     <div>
-                        <input
-                            type="number"
+                        <AmountInput
                             placeholder="Số tiền cho mượn"
                             required
-                            min="0"
                             value={form.amount}
-                            onChange={e => setForm({ ...form, amount: e.target.value })}
+                            onChange={(value) => setForm({ ...form, amount: value })}
                             className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none placeholder:text-slate-400"
                         />
                     </div>

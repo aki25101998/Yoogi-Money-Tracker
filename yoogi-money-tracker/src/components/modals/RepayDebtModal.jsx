@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, ChevronDown } from 'lucide-react';
 import { updateDebt, addTransaction } from '../../utils/firebaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
+import AmountInput from '../ui/AmountInput';
 
 const RepayDebtModal = ({ isOpen, onClose, user, wallets, debt }) => {
     const [form, setForm] = useState({
@@ -103,14 +104,11 @@ const RepayDebtModal = ({ isOpen, onClose, user, wallets, debt }) => {
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div>
-                        <input
-                            type="number"
+                        <AmountInput
                             placeholder="Số tiền được trả"
                             required
-                            min="1"
-                            max={remaining}
                             value={form.amount}
-                            onChange={e => setForm({ ...form, amount: e.target.value })}
+                            onChange={(value) => setForm({ ...form, amount: value })}
                             className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none placeholder:text-slate-400"
                         />
                         <button 

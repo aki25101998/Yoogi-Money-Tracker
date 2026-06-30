@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ArrowRightLeft, Check, Clock } from 'lucide-react';
+import AmountInput from '../ui/AmountInput';
 
 const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initialData }) => {
     const getCurrentTime = () => {
@@ -122,38 +123,15 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
                                 onChange={(e) => setDescription(e.target.value)}
                                 className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none"
                             />
-                            <input
-                                type="text"
-                                inputMode="numeric"
+                            <AmountInput
                                 placeholder="Số tiền"
                                 required
-                                value={amount ? amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
-                                onChange={(e) => {
-                                    const rawValue = e.target.value.replace(/\./g, '');
-                                    if (!isNaN(rawValue)) {
-                                        setAmount(rawValue);
-                                    }
-                                }}
+                                value={amount}
+                                onChange={setAmount}
+                                colorTheme="teal"
                                 className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none"
                             />
-                            {amount && !isNaN(amount) && parseFloat(amount) > 0 && (
-                                <div className="flex gap-2 mt-2 overflow-x-auto pb-1 hide-scrollbar">
-                                    {[10, 100, 1000, 10000, 100000, 1000000]
-                                        .map(multiplier => parseFloat(amount) * multiplier)
-                                        .filter(val => val >= 1000 && val <= 99999999)
-                                        .slice(0, 4)
-                                        .map(suggestedValue => (
-                                            <button
-                                                key={suggestedValue}
-                                                type="button"
-                                                onClick={() => setAmount(suggestedValue)}
-                                                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200 dark:hover:bg-teal-900/30 dark:hover:text-teal-400 dark:hover:border-teal-800 transition-colors"
-                                            >
-                                                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(suggestedValue)}
-                                            </button>
-                                        ))}
-                                </div>
-                            )}
+
                             <div className="relative">
                                 <span className="absolute top-2 left-4 text-xs text-slate-400 font-medium">Ngày & Giờ</span>
                                 <div className="flex gap-2">
