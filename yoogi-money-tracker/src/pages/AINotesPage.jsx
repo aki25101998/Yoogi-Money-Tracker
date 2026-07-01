@@ -301,7 +301,7 @@ const AINotesPage = ({ user, aiMemories, abbreviations = [], categories, hideHea
                                         <button onClick={() => openEdit(mem)} className="p-1.5 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-lg transition-colors">
                                             <Pencil className="w-3.5 h-3.5" />
                                         </button>
-                                        <button onClick={() => setConfirmState({ isOpen: true, data: mem.id })} className="p-1.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg transition-colors">
+                                        <button onClick={() => setConfirmState({ isOpen: true, type: 'memory', data: mem.id })} className="p-1.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg transition-colors">
                                             <Trash2 className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
