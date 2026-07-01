@@ -592,9 +592,18 @@ export const processCorrections = async (userId, oldTxn, newTxn) => {
                 abbr.longForm.toLowerCase() === oldDesc.toLowerCase() && 
                 new RegExp(`\\b${abbr.shortForm.toLowerCase()}\\b`, 'i').test(originalLower)
             );
+            
             if (matchedAbbr) {
                 targetShortForm = matchedAbbr.shortForm;
                 updateExistingId = matchedAbbr.id;
+            } else {
+                // Try to extract keyword by removing price from original input
+                let cleanedInput = oldTxn.originalInput.replace(/\b\d+([.,]\d+)?\s*(k|ngàn|nghìn|tr|triệu|đ|d|vnd|vnđ)?\b/gi, '');
+                cleanedInput = cleanedInput.replace(/\s+/g, ' ').trim();
+                
+                if (cleanedInput && cleanedInput.length > 0) {
+                    targetShortForm = cleanedInput;
+                }
             }
         }
 
