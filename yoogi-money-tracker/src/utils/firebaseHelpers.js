@@ -576,8 +576,38 @@ export const processCorrections = async (userId, oldTxn, newTxn) => {
 
     // Learn abbreviation correction
     if (newTxn.description && oldTxn.description && newTxn.description.trim() !== oldTxn.description.trim()) {
-        if (oldTxn.description.length <= 30) {
-            await learnAbbreviationFromCorrection(userId, oldTxn.description, newTxn.description);
+        const newDesc = newTxn.description.trim();
+        const oldDesc = oldTxn.description.trim();
+
+        const q = query(getCollectionRef(userId, 'abbreviations'));
+        const snapshot = await getDocs(q);
+        const abbreviations = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+
+        let targetShortForm = oldDesc;
+        let updateExistingId = null;
+
+        if (oldTxn.originalInput) {
+            const originalLower = oldTxn.originalInput.toLowerCase();
+            const matchedAbbr = abbreviations.find(abbr => 
+                abbr.longForm.toLowerCase() === oldDesc.toLowerCase() && 
+                new RegExp(`\\b${abbr.shortForm.toLowerCase()}\\b`, 'i').test(originalLower)
+            );
+            if (matchedAbbr) {
+                targetShortForm = matchedAbbr.shortForm;
+                updateExistingId = matchedAbbr.id;
+            }
+        }
+
+        if (updateExistingId) {
+            await updateAbbreviation(userId, updateExistingId, { longForm: newDesc });
+        } else if (targetShortForm.length <= 30) {
+            const normalizedShort = targetShortForm.toLowerCase();
+            const existing = abbreviations.find(a => a.shortForm.toLowerCase() === normalizedShort);
+            if (existing) {
+                await updateAbbreviation(userId, existing.id, { longForm: newDesc });
+            } else {
+                await addAbbreviation(userId, { shortForm: normalizedShort, longForm: newDesc });
+            }
         }
     }
 };
