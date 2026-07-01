@@ -44,7 +44,8 @@ import {
     addTransaction,
     updateRecurringTransaction,
     subscribeLenders,
-    subscribeUserSettings
+    subscribeUserSettings,
+    subscribeAbbreviations
 } from './utils/firebaseHelpers';
 
 export default function App() {
@@ -57,6 +58,7 @@ export default function App() {
     const [transactions, setTransactions] = useState([]);
     const [categories, setCategories] = useState([]);
     const [aiMemories, setAiMemories] = useState([]);
+    const [abbreviations, setAbbreviations] = useState([]);
 
     // Global Modals State
     const [isGlobalFabOpen, setIsGlobalFabOpen] = useState(false);
@@ -138,6 +140,7 @@ export default function App() {
             setTransactions([]);
             setCategories([]);
             setAiMemories([]);
+            setAbbreviations([]);
             setWallets([]);
             setPayers([]);
             setDebtors([]);
@@ -200,6 +203,9 @@ export default function App() {
         // Subscribe to User Settings
         const unsubSettings = subscribeUserSettings(user.uid, setUserSettings);
 
+        // Subscribe to Abbreviations
+        const unsubAbbreviations = subscribeAbbreviations(user.uid, setAbbreviations);
+
         setIsDataLoading(false);
 
         return () => {
@@ -214,6 +220,7 @@ export default function App() {
             unsubRecurring();
             unsubLenders();
             unsubSettings();
+            unsubAbbreviations();
         };
     }, [user]);
 
@@ -464,6 +471,7 @@ export default function App() {
                     userSettings={userSettings}
                     categories={categories}
                     aiMemories={aiMemories}
+                    abbreviations={abbreviations}
                     wallets={wallets}
                     payers={payers}
                     initialTab={initialTab}
@@ -574,6 +582,7 @@ export default function App() {
                         user={user}
                         categories={categories}
                         aiMemories={aiMemories}
+                        abbreviations={abbreviations}
                         wallets={wallets}
                         payers={payers}
                         debtors={debtors}
@@ -586,6 +595,7 @@ export default function App() {
                         onClose={() => setIsGlobalContextWalletOpen(false)}
                         user={user}
                         aiMemories={aiMemories}
+                        abbreviations={abbreviations}
                         categories={categories}
                     />
                 </>

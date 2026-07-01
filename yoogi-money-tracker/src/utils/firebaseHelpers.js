@@ -528,6 +528,40 @@ export const learnFromCorrection = async (userId, keyword, categoryId, subcatego
 };
 
 // ============================================================
+// ABBREVIATIONS
+// ============================================================
+
+export const subscribeAbbreviations = (userId, callback) => {
+    const q = query(getCollectionRef(userId, 'abbreviations'), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(doc => ({
+            ...doc.data(),
+            id: doc.id,
+        }));
+        callback(items);
+    });
+};
+
+export const addAbbreviation = async (userId, data) => {
+    return await addDoc(getCollectionRef(userId, 'abbreviations'), {
+        ...data,
+        createdAt: new Date().toISOString(),
+    });
+};
+
+export const updateAbbreviation = async (userId, id, updates) => {
+    const docRef = getDocRef(userId, 'abbreviations', id);
+    return await updateDoc(docRef, {
+        ...updates,
+        updatedAt: new Date().toISOString(),
+    });
+};
+
+export const deleteAbbreviation = async (userId, id) => {
+    return await deleteDoc(getDocRef(userId, 'abbreviations', id));
+};
+
+// ============================================================
 // INSTALLMENTS (Keep existing path structure)
 // ============================================================
 
@@ -694,7 +728,7 @@ export const updateLender = async (userId, lenderId, lenderData) => {
 export const exportUserData = async (userId) => {
     const collectionsToExport = [
         'categories', 'transactions', 'debts', 'recurring_transactions',
-        'ai_memory', 'installments', 'wallets', 'payers', 'debtors', 'lenders', 'ai_chat_history'
+        'ai_memory', 'installments', 'wallets', 'payers', 'debtors', 'lenders', 'ai_chat_history', 'abbreviations'
     ];
 
     const data = {};
@@ -710,7 +744,7 @@ export const exportUserData = async (userId) => {
 export const importUserData = async (userId, data) => {
     const validCollections = [
         'categories', 'transactions', 'debts', 'recurring_transactions',
-        'ai_memory', 'installments', 'wallets', 'payers', 'debtors', 'lenders', 'ai_chat_history'
+        'ai_memory', 'installments', 'wallets', 'payers', 'debtors', 'lenders', 'ai_chat_history', 'abbreviations'
     ];
 
     let batch = writeBatch(db);

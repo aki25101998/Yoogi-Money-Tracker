@@ -8,7 +8,7 @@ import AINotesPage from './AINotesPage'; // Reusing existing page as a component
 import DataSyncSettings from '../components/settings/DataSyncSettings';
 import GeneralSettings from '../components/settings/GeneralSettings';
 
-const SettingsPage = ({ user, userSettings, categories, aiMemories, wallets, payers, initialTab = 'general' }) => {
+const SettingsPage = ({ user, userSettings, categories, aiMemories, abbreviations, wallets, payers, initialTab = 'general' }) => {
     const [activeTab, setActiveTab] = useState(initialTab);
 
     useEffect(() => {
@@ -78,7 +78,7 @@ const SettingsPage = ({ user, userSettings, categories, aiMemories, wallets, pay
                 {activeTab === 'general' && <GeneralSettings user={user} userSettings={userSettings} />}
                 {activeTab === 'wallets' && <WalletsSettings user={user} wallets={wallets} userSettings={userSettings} />}
                 {activeTab === 'categories' && <CategoriesPage user={user} categories={categories} hideHeader={true} />}
-                {activeTab === 'ai' && <AINotesPage user={user} aiMemories={aiMemories} categories={categories} hideHeader={true} />}
+                {activeTab === 'ai' && <AINotesPage user={user} aiMemories={aiMemories} abbreviations={abbreviations} categories={categories} hideHeader={true} />}
                 {activeTab === 'payers' && <PayersSettings user={user} payers={payers} />}
                 {activeTab === 'sync' && <DataSyncSettings user={user} />}
             </div>

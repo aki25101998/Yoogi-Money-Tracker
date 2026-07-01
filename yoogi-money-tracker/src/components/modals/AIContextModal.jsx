@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import AINotesPage from '../../pages/AINotesPage';
 
-const AIContextModal = ({ isOpen, onClose, user, aiMemories, categories }) => {
+const AIContextModal = ({ isOpen, onClose, user, aiMemories, abbreviations, categories }) => {
     if (!isOpen) return null;
 
     return createPortal(
@@ -21,6 +21,7 @@ const AIContextModal = ({ isOpen, onClose, user, aiMemories, categories }) => {
                     <AINotesPage 
                         user={user} 
                         aiMemories={aiMemories} 
+                        abbreviations={abbreviations}
                         categories={categories} 
                         hideHeader={true} 
                     />

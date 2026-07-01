@@ -9,7 +9,7 @@ import TransferFundsModal from '../modals/TransferFundsModal';
 import TransactionModal from '../modals/TransactionModal';
 import RecurringTransactionsModal from '../modals/RecurringTransactionsModal';
 
-const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, payers, debtors, recurringTransactions, selectedWalletId, onOpenContextWallet }) => {
+const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviations, wallets, payers, debtors, recurringTransactions, selectedWalletId, onOpenContextWallet }) => {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -227,7 +227,18 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, wallets, p
             setIsTyping(true);
 
             try {
-                const result = await categorizeTransaction(singleInput, categories, aiMemories, wallets, payers, debtors);
+                let processedInput = singleInput;
+                if (abbreviations && abbreviations.length > 0) {
+                    abbreviations.forEach(abbr => {
+                        if (abbr.shortForm && abbr.longForm) {
+                            // Match exact word, case insensitive
+                            const regex = new RegExp(`\\b${abbr.shortForm}\\b`, 'gi');
+                            processedInput = processedInput.replace(regex, abbr.longForm);
+                        }
+                    });
+                }
+
+                const result = await categorizeTransaction(processedInput, categories, aiMemories, wallets, payers, debtors);
                 
                 let docRef;
             let finalWalletId = result.walletId || activeWallet.id;

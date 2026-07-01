@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Wallet, ChevronDown } from 'lucide-react';
 import { addTransaction } from '../../utils/firebaseHelpers';
+import { db, APP_ID } from '../../config/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import AmountInput from '../ui/AmountInput';
 import { formatCurrency } from '../../utils/formatters';
 
-const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item }) => {
+const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item, monthStr }) => {
     const [form, setForm] = useState({
         amount: '',
         walletId: '',
@@ -44,6 +46,14 @@ const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item }) => {
             };
 
             await addTransaction(user.uid, transactionData);
+
+            if (monthStr && item?.id) {
+                const docRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', item.id);
+                const currentPartial = (item.partialPayments && item.partialPayments[monthStr]) || 0;
+                await updateDoc(docRef, {
+                    [`partialPayments.${monthStr}`]: currentPartial + amountNum
+                });
+            }
 
             onClose();
             setForm({

@@ -19,6 +19,12 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
     const missedCount = monthsShouldHavePaid - paidCount;
     const showMissedWarning = missedCount > 0 && paidCount < item.term;
 
+    // Partial payment logic for this specific month
+    const currentMonthStr = `${referenceDate.getFullYear()}-${String(referenceDate.getMonth() + 1).padStart(2, '0')}`;
+    const partialPaid = (item.partialPayments && item.partialPayments[currentMonthStr]) || 0;
+    const partialProgress = item.monthlyPayment > 0 ? Math.min(Math.round((partialPaid / item.monthlyPayment) * 100), 100) : 0;
+    const monthlyRemaining = Math.max(item.monthlyPayment - partialPaid, 0);
+
     return (
         <Card className={`overflow-hidden transition-all duration-200 group border-slate-200 dark:border-slate-700 ${isPaid ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : 'bg-white dark:bg-slate-800'}`}>
             <div className="p-4 sm:p-5">
@@ -55,9 +61,22 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700/50">
-                    <div>
+                    <div className="flex-1">
                         <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold">Trả mỗi tháng</p>
                         <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(item.monthlyPayment)}</p>
+                        
+                        {!isPaid && partialPaid > 0 && (
+                            <div className="mt-2 pr-4">
+                                <div className="flex justify-between items-end mb-1">
+                                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Đã trả: {formatCurrency(partialPaid)}</span>
+                                    <span className="text-[10px] text-slate-400">{partialProgress}%</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-1">
+                                    <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${partialProgress}%` }}></div>
+                                </div>
+                                <span className="text-[10px] text-orange-500 font-medium block">Còn lại: {formatCurrency(monthlyRemaining)}</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Payment Toggle Button */}

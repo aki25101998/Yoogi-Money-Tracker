@@ -1041,8 +1041,8 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets }) 
                 onTogglePaid={togglePaidForMonth}
                 referenceDate={activeReferenceDate}
                 onAddNewItem={handleOpenAddWithLender}
-                onMinimumPayment={(item) => {
-                    setSelectedMinPaymentItem(item);
+                onMinimumPayment={(item, monthStr) => {
+                    setSelectedMinPaymentItem({ item, monthStr });
                     setIsMinPaymentOpen(true);
                 }}
             />
@@ -1052,7 +1052,8 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets }) 
                 onClose={() => { setIsMinPaymentOpen(false); setSelectedMinPaymentItem(null); }}
                 user={user}
                 wallets={wallets}
-                item={selectedMinPaymentItem}
+                item={selectedMinPaymentItem?.item}
+                monthStr={selectedMinPaymentItem?.monthStr}
             />
         </>
     );

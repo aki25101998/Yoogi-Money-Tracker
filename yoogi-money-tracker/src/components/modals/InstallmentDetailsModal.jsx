@@ -163,7 +163,7 @@ const InstallmentDetailsModal = ({
                                     referenceDate={wrapper.refDate}
                                     isPaid={activeTab === 'paid' || activeTab === 'history'}
                                     onTogglePaid={(item) => onTogglePaid(item, wrapper.monthStr)}
-                                    onMinimumPayment={onMinimumPayment}
+                                    onMinimumPayment={(item) => onMinimumPayment(item, wrapper.monthStr)}
                                     isReadOnly={false}
                                     kyIndex={wrapper.index}
                                 />
