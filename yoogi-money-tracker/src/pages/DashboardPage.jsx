@@ -203,6 +203,8 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                 balances[t.walletId].balance -= (t.amount || 0);
             } else if (t.type === 'loan_repaid' && balances[t.walletId]) {
                 balances[t.walletId].balance += (t.amount || 0);
+            } else if (t.type === 'installment_repaid' && balances[t.walletId]) {
+                balances[t.walletId].balance -= (t.amount || 0);
             }
         });
         return Object.values(balances);

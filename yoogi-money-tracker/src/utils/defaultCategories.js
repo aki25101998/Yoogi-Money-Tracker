@@ -65,7 +65,7 @@ export const DEFAULT_CATEGORIES = [
         id: 'tra_no_tra_gop',
         name: 'Trả nợ & Trả góp',
         icon: '💳',
-        type: 'expense',
+        type: 'installment_repaid',
         order: 6,
         subcategories: [
             { id: 'tra_gop', name: 'Trả góp', description: 'Trả tiền mua trả góp hàng tháng' },

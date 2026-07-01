@@ -35,7 +35,7 @@ const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item, monthStr })
             const isPaying = ownerName === 'Tôi';
 
             const transactionData = {
-                type: isPaying ? 'expense' : 'loan_repaid',
+                type: isPaying ? 'installment_repaid' : 'loan_repaid',
                 amount: amountNum,
                 description: `Trả lẻ trả góp ${item.name}: ${form.notes}`,
                 categoryId: isPaying ? 'tra_no_tra_gop' : 'loan_repaid',

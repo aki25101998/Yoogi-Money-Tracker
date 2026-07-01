@@ -147,7 +147,7 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
 
     const openEditModal = (e, txn) => {
         e.stopPropagation();
-        if (txn.type === 'loan_given' || txn.type === 'loan_repaid') {
+        if (txn.type === 'loan_given' || txn.type === 'loan_repaid' || txn.type === 'installment_repaid') {
             openLoanEditModal(txn);
             return;
         }
@@ -162,7 +162,7 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
     // --- Loan Edit Handlers ---
     const openLoanEditModal = (txn) => {
         setEditingLoanTxn(txn);
-        const notesMatch = txn.description?.match(/(?:mượn|trả nợ)(?::\s*)?(.*)/);
+        const notesMatch = txn.description?.match(/(?:mượn|trả nợ|Trả lẻ trả góp.*?)(?::\s*)?(.*)/);
         const notes = notesMatch ? notesMatch[1]?.trim() || '' : txn.description || '';
         setLoanEditForm({ amount: txn.amount, walletId: txn.walletId, notes });
         setIsLoanEditOpen(true);
@@ -228,6 +228,15 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
                         });
                     }
                 }
+            } else if (txn.type === 'installment_repaid') {
+                // Update transaction
+                const itemMatch = txn.description?.match(/^Trả lẻ trả góp (.*?):/);
+                const itemName = itemMatch ? itemMatch[1] : '';
+                await updateTransaction(user.uid, txn.id, {
+                    amount: amountNum,
+                    walletId: loanEditForm.walletId,
+                    description: `Trả lẻ trả góp ${itemName}${loanEditForm.notes ? ': ' + loanEditForm.notes : ''}`
+                });
             }
 
             closeLoanEditModal();

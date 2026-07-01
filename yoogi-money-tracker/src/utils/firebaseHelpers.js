@@ -86,18 +86,16 @@ export const ensureRequiredCategories = async (userId) => {
 
     const hasUncategorizedExpense = categories.some(c => c.type === 'expense' && (c.id === 'uncategorized_expense' || c.name === 'Chưa phân loại' || c.name === '❓ Chưa phân loại'));
     const hasUncategorizedIncome = categories.some(c => c.type === 'income' && (c.id === 'uncategorized_income' || c.name === 'Chưa phân loại' || c.name === '❓ Chưa phân loại'));
-    const hasTransfer = categories.some(c => c.id === 'transfer');
-    const hasTraNoTraGop = categories.some(c => c.id === 'tra_no_tra_gop');
-
+    const existingTraNoTraGop = categories.find(c => c.id === 'tra_no_tra_gop');
     const batch = writeBatch(db);
     let updated = false;
 
-    if (!hasTraNoTraGop) {
+    if (!existingTraNoTraGop || existingTraNoTraGop.type !== 'installment_repaid') {
         const cat = DEFAULT_CATEGORIES.find(c => c.id === 'tra_no_tra_gop');
         if (cat) {
             batch.set(doc(catRef, cat.id), {
                 ...cat,
-                createdAt: new Date().toISOString()
+                createdAt: existingTraNoTraGop ? existingTraNoTraGop.createdAt : new Date().toISOString()
             });
             updated = true;
         }
