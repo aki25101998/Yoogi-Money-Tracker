@@ -195,13 +195,6 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
         }
     };
 
-    const handleDeleteEdit = async (id) => {
-        if (!user || !id) return;
-        if (window.confirm('Bạn có chắc chắn muốn xóa giao dịch này?')) {
-            await handleDeleteEditWithoutPrompt(id);
-        }
-    };
-
     const openEditModal = (txn) => {
         setEditingTransaction(txn);
         if (txn.type === 'transfer') {
@@ -721,7 +714,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                 categories={categories}
                 wallets={wallets}
                 onSave={handleSaveEdit}
-                onDelete={handleDeleteEdit}
+                onDelete={handleDeleteEditWithoutPrompt}
                 initialData={editingTransaction}
             />
 
