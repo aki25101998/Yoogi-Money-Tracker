@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Filter, Calendar, Pencil, Trash2, AlertTriangle, ArrowDownRight, ArrowUpRight, ChevronDown, X, Check, Clock } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
-import { deleteTransaction, deleteMultipleTransactions, updateTransaction, updateDebt, getTransactionByDebtId } from '../utils/firebaseHelpers';
+import { deleteTransaction, deleteMultipleTransactions, updateTransaction, processCorrections, updateDebt, getTransactionByDebtId } from '../utils/firebaseHelpers';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import TransactionModal from '../components/modals/TransactionModal';
 import TransferFundsModal from '../components/modals/TransferFundsModal';
@@ -111,6 +111,7 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
     const handleSaveTransaction = async (formData) => {
         if (!user || !editingTransaction) return;
         try {
+            await processCorrections(user.uid, editingTransaction, formData);
             await updateTransaction(user.uid, editingTransaction.id, formData);
             setIsModalOpen(false);
             setIsTransferModalOpen(false);

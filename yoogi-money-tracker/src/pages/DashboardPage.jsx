@@ -279,7 +279,8 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
         if (!user) return;
         try {
             if (editingTransaction) {
-                const { updateTransaction } = await import('../utils/firebaseHelpers');
+                const { updateTransaction, processCorrections } = await import('../utils/firebaseHelpers');
+                await processCorrections(user.uid, editingTransaction, formData);
                 await updateTransaction(user.uid, editingTransaction.id, formData);
             } else {
                 await addTransaction(user.uid, { ...formData, aiCategorized: false });

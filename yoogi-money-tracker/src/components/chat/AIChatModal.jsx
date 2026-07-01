@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Bot, User, Loader2, Pencil, Trash2, CheckCircle2, ChevronRight, ChevronDown, Settings, CalendarClock, ArrowRightLeft } from 'lucide-react';
 import { categorizeTransaction } from '../../utils/aiCategorizer';
-import { addTransaction, incrementMemoryUsage, learnFromCorrection, updateTransaction, deleteTransaction, addDebt, updateDebt, addDebtor, subscribeAIChatHistory, updateAIChatHistory, clearAIChatHistory } from '../../utils/firebaseHelpers';
+import { addTransaction, incrementMemoryUsage, learnFromCorrection, processCorrections, updateTransaction, deleteTransaction, addDebt, updateDebt, addDebtor, subscribeAIChatHistory, updateAIChatHistory, clearAIChatHistory } from '../../utils/firebaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
 import { APP_ID, db } from '../../config/firebase';
 import { collection, addDoc, query, where, getDocs, limit } from 'firebase/firestore';
@@ -164,6 +164,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
     const handleSaveEdit = async (formData) => {
         if (!user || !editingTransaction) return;
         try {
+            await processCorrections(user.uid, editingTransaction, formData);
             await updateTransaction(user.uid, editingTransaction.id, formData);
             isLocalUpdateRef.current = true;
             setMessages(prev => prev.map(msg => {

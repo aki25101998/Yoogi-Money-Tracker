@@ -549,6 +549,39 @@ export const addAbbreviation = async (userId, data) => {
     });
 };
 
+export const learnAbbreviationFromCorrection = async (userId, shortForm, longForm) => {
+    if (!shortForm || !longForm || shortForm.trim() === longForm.trim()) return;
+    
+    const q = query(getCollectionRef(userId, 'abbreviations'));
+    const snapshot = await getDocs(q);
+    const abbreviations = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    
+    const normalizedShort = shortForm.toLowerCase().trim();
+    const existing = abbreviations.find(a => a.shortForm.toLowerCase().trim() === normalizedShort);
+
+    if (existing) {
+        await updateAbbreviation(userId, existing.id, { longForm: longForm.trim() });
+    } else {
+        await addAbbreviation(userId, { shortForm: normalizedShort, longForm: longForm.trim() });
+    }
+};
+
+export const processCorrections = async (userId, oldTxn, newTxn) => {
+    if (!oldTxn || !newTxn) return;
+
+    // Learn category correction
+    if (newTxn.categoryId && (newTxn.categoryId !== oldTxn.categoryId || newTxn.subcategoryId !== oldTxn.subcategoryId)) {
+        await learnFromCorrection(userId, oldTxn.originalInput || oldTxn.description, newTxn.categoryId, newTxn.subcategoryId || '');
+    }
+
+    // Learn abbreviation correction
+    if (newTxn.description && oldTxn.description && newTxn.description.trim() !== oldTxn.description.trim()) {
+        if (oldTxn.description.length <= 30) {
+            await learnAbbreviationFromCorrection(userId, oldTxn.description, newTxn.description);
+        }
+    }
+};
+
 export const updateAbbreviation = async (userId, id, updates) => {
     const docRef = getDocRef(userId, 'abbreviations', id);
     return await updateDoc(docRef, {
