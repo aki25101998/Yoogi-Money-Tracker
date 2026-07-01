@@ -38,17 +38,29 @@ export const calculateItemStats = (item, referenceDate = new Date()) => {
         const validPaidMonths = item.paidMonths.filter(pm => pm <= currentYearMonth);
 
         const effectiveMonths = validPaidMonths.length;
-        const paidAmount = effectiveMonths * item.monthlyPayment;
+        let paidAmount = effectiveMonths * item.monthlyPayment;
+        
+        // Add partial payments for months that are NOT fully paid
+        let totalPartialPaid = 0;
+        if (item.partialPayments) {
+            for (const [mStr, amount] of Object.entries(item.partialPayments)) {
+                if (!item.paidMonths.includes(mStr)) {
+                    totalPartialPaid += amount;
+                }
+            }
+        }
+        
+        paidAmount += totalPartialPaid;
         const remainingAmount = item.totalPayable - paidAmount;
 
         // Progress based on effectively paid amount at that time vs total
-        const progress = Math.min((effectiveMonths / item.term) * 100, 100);
+        const progress = item.totalPayable > 0 ? Math.min((paidAmount / item.totalPayable) * 100, 100) : 0;
 
         // Finished if we have paid enough months (total term) AND strictly speaking, 
         // if we are viewing current time, it's finished. 
         // If viewing past, "isFinished" might be true if we had paid in advance?
         // Usually, isFinished = effectiveMonths >= term.
-        const isFinished = effectiveMonths >= item.term;
+        const isFinished = remainingAmount <= 0 || effectiveMonths >= item.term;
 
         // Calculate months passed for schedule context
         let monthsPassed = monthDiff(start, now);

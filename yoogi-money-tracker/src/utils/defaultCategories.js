@@ -62,6 +62,17 @@ export const DEFAULT_CATEGORIES = [
         ],
     },
     {
+        id: 'tra_no_tra_gop',
+        name: 'Trả nợ & Trả góp',
+        icon: '💳',
+        type: 'expense',
+        order: 6,
+        subcategories: [
+            { id: 'tra_gop', name: 'Trả góp', description: 'Trả tiền mua trả góp hàng tháng' },
+            { id: 'tra_no_vay', name: 'Trả nợ vay', description: 'Trả nợ tiền mặt đã vay' }
+        ],
+    },
+    {
         id: 'uncategorized_expense',
         name: 'Chưa phân loại',
         icon: '❓',

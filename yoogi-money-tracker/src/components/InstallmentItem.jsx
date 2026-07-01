@@ -84,9 +84,9 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                         {!isPaid && !isDisabled && onMinimumPayment && (
                             <button
                                 onClick={() => onMinimumPayment(item)}
-                                className="px-3 py-2 rounded-lg font-bold text-sm transition-all border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 hover:border-orange-300 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800/50 dark:hover:bg-orange-900/40 active:scale-95"
+                                className={`px-3 py-2 rounded-lg font-bold text-sm transition-all border ${partialPaid > 0 ? 'border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50 dark:hover:bg-indigo-900/40' : 'border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 hover:border-orange-300 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800/50 dark:hover:bg-orange-900/40'} active:scale-95`}
                             >
-                                Trả tối thiểu
+                                {partialPaid > 0 ? 'Trả thêm' : 'Trả tối thiểu'}
                             </button>
                         )}
                         <button
@@ -98,6 +98,8 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                                 ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}
                                 ${isPaid
                                     ? 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
+                                    : partialPaid > 0
+                                    ? 'bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 hover:border-orange-300'
                                     : 'bg-white text-slate-600 border border-slate-300 shadow-sm hover:border-indigo-300 hover:text-indigo-600 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:border-indigo-500'
                                 }
                             `}
@@ -110,6 +112,13 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                                         </svg>
                                     </div>
                                     <span>Đã trả</span>
+                                </>
+                            ) : partialPaid > 0 ? (
+                                <>
+                                    <div className="w-4 h-4 rounded-full border-2 border-orange-500 dark:border-orange-400 flex items-center justify-center">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 dark:bg-orange-400"></div>
+                                    </div>
+                                    <span>Trả thiếu</span>
                                 </>
                             ) : (
                                 <>
