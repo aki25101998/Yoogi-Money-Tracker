@@ -163,6 +163,17 @@ export default function App() {
             console.error('Error with categories:', err);
         });
 
+        // --- Loading State Tracking ---
+        let loadFlags = { txns: false, wallets: false, settings: false };
+        const checkDataLoaded = (key) => {
+            if (!loadFlags[key]) {
+                loadFlags[key] = true;
+                if (loadFlags.txns && loadFlags.wallets && loadFlags.settings) {
+                    setIsDataLoading(false);
+                }
+            }
+        };
+
         // Subscribe to installments (legacy path)
         const instQuery = query(
             collection(db, 'artifacts', APP_ID, 'users', user.uid, 'installments')
@@ -177,13 +188,19 @@ export default function App() {
         const unsubCats = subscribeCategories(user.uid, setCategories);
 
         // Subscribe to transactions
-        const unsubTxns = subscribeTransactions(user.uid, setTransactions);
+        const unsubTxns = subscribeTransactions(user.uid, (data) => {
+            setTransactions(data);
+            checkDataLoaded('txns');
+        });
 
         // Subscribe to AI Memory
         const unsubMem = subscribeAIMemory(user.uid, setAiMemories);
 
         // Subscribe to Wallets
-        const unsubWallets = subscribeWallets(user.uid, setWallets);
+        const unsubWallets = subscribeWallets(user.uid, (data) => {
+            setWallets(data);
+            checkDataLoaded('wallets');
+        });
 
         // Subscribe to Payers
         const unsubPayers = subscribePayers(user.uid, setPayers);
@@ -201,12 +218,13 @@ export default function App() {
         const unsubLenders = subscribeLenders(user.uid, setLenders);
 
         // Subscribe to User Settings
-        const unsubSettings = subscribeUserSettings(user.uid, setUserSettings);
+        const unsubSettings = subscribeUserSettings(user.uid, (data) => {
+            setUserSettings(data);
+            checkDataLoaded('settings');
+        });
 
         // Subscribe to Abbreviations
         const unsubAbbreviations = subscribeAbbreviations(user.uid, setAbbreviations);
-
-        setIsDataLoading(false);
 
         return () => {
             unsubInst();
