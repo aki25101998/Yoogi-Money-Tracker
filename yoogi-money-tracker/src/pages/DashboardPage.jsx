@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
     Wallet, ArrowUpRight, ArrowDownRight, CreditCard,
     PieChart as PieChartIcon, Sparkles, Loader2, Plus, Pencil,
-    Filter, Calendar, ChevronDown, Check, Info, Trash2, AlertTriangle
+    Filter, Calendar, ChevronDown, Check, Info, Trash2, AlertTriangle, Clock
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
@@ -674,8 +674,20 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                                         {cat?.icon || '❓'}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{txn.type === 'transfer' ? `${wallets?.find(w => w.id === txn.walletId)?.name || '?'} ➝ ${wallets?.find(w => w.id === txn.transferTo)?.name || '?'}` : (cat?.name || 'Chưa phân loại')}</p>
-                                        <p className="text-sm text-slate-400 truncate">{txn.description}</p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-white truncate mb-0.5">{txn.type === 'transfer' ? `${wallets?.find(w => w.id === txn.walletId)?.name || '?'} ➝ ${wallets?.find(w => w.id === txn.transferTo)?.name || '?'}` : (cat?.name || 'Chưa phân loại')}</p>
+                                        <div className="flex flex-col gap-1 mt-0.5">
+                                            {txn.time && (
+                                                <div className="flex items-center">
+                                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md">
+                                                        <Clock className="w-3 h-3" />
+                                                        {txn.time}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {txn.description && (
+                                                <p className="text-sm text-slate-400 truncate">{txn.description}</p>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className={`text-sm font-bold ${isIncome ? 'text-emerald-500' : (isExpense ? 'text-rose-500' : 'text-slate-500')}`}>
