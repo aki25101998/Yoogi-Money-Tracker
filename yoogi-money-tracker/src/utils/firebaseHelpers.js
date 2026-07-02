@@ -264,6 +264,18 @@ export const updateCategory = async (userId, categoryId, updates) => {
 };
 
 /**
+ * Update category order
+ */
+export const updateCategoryOrder = async (userId, orderedCategoryIds) => {
+    const batch = writeBatch(db);
+    orderedCategoryIds.forEach((id, index) => {
+        const docRef = getDocRef(userId, 'categories', id);
+        batch.update(docRef, { order: index, updatedAt: new Date().toISOString() });
+    });
+    await batch.commit();
+};
+
+/**
  * Delete a category
  */
 export const deleteCategory = async (userId, categoryId) => {

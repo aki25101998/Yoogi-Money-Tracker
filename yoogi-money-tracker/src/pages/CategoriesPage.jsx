@@ -4,9 +4,149 @@ import {
     GripVertical, AlertTriangle
 } from 'lucide-react';
 import {
-    addCategory, updateCategory, deleteCategory
+    addCategory, updateCategory, deleteCategory, updateCategoryOrder
 } from '../utils/firebaseHelpers';
+
+import {
+    DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+    arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable,
+} from '@dnd-kit/sortable';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { CSS } from '@dnd-kit/utilities';
 import ConfirmModal from '../components/modals/ConfirmModal';
+
+const SortableSubcategoryItem = ({ sub, catId, openEditSubcategory, confirmDeleteSubcategory }) => {
+    const {
+        attributes, listeners, setNodeRef, transform, transition, isDragging,
+    } = useSortable({ id: sub.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition: isDragging ? 'none' : transition,
+        zIndex: isDragging ? 10 : 1,
+        opacity: isDragging ? 0.8 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className={`flex items-center gap-3 px-4 py-3 pl-12 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group ${isDragging ? 'bg-white dark:bg-slate-800 shadow-lg border border-emerald-500 rounded-lg relative z-10 scale-[1.01]' : ''}`}>
+            <div 
+                {...attributes} 
+                {...listeners}
+                className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400 p-1 -ml-2"
+            >
+                <GripVertical className="w-4 h-4" />
+            </div>
+            <div className="w-2 h-2 rounded-full flex-shrink-0 bg-slate-300 dark:bg-slate-600" />
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    {sub.name}
+                </p>
+                {sub.description && (
+                    <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{sub.description}</p>
+                )}
+            </div>
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => openEditSubcategory(catId, sub)} className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg transition-colors">
+                    <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => confirmDeleteSubcategory(catId, sub)} className="p-1.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const SortableCategoryItem = ({ cat, isExpanded, subCount, isUncategorized, toggleExpand, openEditCategory, confirmDeleteCategory, openAddSubcategory, openEditSubcategory, confirmDeleteSubcategory, onSubDragEnd }) => {
+    const {
+        attributes, listeners, setNodeRef, transform, transition, isDragging,
+    } = useSortable({ id: cat.id, disabled: isUncategorized });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition: isDragging ? 'none' : transition,
+        zIndex: isDragging ? 10 : 1,
+        opacity: isDragging ? 0.8 : 1,
+    };
+
+    const sensors = useSensors(
+        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    return (
+        <div ref={setNodeRef} style={style} className={`bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden ${isDragging ? 'shadow-xl border-emerald-500 scale-[1.01]' : ''}`}>
+            {/* Category Header */}
+            <div className={`flex items-center gap-3 px-4 py-4 transition-colors ${!isUncategorized ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30' : ''}`} onClick={() => !isUncategorized && toggleExpand(cat.id)}>
+                {!isUncategorized && (
+                    <div 
+                        {...attributes} 
+                        {...listeners}
+                        onClick={(e) => e.stopPropagation()}
+                        className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400 p-1"
+                    >
+                        <GripVertical className="w-5 h-5" />
+                    </div>
+                )}
+                {isUncategorized && <div className="w-7"></div>}
+                <span className="text-2xl">{cat.icon}</span>
+                <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-slate-800 dark:text-white text-base">{cat.name}</h4>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">{subCount} danh mục phụ</p>
+                </div>
+                <div className="flex items-center gap-1">
+                    {!isUncategorized && (
+                        <>
+                            <button onClick={(e) => { e.stopPropagation(); openEditCategory(cat); }} className="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors">
+                                <Pencil className="w-4 h-4" />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); confirmDeleteCategory(cat); }} className="p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                            <button className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                                {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </button>
+                        </>
+                    )}
+                </div>
+            </div>
+
+            {/* Subcategories */}
+            {isExpanded && (
+                <div className="border-t border-slate-100 dark:border-slate-700">
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={(e) => onSubDragEnd(e, cat)}>
+                        <SortableContext items={(cat.subcategories || []).map(s => s.id)} strategy={verticalListSortingStrategy}>
+                            <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
+                                {(cat.subcategories || []).map(sub => (
+                                    <SortableSubcategoryItem 
+                                        key={sub.id} 
+                                        sub={sub} 
+                                        catId={cat.id}
+                                        openEditSubcategory={openEditSubcategory}
+                                        confirmDeleteSubcategory={confirmDeleteSubcategory}
+                                    />
+                                ))}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
+
+                    {/* Add Subcategory Button */}
+                    {!isUncategorized && (
+                        <button
+                            onClick={() => openAddSubcategory(cat.id)}
+                            className="w-full py-3 px-4 pl-12 text-left text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-2 border-t border-slate-100 dark:border-slate-700"
+                        >
+                            <Plus className="w-3.5 h-3.5" /> Thêm danh mục phụ
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const CategoriesPage = ({ user, categories, hideHeader = false }) => {
     const [activeTab, setActiveTab] = useState('expense'); // 'expense' | 'income'
@@ -23,6 +163,54 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
     const [isDeleting, setIsDeleting] = useState(false);
 
     const filteredCategories = categories.filter(c => c.type === activeTab);
+    
+    // Sort filtered categories by order
+    filteredCategories.sort((a, b) => {
+        if (a.id.includes('uncategorized')) return 1;
+        if (b.id.includes('uncategorized')) return -1;
+        return (a.order || 0) - (b.order || 0);
+    });
+
+    const sensors = useSensors(
+        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    const handleDragEnd = async (event) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            const oldIndex = filteredCategories.findIndex(c => c.id === active.id);
+            const newIndex = filteredCategories.findIndex(c => c.id === over.id);
+            
+            if (filteredCategories[newIndex]?.id.includes('uncategorized') || filteredCategories[oldIndex]?.id.includes('uncategorized')) return;
+
+            const newCategories = arrayMove(filteredCategories, oldIndex, newIndex);
+            
+            try {
+                await updateCategoryOrder(user.uid, newCategories.filter(c => !c.id.includes('uncategorized')).map(c => c.id));
+            } catch (error) {
+                console.error(error);
+                alert("Lỗi khi sắp xếp: " + error.message);
+            }
+        }
+    };
+
+    const handleSubDragEnd = async (event, parentCat) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            const oldIndex = (parentCat.subcategories || []).findIndex(s => s.id === active.id);
+            const newIndex = (parentCat.subcategories || []).findIndex(s => s.id === over.id);
+            const newSubs = arrayMove(parentCat.subcategories || [], oldIndex, newIndex);
+            
+            try {
+                await updateCategory(user.uid, parentCat.id, { subcategories: newSubs });
+            } catch (error) {
+                console.error(error);
+                alert("Lỗi khi sắp xếp: " + error.message);
+            }
+        }
+    };
 
     const toggleExpand = (catId) => {
         setExpandedCats(prev => {
@@ -206,80 +394,32 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                         <p className="text-slate-400 font-medium">Chưa có danh mục nào</p>
                     </div>
                 ) : (
-                    filteredCategories.map((cat, idx) => {
-                        const isExpanded = expandedCats[cat.id] !== false; // Default expanded
-                        const subCount = cat.subcategories?.length || 0;
-                        const isUncategorized = cat.id === 'uncategorized_expense' || cat.id === 'uncategorized_income' || cat.name === 'Chưa phân loại' || cat.name === '❓ Chưa phân loại';
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEnd}>
+                        <SortableContext items={filteredCategories.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                            {filteredCategories.map((cat, idx) => {
+                                const isExpanded = expandedCats[cat.id] !== false; // Default expanded
+                                const subCount = cat.subcategories?.length || 0;
+                                const isUncategorized = cat.id === 'uncategorized_expense' || cat.id === 'uncategorized_income' || cat.name === 'Chưa phân loại' || cat.name === '❓ Chưa phân loại';
 
-                        return (
-                            <div key={cat.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                                {/* Category Header */}
-                                <div className={`flex items-center gap-3 px-4 py-4 transition-colors ${!isUncategorized ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30' : ''}`} onClick={() => !isUncategorized && toggleExpand(cat.id)}>
-                                    <span className="text-2xl">{cat.icon}</span>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-slate-800 dark:text-white text-base">{cat.name}</h4>
-                                        <p className="text-xs text-slate-400 dark:text-slate-500">{subCount} danh mục phụ</p>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        {!isUncategorized && (
-                                            <>
-                                                <button onClick={(e) => { e.stopPropagation(); openEditCategory(cat); }} className="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors">
-                                                    <Pencil className="w-4 h-4" />
-                                                </button>
-                                                <button onClick={(e) => { e.stopPropagation(); confirmDeleteCategory(cat); }} className="p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                                <button className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
-                                                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Subcategories */}
-                                {isExpanded && (
-                                    <div className="border-t border-slate-100 dark:border-slate-700">
-                                        <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
-                                            {(cat.subcategories || []).map(sub => {
-                                                return (
-                                                    <div key={sub.id} className="flex items-center gap-3 px-4 py-3 pl-12 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group">
-                                                        <div className="w-2 h-2 rounded-full flex-shrink-0 bg-slate-300 dark:bg-slate-600" />
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                                {sub.name}
-                                                            </p>
-                                                            {sub.description && (
-                                                                <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{sub.description}</p>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button onClick={() => openEditSubcategory(cat.id, sub)} className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg transition-colors">
-                                                                <Pencil className="w-3.5 h-3.5" />
-                                                            </button>
-                                                            <button onClick={() => confirmDeleteSubcategory(cat.id, sub)} className="p-1.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg transition-colors">
-                                                                <Trash2 className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-
-                                        {/* Add Subcategory Button */}
-                                        {!isUncategorized && (
-                                            <button
-                                                onClick={() => openAddSubcategory(cat.id)}
-                                                className="w-full py-3 px-4 pl-12 text-left text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-2 border-t border-slate-100 dark:border-slate-700"
-                                            >
-                                                <Plus className="w-3.5 h-3.5" /> Thêm danh mục phụ
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })
+                                return (
+                                    <SortableCategoryItem
+                                        key={cat.id}
+                                        cat={cat}
+                                        isExpanded={isExpanded}
+                                        subCount={subCount}
+                                        isUncategorized={isUncategorized}
+                                        toggleExpand={toggleExpand}
+                                        openEditCategory={openEditCategory}
+                                        confirmDeleteCategory={confirmDeleteCategory}
+                                        openAddSubcategory={openAddSubcategory}
+                                        openEditSubcategory={openEditSubcategory}
+                                        confirmDeleteSubcategory={confirmDeleteSubcategory}
+                                        onSubDragEnd={handleSubDragEnd}
+                                    />
+                                );
+                            })}
+                        </SortableContext>
+                    </DndContext>
                 )}
             </div>
 
