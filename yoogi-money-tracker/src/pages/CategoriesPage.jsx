@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Plus, Pencil, Trash2, ChevronDown, ChevronUp, X,
     GripVertical, AlertTriangle
@@ -20,7 +20,10 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 const SortableSubcategoryItem = ({ sub, catId, openEditSubcategory, confirmDeleteSubcategory }) => {
     const {
         attributes, listeners, setNodeRef, transform, transition, isDragging,
-    } = useSortable({ id: sub.id });
+    } = useSortable({ 
+        id: sub.id,
+        data: { type: 'subcategory', categoryId: catId, sub }
+    });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -34,7 +37,7 @@ const SortableSubcategoryItem = ({ sub, catId, openEditSubcategory, confirmDelet
             <div 
                 {...attributes} 
                 {...listeners}
-                className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400 p-1 -ml-2"
+                className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400 p-1 -ml-2 touch-none"
             >
                 <GripVertical className="w-4 h-4" />
             </div>
@@ -59,10 +62,14 @@ const SortableSubcategoryItem = ({ sub, catId, openEditSubcategory, confirmDelet
     );
 };
 
-const SortableCategoryItem = ({ cat, isExpanded, subCount, isUncategorized, toggleExpand, openEditCategory, confirmDeleteCategory, openAddSubcategory, openEditSubcategory, confirmDeleteSubcategory, onSubDragEnd }) => {
+const SortableCategoryItem = ({ cat, isExpanded, subCount, isUncategorized, toggleExpand, openEditCategory, confirmDeleteCategory, openAddSubcategory, openEditSubcategory, confirmDeleteSubcategory }) => {
     const {
         attributes, listeners, setNodeRef, transform, transition, isDragging,
-    } = useSortable({ id: cat.id, disabled: isUncategorized });
+    } = useSortable({ 
+        id: cat.id, 
+        disabled: isUncategorized,
+        data: { type: 'category', cat }
+    });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -70,12 +77,6 @@ const SortableCategoryItem = ({ cat, isExpanded, subCount, isUncategorized, togg
         zIndex: isDragging ? 10 : 1,
         opacity: isDragging ? 0.8 : 1,
     };
-
-    const sensors = useSensors(
-        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-        useSensor(TouchSensor, { activationConstraint: { distance: 5 } }),
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-    );
 
     return (
         <div ref={setNodeRef} style={style} className={`bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden ${isDragging ? 'shadow-xl border-emerald-500 scale-[1.01]' : ''}`}>
@@ -86,7 +87,7 @@ const SortableCategoryItem = ({ cat, isExpanded, subCount, isUncategorized, togg
                         {...attributes} 
                         {...listeners}
                         onClick={(e) => e.stopPropagation()}
-                        className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400 p-1"
+                        className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400 p-1 touch-none"
                     >
                         <GripVertical className="w-5 h-5" />
                     </div>
@@ -117,21 +118,19 @@ const SortableCategoryItem = ({ cat, isExpanded, subCount, isUncategorized, togg
             {/* Subcategories */}
             {isExpanded && (
                 <div className="border-t border-slate-100 dark:border-slate-700">
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={(e) => onSubDragEnd(e, cat)}>
-                        <SortableContext items={(cat.subcategories || []).map(s => s.id)} strategy={verticalListSortingStrategy}>
-                            <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
-                                {(cat.subcategories || []).map(sub => (
-                                    <SortableSubcategoryItem 
-                                        key={sub.id} 
-                                        sub={sub} 
-                                        catId={cat.id}
-                                        openEditSubcategory={openEditSubcategory}
-                                        confirmDeleteSubcategory={confirmDeleteSubcategory}
-                                    />
-                                ))}
-                            </div>
-                        </SortableContext>
-                    </DndContext>
+                    <SortableContext items={(cat.subcategories || []).map(s => s.id)} strategy={verticalListSortingStrategy}>
+                        <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
+                            {(cat.subcategories || []).map(sub => (
+                                <SortableSubcategoryItem 
+                                    key={sub.id} 
+                                    sub={sub} 
+                                    catId={cat.id}
+                                    openEditSubcategory={openEditSubcategory}
+                                    confirmDeleteSubcategory={confirmDeleteSubcategory}
+                                />
+                            ))}
+                        </div>
+                    </SortableContext>
 
                     {/* Add Subcategory Button */}
                     {!isUncategorized && (
@@ -162,52 +161,148 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
     const [confirmState, setConfirmState] = useState({ isOpen: false, data: null, type: null });
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const filteredCategories = categories.filter(c => c.type === activeTab);
-    
-    // Sort filtered categories by order
-    filteredCategories.sort((a, b) => {
-        if (a.id.includes('uncategorized')) return 1;
-        if (b.id.includes('uncategorized')) return -1;
-        return (a.order || 0) - (b.order || 0);
-    });
+    const [localCategories, setLocalCategories] = useState([]);
+    const initialCategoryIdRef = useRef(null);
+
+    useEffect(() => {
+        const sorted = [...categories.filter(c => c.type === activeTab)].sort((a, b) => {
+            if (a.id.includes('uncategorized')) return 1;
+            if (b.id.includes('uncategorized')) return -1;
+            return (a.order || 0) - (b.order || 0);
+        });
+        setLocalCategories(sorted);
+    }, [categories, activeTab]);
 
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-        useSensor(TouchSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 500, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const handleDragEnd = async (event) => {
-        const { active, over } = event;
-        if (over && active.id !== over.id) {
-            const oldIndex = filteredCategories.findIndex(c => c.id === active.id);
-            const newIndex = filteredCategories.findIndex(c => c.id === over.id);
-            
-            if (filteredCategories[newIndex]?.id.includes('uncategorized') || filteredCategories[oldIndex]?.id.includes('uncategorized')) return;
+    const handleDragStart = (event) => {
+        const { active } = event;
+        if (active.data.current?.type === 'subcategory') {
+            initialCategoryIdRef.current = active.data.current.categoryId;
+        }
+    };
 
-            const newCategories = arrayMove(filteredCategories, oldIndex, newIndex);
-            
-            try {
-                await updateCategoryOrder(user.uid, newCategories.filter(c => !c.id.includes('uncategorized')).map(c => c.id));
-            } catch (error) {
-                console.error(error);
-                alert("Lỗi khi sắp xếp: " + error.message);
+    const handleDragOver = (event) => {
+        const { active, over } = event;
+        if (!over) return;
+
+        const activeType = active.data.current?.type;
+        const overType = over.data.current?.type;
+        
+        if (activeType === 'subcategory') {
+            const activeCategoryId = active.data.current?.categoryId;
+            let overCategoryId = overType === 'category' ? over.id : over.data.current?.categoryId;
+
+            if (overCategoryId && overCategoryId !== activeCategoryId) {
+                setLocalCategories(prev => {
+                    const activeCatIndex = prev.findIndex(c => c.id === activeCategoryId);
+                    const overCatIndex = prev.findIndex(c => c.id === overCategoryId);
+                    
+                    if (activeCatIndex === -1 || overCatIndex === -1) return prev;
+                    
+                    const newCats = [...prev];
+                    const activeCat = { ...newCats[activeCatIndex] };
+                    const overCat = { ...newCats[overCatIndex] };
+                    
+                    const activeSubIndex = (activeCat.subcategories || []).findIndex(s => s.id === active.id);
+                    if (activeSubIndex === -1) return prev;
+                    
+                    const activeSub = activeCat.subcategories[activeSubIndex];
+                    activeCat.subcategories = (activeCat.subcategories || []).filter(s => s.id !== active.id);
+                    
+                    const newOverSubs = [...(overCat.subcategories || [])];
+                    if (overType === 'category') {
+                        newOverSubs.push(activeSub);
+                    } else {
+                        const overSubIndex = newOverSubs.findIndex(s => s.id === over.id);
+                        if (overSubIndex !== -1) {
+                            newOverSubs.splice(overSubIndex, 0, activeSub);
+                        } else {
+                            newOverSubs.push(activeSub);
+                        }
+                    }
+                    
+                    overCat.subcategories = newOverSubs;
+                    newCats[activeCatIndex] = activeCat;
+                    newCats[overCatIndex] = overCat;
+                    
+                    active.data.current.categoryId = overCategoryId;
+                    return newCats;
+                });
             }
         }
     };
 
-    const handleSubDragEnd = async (event, parentCat) => {
+    const handleDragEnd = async (event) => {
         const { active, over } = event;
-        if (over && active.id !== over.id) {
-            const oldIndex = (parentCat.subcategories || []).findIndex(s => s.id === active.id);
-            const newIndex = (parentCat.subcategories || []).findIndex(s => s.id === over.id);
-            const newSubs = arrayMove(parentCat.subcategories || [], oldIndex, newIndex);
+        const initialCategoryId = initialCategoryIdRef.current;
+        initialCategoryIdRef.current = null;
+        
+        if (!over) return;
+        
+        const activeType = active.data.current?.type;
+        
+        if (activeType === 'category') {
+            if (active.id !== over.id) {
+                const oldIndex = localCategories.findIndex(c => c.id === active.id);
+                const newIndex = localCategories.findIndex(c => c.id === over.id);
+                
+                if (localCategories[newIndex]?.id.includes('uncategorized') || localCategories[oldIndex]?.id.includes('uncategorized')) return;
+
+                const newCategories = arrayMove(localCategories, oldIndex, newIndex);
+                setLocalCategories(newCategories);
+                
+                try {
+                    await updateCategoryOrder(user.uid, newCategories.filter(c => !c.id.includes('uncategorized')).map(c => c.id));
+                } catch (error) {
+                    console.error(error);
+                    alert("Lỗi khi sắp xếp: " + error.message);
+                }
+            }
+        } else if (activeType === 'subcategory') {
+            const finalCategoryId = active.data.current?.categoryId;
+            let finalLocalCats = [...localCategories];
             
+            if (active.id !== over.id) {
+                const overCategoryId = over.data.current?.type === 'category' ? over.id : over.data.current?.categoryId;
+                
+                if (finalCategoryId === overCategoryId) {
+                    const catIndex = finalLocalCats.findIndex(c => c.id === finalCategoryId);
+                    if (catIndex !== -1) {
+                        const cat = { ...finalLocalCats[catIndex] };
+                        const oldIndex = (cat.subcategories || []).findIndex(s => s.id === active.id);
+                        const newIndex = (cat.subcategories || []).findIndex(s => s.id === over.id);
+                        
+                        if (oldIndex !== -1 && newIndex !== -1) {
+                            cat.subcategories = arrayMove(cat.subcategories || [], oldIndex, newIndex);
+                            finalLocalCats[catIndex] = cat;
+                            setLocalCategories(finalLocalCats);
+                        }
+                    }
+                }
+            }
+
             try {
-                await updateCategory(user.uid, parentCat.id, { subcategories: newSubs });
+                const finalCat = finalLocalCats.find(c => c.id === finalCategoryId);
+                
+                if (initialCategoryId && initialCategoryId !== finalCategoryId) {
+                    const initialCat = finalLocalCats.find(c => c.id === initialCategoryId);
+                    if (initialCat && finalCat) {
+                        await Promise.all([
+                            updateCategory(user.uid, initialCategoryId, { subcategories: initialCat.subcategories || [] }),
+                            updateCategory(user.uid, finalCategoryId, { subcategories: finalCat.subcategories || [] })
+                        ]);
+                    }
+                } else if (finalCat && active.id !== over.id) {
+                    await updateCategory(user.uid, finalCategoryId, { subcategories: finalCat.subcategories || [] });
+                }
             } catch (error) {
                 console.error(error);
-                alert("Lỗi khi sắp xếp: " + error.message);
+                alert("Lỗi khi cập nhật danh mục: " + error.message);
             }
         }
     };
@@ -262,7 +357,7 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
             if (editModal.level === 'category') {
                 if (editModal.mode === 'add') {
                     // Add new category
-                    const maxOrder = Math.max(...filteredCategories.map(c => c.order || 0), 0);
+                    const maxOrder = Math.max(...localCategories.map(c => c.order || 0), 0);
                     await addCategory(user.uid, {
                         name: formName.trim(),
                         icon: formIcon || '📁',
@@ -388,15 +483,15 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
 
             {/* Categories List */}
             <div className="space-y-3">
-                {filteredCategories.length === 0 ? (
+                {localCategories.length === 0 ? (
                     <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 text-center border border-dashed border-slate-200 dark:border-slate-700">
                         <div className="text-4xl mb-3">📁</div>
                         <p className="text-slate-400 font-medium">Chưa có danh mục nào</p>
                     </div>
                 ) : (
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEnd}>
-                        <SortableContext items={filteredCategories.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                            {filteredCategories.map((cat, idx) => {
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+                        <SortableContext items={localCategories.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                            {localCategories.map((cat, idx) => {
                                 const isExpanded = expandedCats[cat.id] !== false; // Default expanded
                                 const subCount = cat.subcategories?.length || 0;
                                 const isUncategorized = cat.id === 'uncategorized_expense' || cat.id === 'uncategorized_income' || cat.name === 'Chưa phân loại' || cat.name === '❓ Chưa phân loại';
@@ -414,7 +509,6 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                                         openAddSubcategory={openAddSubcategory}
                                         openEditSubcategory={openEditSubcategory}
                                         confirmDeleteSubcategory={confirmDeleteSubcategory}
-                                        onSubDragEnd={handleSubDragEnd}
                                     />
                                 );
                             })}
