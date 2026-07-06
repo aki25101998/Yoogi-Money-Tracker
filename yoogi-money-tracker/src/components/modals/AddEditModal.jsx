@@ -20,7 +20,7 @@ const AddEditModal = ({
         amount: '',
         term: 6,
         rate: 0,
-        startDate: new Date().toISOString().split('T')[0],
+        startDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         owner: 'Tôi',
         lender: '',
         paidMonths: []
@@ -48,7 +48,7 @@ const AddEditModal = ({
                 amount: '',
                 term: 6,
                 rate: 0,
-                startDate: new Date().toISOString().split('T')[0],
+                startDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
                 owner: 'Tôi',
                 lender: initialLender || '',
                 paidMonths: []

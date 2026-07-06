@@ -18,7 +18,7 @@ const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, walle
         description: '',
         categoryId: '',
         subcategoryId: '',
-        date: new Date().toISOString().split('T')[0],
+        date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         time: getCurrentTime(),
         walletId: defaultWallet,
     });
@@ -32,7 +32,7 @@ const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, walle
                     description: initialData.description || '',
                     categoryId: initialData.categoryId || '',
                     subcategoryId: initialData.subcategoryId || '',
-                    date: initialData.date || new Date().toISOString().split('T')[0],
+                    date: initialData.date || new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
                     time: initialData.time || getCurrentTime(),
                     walletId: initialData.walletId || defaultWallet,
                 });
@@ -43,7 +43,7 @@ const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, walle
                     description: '',
                     categoryId: '',
                     subcategoryId: '',
-                    date: new Date().toISOString().split('T')[0],
+                    date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
                     time: getCurrentTime(),
                     walletId: defaultWallet,
                 });

@@ -9,7 +9,7 @@ const RepayDebtModal = ({ isOpen, onClose, user, wallets, debt }) => {
     const [form, setForm] = useState({
         amount: '',
         walletId: '',
-        date: new Date().toISOString().split('T')[0],
+        date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         notes: ''
     });
 
@@ -75,7 +75,7 @@ const RepayDebtModal = ({ isOpen, onClose, user, wallets, debt }) => {
             setForm({
                 amount: '',
                 walletId: wallets.find(w => w.isDefault)?.id || wallets[0]?.id || '',
-                date: new Date().toISOString().split('T')[0],
+                date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
                 notes: ''
             });
         } catch (error) {

@@ -11,7 +11,7 @@ const AddRecurringTransactionModal = ({ isOpen, onClose, categories, user, walle
         amount: '',
         categoryId: '',
         subcategoryId: '',
-        nextDate: new Date().toISOString().split('T')[0],
+        nextDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         intervalValue: '1',
         intervalUnit: 'Phút', // Set default to minute for testing as user requested
         notes: '',
@@ -36,7 +36,7 @@ const AddRecurringTransactionModal = ({ isOpen, onClose, categories, user, walle
         try {
             // Check if date is time-inclusive or just date. The input type="date" returns YYYY-MM-DD.
             // For minute intervals to work immediately, we should probably append the current time if the date is today.
-            const today = new Date().toISOString().split('T')[0];
+            const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
             let nextDateObj = new Date(form.nextDate);
             if (form.nextDate === today) {
                 // If it's today, set the time to now + interval

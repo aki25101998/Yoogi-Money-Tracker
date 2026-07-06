@@ -482,7 +482,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets }) 
                 const name = raw.name;
                 const term = parseInt(raw.term) || 6;
                 const rate = parseFloat(raw.rate) || 0;
-                const startDate = raw.startDate || new Date().toISOString().split('T')[0];
+                const startDate = raw.startDate || new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
                 const owner = raw.owner || 'Tôi';
                 if (name && !isNaN(amount) && amount > 0) {
                     const monthlyPayment = calculateLoan(amount, rate, term);

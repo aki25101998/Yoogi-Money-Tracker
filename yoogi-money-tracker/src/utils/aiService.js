@@ -21,7 +21,7 @@ export const parseLoanInfo = async (text) => {
       - amount: Số tiền vay (chuyển về số nguyên, ví dụ "10 triệu" -> 10000000)
       - term: Số tháng trả góp (số nguyên)
       - rate: Lãi suất hàng tháng (số thực, nếu người dùng nói lãi suất năm thì tự chia 12, nếu không nói gì thì để 0)
-      - startDate: Ngày bắt đầu trả (định dạng YYYY-MM-DD, nếu là "hôm nay" hoặc không nói gì thì lấy ngày hiện tại: ${new Date().toISOString().split('T')[0]})
+      - startDate: Ngày bắt đầu trả (định dạng YYYY-MM-DD, nếu là "hôm nay" hoặc không nói gì thì lấy ngày hiện tại: ${new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]})
       - owner: Người trả ("Tôi", "Vợ", "Chồng", hoặc tên riêng. Mặc định là "Tôi")
 
       Văn bản đầu vào: "${text}"

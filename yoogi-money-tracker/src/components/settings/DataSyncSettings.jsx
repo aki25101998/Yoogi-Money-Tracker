@@ -22,7 +22,7 @@ const DataSyncSettings = ({ user }) => {
             const link = document.createElement('a');
             link.href = url;
             
-            const dateStr = new Date().toISOString().split('T')[0];
+            const dateStr = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
             link.download = `yoogi_backup_${dateStr}.json`;
             
             document.body.appendChild(link);

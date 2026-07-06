@@ -289,7 +289,7 @@ export const categorizeTransaction = async (rawInput, categories, aiMemories, wa
                 aiCategorized: true,
                 aiSource: 'memory',
                 memoryId: memoryMatch.id,
-                date: new Date().toISOString().split('T')[0],
+                date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
             };
         }
     }
@@ -318,7 +318,7 @@ export const categorizeTransaction = async (rawInput, categories, aiMemories, wa
             debtNotes: geminiResult.debtNotes || '',
             aiCategorized: true,
             aiSource: 'gemini',
-            date: new Date().toISOString().split('T')[0],
+            date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         };
     }
 
@@ -333,6 +333,6 @@ export const categorizeTransaction = async (rawInput, categories, aiMemories, wa
         subcategoryId: uncategorized.subcategoryId,
         aiCategorized: false,
         aiSource: 'fallback',
-        date: new Date().toISOString().split('T')[0],
+        date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
     };
 };

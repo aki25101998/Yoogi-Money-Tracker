@@ -9,7 +9,7 @@ const AddDebtModal = ({ isOpen, onClose, user, wallets, payers, onAddPayer }) =>
         personName: '',
         amount: '',
         walletId: '',
-        date: new Date().toISOString().split('T')[0],
+        date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         notes: ''
     });
 
@@ -66,7 +66,7 @@ const AddDebtModal = ({ isOpen, onClose, user, wallets, payers, onAddPayer }) =>
                 personName: '',
                 amount: '',
                 walletId: wallets.find(w => w.isDefault)?.id || wallets[0]?.id || '',
-                date: new Date().toISOString().split('T')[0],
+                date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
                 notes: ''
             });
         } catch (error) {

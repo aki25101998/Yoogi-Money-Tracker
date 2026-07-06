@@ -73,7 +73,19 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
     const groupedTransactions = useMemo(() => {
         const groups = {};
         filteredTransactions.forEach(t => {
-            const dateKey = t.date.split('T')[0];
+            let dateKey = t.date;
+            if (dateKey && dateKey.includes('T')) {
+                const d = new Date(dateKey);
+                if (!isNaN(d.getTime())) {
+                    dateKey = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                } else {
+                    dateKey = dateKey.split('T')[0];
+                }
+            } else if (dateKey) {
+                dateKey = dateKey.split('T')[0];
+            } else {
+                dateKey = 'Unknown';
+            }
             if (!groups[dateKey]) groups[dateKey] = { date: dateKey, totalIncome: 0, totalExpense: 0, items: [] };
             groups[dateKey].items.push(t);
             if (t.type === 'income' || t.type === 'loan_repaid') groups[dateKey].totalIncome += t.amount;

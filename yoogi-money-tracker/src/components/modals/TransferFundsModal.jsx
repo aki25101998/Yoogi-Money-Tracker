@@ -13,7 +13,7 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
     const [toWallet, setToWallet] = useState('');
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
     const [time, setTime] = useState(getCurrentTime());
 
     useEffect(() => {
@@ -23,14 +23,14 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
                 setToWallet(initialData.transferTo || '');
                 setDescription(initialData.description || '');
                 setAmount(initialData.amount || '');
-                setDate(initialData.date || new Date().toISOString().split('T')[0]);
+                setDate(initialData.date || new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
                 setTime(initialData.time || getCurrentTime());
             } else if (wallets?.length > 0) {
                 setFromWallet(wallets[0]?.id);
                 setToWallet(wallets.length > 1 ? wallets[1]?.id : wallets[0]?.id);
                 setDescription('');
                 setAmount('');
-                setDate(new Date().toISOString().split('T')[0]);
+                setDate(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
                 setTime(getCurrentTime());
             }
         }

@@ -11,7 +11,7 @@ const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item, monthStr })
     const [form, setForm] = useState({
         amount: '',
         walletId: '',
-        date: new Date().toISOString().split('T')[0],
+        date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         notes: ''
     });
 
@@ -59,7 +59,7 @@ const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item, monthStr })
             setForm({
                 amount: '',
                 walletId: wallets.find(w => w.isDefault)?.id || wallets[0]?.id || '',
-                date: new Date().toISOString().split('T')[0],
+                date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
                 notes: ''
             });
         } catch (error) {
