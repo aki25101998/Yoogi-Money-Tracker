@@ -28,8 +28,7 @@ const LoanEditModal = ({
                 const match = transaction.description?.match(/(?:mượn|trả nợ)(?::\s*)?(.*)/);
                 notes = match ? match[1]?.trim() || '' : '';
             } else if (transaction.type === 'installment_repaid') {
-                const match = transaction.description?.match(/^(?:Trả lẻ trả góp|Trả tối thiểu) .*?:(.*)/);
-                notes = match ? match[1]?.trim() || '' : '';
+                notes = transaction.description || '';
             }
 
             setForm({
@@ -91,13 +90,10 @@ const LoanEditModal = ({
                     }
                 }
             } else if (transaction.type === 'installment_repaid') {
-                const itemMatch = transaction.description?.match(/^(?:Trả lẻ trả góp|Trả tối thiểu) (.*?):/);
-                const itemName = itemMatch ? itemMatch[1] : transaction.description?.replace(/^(?:Trả lẻ trả góp|Trả tối thiểu) /, '').split(':')[0] || '';
-                
                 await updateTransaction(user.uid, transaction.id, {
                     amount: amountNum,
                     walletId: form.walletId,
-                    description: form.notes ? `Trả tối thiểu ${itemName}: ${form.notes}` : `Trả tối thiểu ${itemName}`
+                    description: form.notes.trim() || transaction.description
                 });
 
                 if (transaction.installmentId && transaction.monthStr && diff !== 0) {
@@ -179,7 +175,7 @@ const LoanEditModal = ({
                     </div>
 
                     <div>
-                        <label className="text-[10px] text-slate-400 font-medium block mb-1">Ghi chú</label>
+                        <label className="text-[10px] text-slate-400 font-medium block mb-1">Mô tả / Ghi chú</label>
                         <input
                             type="text"
                             value={form.notes}

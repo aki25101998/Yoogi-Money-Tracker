@@ -16,10 +16,16 @@ const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item, monthStr })
     });
 
     useEffect(() => {
-        if (isOpen && wallets?.length > 0 && !form.walletId) {
-            setForm(prev => ({ ...prev, walletId: wallets.find(w => w.isDefault)?.id || wallets[0].id }));
+        if (isOpen) {
+            setForm(prev => ({ 
+                ...prev, 
+                notes: `Trả tối thiểu ${item?.name || ''}`,
+                walletId: prev.walletId || (wallets?.length > 0 ? wallets.find(w => w.isDefault)?.id || wallets[0].id : '')
+            }));
+        } else {
+            setForm(prev => ({ ...prev, amount: '', notes: '' }));
         }
-    }, [isOpen, wallets]);
+    }, [isOpen, wallets, item]);
 
     if (!isOpen || !item) return null;
 
@@ -37,7 +43,7 @@ const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item, monthStr })
             const transactionData = {
                 type: isPaying ? 'installment_repaid' : 'loan_repaid',
                 amount: amountNum,
-                description: form.notes ? `Trả tối thiểu ${item.name}: ${form.notes}` : `Trả tối thiểu ${item.name}`,
+                description: form.notes.trim() || `Trả tối thiểu ${item.name}`,
                 categoryId: isPaying ? 'tra_no_tra_gop' : 'loan_repaid',
                 subcategoryId: isPaying ? 'tra_gop' : '',
                 date: new Date(form.date).toISOString(),
@@ -133,7 +139,7 @@ const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item, monthStr })
                     <div>
                         <input
                             type="text"
-                            placeholder="Ghi chú thêm"
+                            placeholder="Mô tả / Ghi chú"
                             value={form.notes}
                             onChange={e => setForm({ ...form, notes: e.target.value })}
                             className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none placeholder:text-slate-400"
