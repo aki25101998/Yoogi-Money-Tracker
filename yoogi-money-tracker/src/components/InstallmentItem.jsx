@@ -124,7 +124,7 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                                     <div className="w-4 h-4 rounded-full border-2 border-orange-500 dark:border-orange-400 flex items-center justify-center">
                                         <div className="w-1.5 h-1.5 rounded-full bg-orange-500 dark:bg-orange-400"></div>
                                     </div>
-                                    <span>Trả thiếu</span>
+                                    <span>Chưa trả</span>
                                 </>
                             ) : (
                                 <>
