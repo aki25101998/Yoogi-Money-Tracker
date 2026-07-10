@@ -8,6 +8,7 @@ import TransactionModal from '../components/modals/TransactionModal';
 import TransferFundsModal from '../components/modals/TransferFundsModal';
 import DateRangeSelector from '../components/DateRangeSelector';
 import MultiSelectDropdown from '../components/MultiSelectDropdown';
+import LoanEditModal from '../components/modals/LoanEditModal';
 
 const TransactionsPage = ({ user, userSettings, transactions, categories, wallets, debts }) => {
     // --- Filters ---
@@ -43,8 +44,6 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
     // --- Loan Edit State ---
     const [isLoanEditOpen, setIsLoanEditOpen] = useState(false);
     const [editingLoanTxn, setEditingLoanTxn] = useState(null);
-    const [loanEditForm, setLoanEditForm] = useState({ amount: '', walletId: '', notes: '' });
-    const [isSavingLoan, setIsSavingLoan] = useState(false);
 
     // --- Filter Logic ---
     const filteredTransactions = useMemo(() => {
@@ -162,7 +161,8 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
     const openEditModal = (e, txn) => {
         e.stopPropagation();
         if (txn.type === 'loan_given' || txn.type === 'loan_repaid' || txn.type === 'installment_repaid') {
-            openLoanEditModal(txn);
+            setEditingLoanTxn(txn);
+            setIsLoanEditOpen(true);
             return;
         }
         setEditingTransaction(txn);
@@ -174,91 +174,9 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
     };
 
     // --- Loan Edit Handlers ---
-    const openLoanEditModal = (txn) => {
-        setEditingLoanTxn(txn);
-        const notesMatch = txn.description?.match(/(?:mượn|trả nợ|Trả lẻ trả góp.*?)(?::\s*)?(.*)/);
-        const notes = notesMatch ? notesMatch[1]?.trim() || '' : txn.description || '';
-        setLoanEditForm({ amount: txn.amount, walletId: txn.walletId, notes });
-        setIsLoanEditOpen(true);
-    };
-
     const closeLoanEditModal = () => {
         setIsLoanEditOpen(false);
         setEditingLoanTxn(null);
-    };
-
-    const saveLoanEdit = async () => {
-        if (!user || !editingLoanTxn) return;
-        setIsSavingLoan(true);
-        try {
-            const amountNum = parseFloat(loanEditForm.amount) || 0;
-            const txn = editingLoanTxn;
-
-            if (txn.type === 'loan_given') {
-                // Update transaction
-                const personMatch = txn.description?.match(/(?:Cho )?(.+?) mượn/);
-                const personName = personMatch ? personMatch[1] : '';
-                await updateTransaction(user.uid, txn.id, {
-                    amount: amountNum,
-                    walletId: loanEditForm.walletId,
-                    description: `${personName} mượn${loanEditForm.notes ? ': ' + loanEditForm.notes : ''}`
-                });
-
-                // Sync with debt if linked
-                if (txn.debtId) {
-                    const debt = debts?.find(d => d.id === txn.debtId);
-                    if (debt) {
-                        const currentRepaid = debt.repaidAmount || 0;
-                        const newStatus = currentRepaid >= amountNum ? 'paid' : 'active';
-                        await updateDebt(user.uid, txn.debtId, {
-                            totalAmount: amountNum,
-                            notes: loanEditForm.notes,
-                            status: newStatus
-                        });
-                    }
-                }
-            } else if (txn.type === 'loan_repaid') {
-                // Update transaction
-                const personMatch = txn.description?.match(/^(.+?) trả nợ/);
-                const personName = personMatch ? personMatch[1] : '';
-                const oldAmount = txn.amount;
-                const diff = amountNum - oldAmount;
-
-                await updateTransaction(user.uid, txn.id, {
-                    amount: amountNum,
-                    walletId: loanEditForm.walletId,
-                    description: `${personName} trả nợ${loanEditForm.notes ? ': ' + loanEditForm.notes : ''}`
-                });
-
-                // Sync repaid amount with debt if linked
-                if (txn.debtId && diff !== 0) {
-                    const debt = debts?.find(d => d.id === txn.debtId);
-                    if (debt) {
-                        const newRepaidAmount = Math.max(0, (debt.repaidAmount || 0) + diff);
-                        const newStatus = newRepaidAmount >= debt.totalAmount ? 'paid' : 'active';
-                        await updateDebt(user.uid, txn.debtId, {
-                            repaidAmount: newRepaidAmount,
-                            status: newStatus
-                        });
-                    }
-                }
-            } else if (txn.type === 'installment_repaid') {
-                // Update transaction
-                const itemMatch = txn.description?.match(/^Trả lẻ trả góp (.*?):/);
-                const itemName = itemMatch ? itemMatch[1] : '';
-                await updateTransaction(user.uid, txn.id, {
-                    amount: amountNum,
-                    walletId: loanEditForm.walletId,
-                    description: `Trả lẻ trả góp ${itemName}${loanEditForm.notes ? ': ' + loanEditForm.notes : ''}`
-                });
-            }
-
-            closeLoanEditModal();
-        } catch (err) {
-            alert('Lỗi: ' + err.message);
-        } finally {
-            setIsSavingLoan(false);
-        }
     };
 
     const openDeleteModal = (e, id) => {
@@ -557,101 +475,15 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
             )}
 
             {/* Loan Edit Modal */}
-            {isLoanEditOpen && editingLoanTxn && createPortal(
-                <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        <div className="px-6 py-4 flex justify-between items-center border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
-                            <div>
-                                <h3 className="font-bold text-xl text-slate-800 dark:text-white">
-                                    {editingLoanTxn.type === 'loan_given' ? 'Chỉnh sửa khoản cho mượn' : 'Chỉnh sửa khoản trả nợ'}
-                                </h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{editingLoanTxn.description}</p>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <button 
-                                    onClick={() => { closeLoanEditModal(); setDeleteModal({ isOpen: true, id: editingLoanTxn.id }); }} 
-                                    className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
-                                    title="Xóa giao dịch này"
-                                >
-                                    <Trash2 className="w-5 h-5" />
-                                </button>
-                                <button onClick={closeLoanEditModal} className="p-1 -mr-2"><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
-                            </div>
-                        </div>
-
-                        <div className="p-6 space-y-4">
-                            <div>
-                                <label className="text-[10px] text-slate-400 font-medium block mb-1">
-                                    {editingLoanTxn.type === 'loan_given' ? 'Số tiền cho mượn' : 'Số tiền đã trả'}
-                                </label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={loanEditForm.amount}
-                                    onChange={e => setLoanEditForm({ ...loanEditForm, amount: e.target.value })}
-                                    className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-[10px] text-slate-400 font-medium block mb-1">
-                                    {editingLoanTxn.type === 'loan_given' ? 'Trích tiền từ ví' : 'Nhận vào ví'}
-                                </label>
-                                <div className="relative">
-                                    <select
-                                        value={loanEditForm.walletId}
-                                        onChange={e => setLoanEditForm({ ...loanEditForm, walletId: e.target.value })}
-                                        className="w-full pl-4 pr-10 py-3 appearance-none border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none cursor-pointer"
-                                    >
-                                        <option value="" disabled>Chọn ví</option>
-                                        {wallets?.map(w => (
-                                            <option key={w.id} value={w.id}>{w.icon} {w.name}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="text-[10px] text-slate-400 font-medium block mb-1">Ghi chú</label>
-                                <input
-                                    type="text"
-                                    placeholder="Ghi chú thêm"
-                                    value={loanEditForm.notes}
-                                    onChange={e => setLoanEditForm({ ...loanEditForm, notes: e.target.value })}
-                                    className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none placeholder:text-slate-400"
-                                />
-                            </div>
-
-                            {editingLoanTxn.debtId && debts?.find(d => d.id === editingLoanTxn.debtId) && (
-                                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
-                                    <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
-                                        ⚠️ Thay đổi này sẽ tự động đồng bộ với khoản nợ trong Sổ Nợ.
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={closeLoanEditModal}
-                                    className="flex-1 py-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                                >
-                                    Hủy bỏ
-                                </button>
-                                <button
-                                    onClick={saveLoanEdit}
-                                    disabled={isSavingLoan}
-                                    className="flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {isSavingLoan ? 'Đang lưu...' : <><Check className="w-4 h-4" /> Lưu thay đổi</>}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+            <LoanEditModal
+                isOpen={isLoanEditOpen}
+                onClose={closeLoanEditModal}
+                transaction={editingLoanTxn}
+                user={user}
+                wallets={wallets}
+                debts={debts}
+                onDeleteRequest={(e, id) => openDeleteModal(e, id)}
+            />
         </div>
     );
 };

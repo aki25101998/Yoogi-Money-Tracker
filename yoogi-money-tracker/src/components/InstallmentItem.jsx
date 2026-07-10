@@ -5,7 +5,7 @@ import Badge from './ui/Badge';
 import { formatCurrency } from '../utils/formatters';
 import { calculateItemStats, monthDiff } from '../utils/calculations';
 
-const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, onMinimumPayment, isReadOnly, kyIndex, transactions }) => {
+const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, onMinimumPayment, isReadOnly, kyIndex, transactions, onEditTransaction }) => {
     const stats = calculateItemStats(item, referenceDate);
     const paidCount = Array.isArray(item.paidMonths) ? item.paidMonths.length : stats.effectiveMonths;
     const cannotTickMore = !isPaid && paidCount >= item.term;
@@ -158,13 +158,17 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                         <p className="text-[10px] uppercase font-bold text-slate-500 mb-1.5 px-1">Lịch sử trả tối thiểu kỳ này</p>
                         <div className="space-y-1">
                             {relatedTransactions.map(t => (
-                                <div key={t.id} className="flex justify-between items-center text-xs px-2 py-1 rounded hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                <button 
+                                    key={t.id} 
+                                    onClick={() => onEditTransaction && onEditTransaction(t)}
+                                    className="w-full flex justify-between items-center text-xs px-2 py-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-left"
+                                >
                                     <span className="text-slate-500 flex items-center gap-2">
                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                         {new Date(t.date).toLocaleDateString('vi-VN')} {t.time && `• ${t.time}`}
                                     </span>
                                     <span className="font-bold text-emerald-600 dark:text-emerald-400">+{formatCurrency(t.amount)}</span>
-                                </div>
+                                </button>
                             ))}
                         </div>
                     </div>

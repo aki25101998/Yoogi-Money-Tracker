@@ -15,7 +15,8 @@ const InstallmentDetailsModal = ({
     referenceDate,
     onAddNewItem,
     onMinimumPayment,
-    transactions
+    transactions,
+    onEditTransaction
 }) => {
     const [activeTab, setActiveTab] = useState('active'); // active, paid, history
 
@@ -168,6 +169,7 @@ const InstallmentDetailsModal = ({
                                     isReadOnly={false}
                                     kyIndex={wrapper.index}
                                     transactions={transactions}
+                                    onEditTransaction={onEditTransaction}
                                 />
                             </div>
                         ))

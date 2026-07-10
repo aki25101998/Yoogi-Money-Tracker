@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 
 import { db, APP_ID } from '../config/firebase';
-import { addPayer, deletePayer, addLender, deleteLender, updateLender } from '../utils/firebaseHelpers';
+import { addPayer, deletePayer, addLender, deleteLender, updateLender, deleteTransaction } from '../utils/firebaseHelpers';
 import { formatCurrency } from '../utils/formatters';
 import { calculateLoan, calculateItemStats, getYearMonth } from '../utils/calculations';
 
@@ -21,6 +21,7 @@ import AddEditModal from '../components/modals/AddEditModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import InstallmentDetailsModal from '../components/modals/InstallmentDetailsModal';
 import MinimumPaymentModal from '../components/modals/MinimumPaymentModal';
+import LoanEditModal from '../components/modals/LoanEditModal';
 
 const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, transactions }) => {
     // Modal States
@@ -33,6 +34,10 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
 
     const [isMinPaymentOpen, setIsMinPaymentOpen] = useState(false);
     const [selectedMinPaymentItem, setSelectedMinPaymentItem] = useState(null);
+
+    // Edit Transaction States
+    const [isLoanEditOpen, setIsLoanEditOpen] = useState(false);
+    const [editingLoanTxn, setEditingLoanTxn] = useState(null);
 
     // Confirm Modal States
     const [confirmModalState, setConfirmModalState] = useState({
@@ -503,11 +508,40 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
         }
     };
 
+    const handleDeleteTxnRequest = (e, id) => {
+        e.stopPropagation();
+        setConfirmModalState({
+            isOpen: true,
+            type: 'delete_txn',
+            data: id,
+            title: 'Xóa giao dịch này?',
+            description: 'Hành động này không thể hoàn tác.',
+            confirmVariant: 'danger'
+        });
+    };
+
     const handleConfirmAction = () => {
         if (confirmModalState.type === 'delete') executeDelete();
         else if (confirmModalState.type === 'import') executeImport();
         else if (confirmModalState.type === 'delete_payer') executeDeletePayer();
         else if (confirmModalState.type === 'delete_lender') executeDeleteLender();
+        else if (confirmModalState.type === 'delete_txn') executeDeleteTxn();
+    };
+
+    const executeDeleteTxn = async () => {
+        if (!user || !confirmModalState.data) return;
+        setIsProcessing(true);
+        try {
+            const txnToDelete = transactions?.find(t => t.id === confirmModalState.data);
+            await deleteTransaction(user.uid, confirmModalState.data, txnToDelete);
+            setIsLoanEditOpen(false);
+            setEditingLoanTxn(null);
+        } catch (error) {
+            alert('Lỗi xóa giao dịch: ' + error.message);
+        } finally {
+            setIsProcessing(false);
+            setConfirmModalState(prev => ({ ...prev, isOpen: false }));
+        }
     };
 
     const handleAnalyzeFinances = async () => {
@@ -1046,6 +1080,10 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                     setIsMinPaymentOpen(true);
                 }}
                 transactions={transactions}
+                onEditTransaction={(txn) => {
+                    setEditingLoanTxn(txn);
+                    setIsLoanEditOpen(true);
+                }}
             />
 
             <MinimumPaymentModal
@@ -1055,6 +1093,18 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                 wallets={wallets}
                 item={selectedMinPaymentItem?.item}
                 monthStr={selectedMinPaymentItem?.monthStr}
+            />
+
+            <LoanEditModal
+                isOpen={isLoanEditOpen}
+                onClose={() => {
+                    setIsLoanEditOpen(false);
+                    setEditingLoanTxn(null);
+                }}
+                transaction={editingLoanTxn}
+                user={user}
+                wallets={wallets}
+                onDeleteRequest={handleDeleteTxnRequest}
             />
         </>
     );
