@@ -28,7 +28,7 @@ const LoanEditModal = ({
                 const match = transaction.description?.match(/(?:mượn|trả nợ)(?::\s*)?(.*)/);
                 notes = match ? match[1]?.trim() || '' : '';
             } else if (transaction.type === 'installment_repaid') {
-                const match = transaction.description?.match(/^Trả lẻ trả góp .*?:(.*)/);
+                const match = transaction.description?.match(/^(?:Trả lẻ trả góp|Trả tối thiểu) .*?:(.*)/);
                 notes = match ? match[1]?.trim() || '' : '';
             }
 
@@ -91,13 +91,13 @@ const LoanEditModal = ({
                     }
                 }
             } else if (transaction.type === 'installment_repaid') {
-                const itemMatch = transaction.description?.match(/^Trả lẻ trả góp (.*?):/);
-                const itemName = itemMatch ? itemMatch[1] : transaction.description?.replace('Trả lẻ trả góp ', '').split(':')[0] || '';
+                const itemMatch = transaction.description?.match(/^(?:Trả lẻ trả góp|Trả tối thiểu) (.*?):/);
+                const itemName = itemMatch ? itemMatch[1] : transaction.description?.replace(/^(?:Trả lẻ trả góp|Trả tối thiểu) /, '').split(':')[0] || '';
                 
                 await updateTransaction(user.uid, transaction.id, {
                     amount: amountNum,
                     walletId: form.walletId,
-                    description: `Trả lẻ trả góp ${itemName}${form.notes ? ': ' + form.notes : ''}`
+                    description: form.notes ? `Trả tối thiểu ${itemName}: ${form.notes}` : `Trả tối thiểu ${itemName}`
                 });
 
                 if (transaction.installmentId && transaction.monthStr && diff !== 0) {

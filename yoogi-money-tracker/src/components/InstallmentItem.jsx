@@ -28,7 +28,7 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
     const relatedTransactions = transactions?.filter(t => 
         t.type === 'installment_repaid' && 
         ( (t.installmentId === item.id && t.monthStr === currentMonthStr) || 
-          (t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`) && !t.installmentId && currentMonthStr === `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}`) )
+          ((t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`) || t.description?.startsWith(`Trả tối thiểu ${item.name}`)) && !t.installmentId && currentMonthStr === `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}`) )
     ) || [];
 
     return (

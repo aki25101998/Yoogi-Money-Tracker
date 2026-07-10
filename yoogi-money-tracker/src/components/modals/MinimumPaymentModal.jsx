@@ -37,7 +37,7 @@ const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item, monthStr })
             const transactionData = {
                 type: isPaying ? 'installment_repaid' : 'loan_repaid',
                 amount: amountNum,
-                description: `Trả lẻ trả góp ${item.name}: ${form.notes}`,
+                description: form.notes ? `Trả tối thiểu ${item.name}: ${form.notes}` : `Trả tối thiểu ${item.name}`,
                 categoryId: isPaying ? 'tra_no_tra_gop' : 'loan_repaid',
                 subcategoryId: isPaying ? 'tra_gop' : '',
                 date: new Date(form.date).toISOString(),
