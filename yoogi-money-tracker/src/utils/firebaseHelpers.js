@@ -1,6 +1,6 @@
 import {
     collection, addDoc, deleteDoc, updateDoc, doc,
-    onSnapshot, query, getDocs, setDoc, where, orderBy, writeBatch
+    onSnapshot, query, getDocs, setDoc, where, orderBy, writeBatch, increment
 } from 'firebase/firestore';
 import { db, APP_ID } from '../config/firebase';
 import { DEFAULT_CATEGORIES } from './defaultCategories';
@@ -340,7 +340,17 @@ export const updateTransaction = async (userId, transactionId, updates) => {
 /**
  * Delete a transaction
  */
-export const deleteTransaction = async (userId, transactionId) => {
+export const deleteTransaction = async (userId, transactionId, fullTxnObj = null) => {
+    if (fullTxnObj && fullTxnObj.type === 'installment_repaid' && fullTxnObj.installmentId && fullTxnObj.monthStr) {
+        try {
+            const instRef = getDocRef(userId, 'installments', fullTxnObj.installmentId);
+            await updateDoc(instRef, {
+                [`partialPayments.${fullTxnObj.monthStr}`]: increment(-fullTxnObj.amount)
+            });
+        } catch (e) {
+            console.error("Failed to sync partial payment deletion", e);
+        }
+    }
     return await deleteDoc(getDocRef(userId, 'transactions', transactionId));
 };
 

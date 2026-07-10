@@ -5,7 +5,7 @@ import Badge from './ui/Badge';
 import { formatCurrency } from '../utils/formatters';
 import { calculateItemStats, monthDiff } from '../utils/calculations';
 
-const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, onMinimumPayment, isReadOnly, kyIndex }) => {
+const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, onMinimumPayment, isReadOnly, kyIndex, transactions }) => {
     const stats = calculateItemStats(item, referenceDate);
     const paidCount = Array.isArray(item.paidMonths) ? item.paidMonths.length : stats.effectiveMonths;
     const cannotTickMore = !isPaid && paidCount >= item.term;
@@ -24,6 +24,12 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
     const partialPaid = (item.partialPayments && item.partialPayments[currentMonthStr]) || 0;
     const partialProgress = item.monthlyPayment > 0 ? Math.min(Math.round((partialPaid / item.monthlyPayment) * 100), 100) : 0;
     const monthlyRemaining = Math.max(item.monthlyPayment - partialPaid, 0);
+
+    const relatedTransactions = transactions?.filter(t => 
+        t.type === 'installment_repaid' && 
+        ( (t.installmentId === item.id && t.monthStr === currentMonthStr) || 
+          (t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`) && !t.installmentId && currentMonthStr === `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}`) )
+    ) || [];
 
     return (
         <Card className={`overflow-hidden transition-all duration-200 group border-slate-200 dark:border-slate-700 ${isPaid ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : 'bg-white dark:bg-slate-800'}`}>
@@ -146,6 +152,23 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                         <span>{stats.effectiveMonths}/{item.term} kỳ</span>
                     </div>
                 </div>
+
+                {relatedTransactions.length > 0 && (
+                    <div className="mt-3 bg-white dark:bg-slate-800 rounded-lg p-2 border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                        <p className="text-[10px] uppercase font-bold text-slate-500 mb-1.5 px-1">Lịch sử trả tối thiểu kỳ này</p>
+                        <div className="space-y-1">
+                            {relatedTransactions.map(t => (
+                                <div key={t.id} className="flex justify-between items-center text-xs px-2 py-1 rounded hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                    <span className="text-slate-500 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        {new Date(t.date).toLocaleDateString('vi-VN')} {t.time && `• ${t.time}`}
+                                    </span>
+                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">+{formatCurrency(t.amount)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {showMissedWarning && (
                     <div className="mt-3 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 p-2.5 rounded-lg border border-amber-200 dark:border-amber-800">

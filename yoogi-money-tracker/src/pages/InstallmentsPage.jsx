@@ -22,7 +22,7 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 import InstallmentDetailsModal from '../components/modals/InstallmentDetailsModal';
 import MinimumPaymentModal from '../components/modals/MinimumPaymentModal';
 
-const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets }) => {
+const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, transactions }) => {
     // Modal States
     const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
@@ -1045,6 +1045,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets }) 
                     setSelectedMinPaymentItem({ item, monthStr });
                     setIsMinPaymentOpen(true);
                 }}
+                transactions={transactions}
             />
 
             <MinimumPaymentModal

@@ -137,7 +137,8 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
         if (!user || !deleteModal.id) return;
         setIsDeleting(true);
         try {
-            await deleteTransaction(user.uid, deleteModal.id);
+            const txnToDelete = transactions.find(t => t.id === deleteModal.id);
+            await deleteTransaction(user.uid, deleteModal.id, txnToDelete);
             setDeleteModal({ isOpen: false, id: null });
         } catch (error) {
             alert("Lỗi khi xóa: " + error.message);
@@ -148,7 +149,8 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
     const handleDeleteFromModal = async (id) => {
         if (!user || !id) return;
         try {
-            await deleteTransaction(user.uid, id);
+            const txnToDelete = transactions.find(t => t.id === id);
+            await deleteTransaction(user.uid, id, txnToDelete);
             setIsModalOpen(false);
             setIsTransferModalOpen(false);
             setEditingTransaction(null);
@@ -565,7 +567,16 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
                                 </h3>
                                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{editingLoanTxn.description}</p>
                             </div>
-                            <button onClick={closeLoanEditModal} className="p-1 -mr-2"><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
+                            <div className="flex items-center gap-1">
+                                <button 
+                                    onClick={() => { closeLoanEditModal(); setDeleteModal({ isOpen: true, id: editingLoanTxn.id }); }} 
+                                    className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                                    title="Xóa giao dịch này"
+                                >
+                                    <Trash2 className="w-5 h-5" />
+                                </button>
+                                <button onClick={closeLoanEditModal} className="p-1 -mr-2"><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
+                            </div>
                         </div>
 
                         <div className="p-6 space-y-4">

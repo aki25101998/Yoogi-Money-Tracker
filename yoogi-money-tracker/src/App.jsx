@@ -468,6 +468,7 @@ export default function App() {
                     lenders={lenders}
                     isLoading={false}
                     wallets={wallets}
+                    transactions={transactions}
                 />
             );
         } else if (activePage === 'debts') {

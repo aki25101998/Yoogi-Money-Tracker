@@ -43,6 +43,8 @@ const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item, monthStr })
                 date: new Date(form.date).toISOString(),
                 time: `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`,
                 walletId: form.walletId,
+                installmentId: item.id,
+                monthStr: monthStr,
             };
 
             await addTransaction(user.uid, transactionData);
