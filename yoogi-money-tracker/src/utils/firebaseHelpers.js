@@ -904,3 +904,79 @@ export const clearAIChatHistory = async (userId, walletId) => {
     const docRef = getDocRef(userId, 'ai_chat_history', walletId);
     return await deleteDoc(docRef);
 };
+
+// ============================================================
+// DEFAULT TEMPLATES
+// ============================================================
+
+export const applyDefaultWallets = async (userId) => {
+    try {
+        const walletRef = getCollectionRef(userId, 'wallets');
+        const snapshot = await getDocs(walletRef);
+        const existingWallets = snapshot.docs.map(d => d.data().name.toLowerCase());
+        
+        let addedCount = 0;
+        let nextOrder = snapshot.size;
+
+        for (const wallet of DEFAULT_WALLETS) {
+            if (!existingWallets.includes(wallet.name.toLowerCase())) {
+                await addDoc(walletRef, {
+                    ...wallet,
+                    isDefault: snapshot.size === 0 && addedCount === 0 ? true : false,
+                    order: nextOrder++,
+                    createdAt: new Date().toISOString(),
+                });
+                addedCount++;
+            }
+        }
+        return addedCount;
+    } catch (error) {
+        console.error("Error applying default wallets:", error);
+        throw error;
+    }
+};
+
+export const applyDefaultCategories = async (userId) => {
+    try {
+        const catRef = getCollectionRef(userId, 'categories');
+        const snapshot = await getDocs(catRef);
+        const existingCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        const batch = writeBatch(db);
+        let updatedCount = 0;
+
+        for (const defaultCat of DEFAULT_CATEGORIES) {
+            const existing = existingCategories.find(c => c.id === defaultCat.id);
+            if (!existing) {
+                // Not exists, add it
+                batch.set(doc(catRef, defaultCat.id), {
+                    ...defaultCat,
+                    createdAt: new Date().toISOString(),
+                });
+                updatedCount++;
+            } else {
+                // Exists, check if subcategories are missing
+                let subAdded = false;
+                let newSubs = [...(existing.subcategories || [])];
+                for (const defaultSub of defaultCat.subcategories || []) {
+                    if (!newSubs.find(s => s.id === defaultSub.id)) {
+                        newSubs.push(defaultSub);
+                        subAdded = true;
+                    }
+                }
+                if (subAdded) {
+                    batch.update(doc(catRef, existing.id), { subcategories: newSubs });
+                    updatedCount++;
+                }
+            }
+        }
+
+        if (updatedCount > 0) {
+            await batch.commit();
+        }
+        return updatedCount;
+    } catch (error) {
+        console.error("Error applying default categories:", error);
+        throw error;
+    }
+};
