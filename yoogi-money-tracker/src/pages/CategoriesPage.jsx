@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Plus, Pencil, Trash2, ChevronDown, ChevronUp, X,
-    GripVertical, AlertTriangle
+    GripVertical, AlertTriangle, Download
 } from 'lucide-react';
 import {
-    addCategory, updateCategory, deleteCategory, updateCategoryOrder
+    addCategory, updateCategory, deleteCategory, updateCategoryOrder, applyDefaultCategories
 } from '../utils/firebaseHelpers';
 
 import {
@@ -160,6 +160,7 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
     // Delete confirm
     const [confirmState, setConfirmState] = useState({ isOpen: false, data: null, type: null });
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isApplyingDefaults, setIsApplyingDefaults] = useState(false);
 
     const [localCategories, setLocalCategories] = useState([]);
     const initialCategoryIdRef = useRef(null);
@@ -434,6 +435,21 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
         setConfirmState({ isOpen: false, data: null, type: null });
     };
 
+    const handleLoadDefaultCategories = async () => {
+        if (!user || isApplyingDefaults) return;
+
+        if (window.confirm("Tải mẫu danh mục Yoogi? Các danh mục hiện tại của bạn sẽ được giữ nguyên, chỉ thêm những danh mục chuẩn còn thiếu.")) {
+            setIsApplyingDefaults(true);
+            try {
+                const added = await applyDefaultCategories(user.uid);
+                alert(`Đã tải thêm/cập nhật ${added} danh mục chuẩn.`);
+            } catch (error) {
+                alert('Lỗi tải danh mục: ' + error.message);
+            }
+            setIsApplyingDefaults(false);
+        }
+    };
+
     // Common emojis
     const EMOJI_PICKS = ['🏠', '🛍️', '💼', '🌱', '🎁', '💪', '📈', '🤝', '❓', '🚗', '🎮', '📚', '🍜', '💊', '✈️', '💰', '📱', '🎵', '🏋️', '🎯'];
 
@@ -446,16 +462,50 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                         <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Danh mục</h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Quản lý danh mục thu chi 2 cấp</p>
                     </div>
-                    <button
-                        onClick={openAddCategory}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-200 dark:shadow-none transition-all hover:-translate-y-0.5"
-                    >
-                        <Plus className="w-4 h-4" /> Thêm danh mục
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <div className="relative group">
+                            <button
+                                className="flex items-center gap-1 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition-colors"
+                            >
+                                Mẫu <ChevronDown className="w-4 h-4" />
+                            </button>
+                            <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                                <button
+                                    onClick={handleLoadDefaultCategories}
+                                    disabled={isApplyingDefaults}
+                                    className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    <Download className="w-4 h-4" /> {isApplyingDefaults ? 'Đang tải...' : 'Tải mẫu Yoogi'}
+                                </button>
+                            </div>
+                        </div>
+                        <button
+                            onClick={openAddCategory}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-200 dark:shadow-none transition-all hover:-translate-y-0.5"
+                        >
+                            <Plus className="w-4 h-4" /> Thêm danh mục
+                        </button>
+                    </div>
                 </div>
             )}
             {hideHeader && (
-                <div className="flex justify-end mb-2">
+                <div className="flex justify-end mb-2 gap-2">
+                    <div className="relative group">
+                        <button
+                            className="flex items-center gap-1 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition-colors"
+                        >
+                            Mẫu <ChevronDown className="w-4 h-4" />
+                        </button>
+                        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                            <button
+                                onClick={handleLoadDefaultCategories}
+                                disabled={isApplyingDefaults}
+                                className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                            >
+                                <Download className="w-4 h-4" /> {isApplyingDefaults ? 'Đang tải...' : 'Tải mẫu Yoogi'}
+                            </button>
+                        </div>
+                    </div>
                     <button
                         onClick={openAddCategory}
                         className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-sm transition-all"

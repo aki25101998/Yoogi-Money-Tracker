@@ -154,3 +154,11 @@ export const DEFAULT_CATEGORIES = [
         subcategories: [],
     },
 ];
+
+export const DEFAULT_WALLETS = [
+    { name: 'Tiền mặt', icon: '💵', initialBalance: 0, isDefault: true, order: 0 },
+    { name: 'Tài khoản ngân hàng', icon: '🏦', initialBalance: 0, isDefault: false, order: 1 },
+    { name: 'Thẻ tín dụng', icon: '💳', initialBalance: 0, isDefault: false, order: 2 },
+    { name: 'Ví điện tử', icon: '📱', initialBalance: 0, isDefault: false, order: 3 },
+];
+

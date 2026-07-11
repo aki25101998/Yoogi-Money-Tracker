@@ -3,7 +3,7 @@ import {
     onSnapshot, query, getDocs, setDoc, where, orderBy, writeBatch, increment
 } from 'firebase/firestore';
 import { db, APP_ID } from '../config/firebase';
-import { DEFAULT_CATEGORIES } from './defaultCategories';
+import { DEFAULT_CATEGORIES, DEFAULT_WALLETS } from './defaultCategories';
 
 // ============================================================
 // PATH HELPERS
@@ -46,12 +46,12 @@ export const seedDefaultCategories = async (userId) => {
     const walletRef = getCollectionRef(userId, 'wallets');
     const walletSnapshot = await getDocs(walletRef);
     if (walletSnapshot.size === 0) {
-        await addDoc(walletRef, {
-            name: 'Tiền mặt',
-            icon: '💵',
-            isDefault: true,
-            createdAt: new Date().toISOString(),
-        });
+        for (const wallet of DEFAULT_WALLETS) {
+            await addDoc(walletRef, {
+                ...wallet,
+                createdAt: new Date().toISOString(),
+            });
+        }
     }
 
     // Also seed a default payer if payers are empty
