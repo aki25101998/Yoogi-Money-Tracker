@@ -7,7 +7,7 @@ import {
 import {
     addAIMemory, updateAIMemory, deleteAIMemory,
     addAbbreviation, updateAbbreviation, deleteAbbreviation
-} from '../utils/firebaseHelpers';
+} from '../utils/supabaseHelpers';
 import ConfirmModal from '../components/modals/ConfirmModal';
 
 const AINotesPage = ({ user, aiMemories, abbreviations = [], categories, hideHeader = false }) => {

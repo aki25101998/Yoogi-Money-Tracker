@@ -19,12 +19,25 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
     useEffect(() => {
         if (isOpen) {
             if (initialData) {
+                let parsedDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                let parsedTime = initialData.time || (initialData.createdAt ? new Date(initialData.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }) : getCurrentTime());
+
+                if (initialData.date) {
+                    if (initialData.date.includes('T')) {
+                        const d = new Date(initialData.date);
+                        parsedDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                        parsedTime = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+                    } else {
+                        parsedDate = initialData.date;
+                    }
+                }
+
                 setFromWallet(initialData.walletId || '');
                 setToWallet(initialData.transferTo || '');
                 setDescription(initialData.description || '');
                 setAmount(initialData.amount || '');
-                setDate(initialData.date || new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
-                setTime(initialData.time || getCurrentTime());
+                setDate(parsedDate);
+                setTime(parsedTime);
             } else if (wallets?.length > 0) {
                 setFromWallet(wallets[0]?.id);
                 setToWallet(wallets.length > 1 ? wallets[1]?.id : wallets[0]?.id);
@@ -40,6 +53,18 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        let combinedDate = date;
+        try {
+            const d = new Date();
+            const [year, month, day] = date.split('-');
+            const [hours, minutes] = time.split(':');
+            d.setFullYear(year, month - 1, day);
+            d.setHours(hours, minutes, 0, 0);
+            combinedDate = d.toISOString();
+        } catch (err) {
+            console.error('Error combining date', err);
+        }
+
         onSave({
             ...(initialData ? { id: initialData.id } : {}),
             type: 'transfer',
@@ -49,8 +74,9 @@ const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initia
             transferTo: toWallet,
             description,
             amount: parseFloat(amount) || 0,
-            date,
+            date: combinedDate,
             time
+
         });
         onClose();
     };

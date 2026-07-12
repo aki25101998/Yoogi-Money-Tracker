@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Trash2, ChevronDown } from 'lucide-react';
-import { updateTransaction, updateDebt } from '../../utils/firebaseHelpers';
-import { db, APP_ID } from '../../config/firebase';
-import { doc, updateDoc, increment } from 'firebase/firestore';
+import { updateTransaction, updateDebt, updateInstallmentPartialPayment } from '../../utils/supabaseHelpers';
 
 const LoanEditModal = ({ 
     isOpen, 
@@ -96,11 +94,9 @@ const LoanEditModal = ({
                     description: form.notes.trim() || transaction.description
                 });
 
-                if (transaction.installmentId && transaction.monthStr && diff !== 0) {
-                    const instRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', transaction.installmentId);
-                    await updateDoc(instRef, {
-                        [`partialPayments.${transaction.monthStr}`]: increment(diff)
-                    });
+                const txMonthStr = transaction.date ? `${new Date(transaction.date).getFullYear()}-${String(new Date(transaction.date).getMonth() + 1).padStart(2, '0')}` : null;
+                if (transaction.installmentId && txMonthStr && diff !== 0) {
+                    await updateInstallmentPartialPayment(user.uid, transaction.installmentId, txMonthStr, diff);
                 }
             }
 

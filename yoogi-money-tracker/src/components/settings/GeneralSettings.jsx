@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, Save, Loader2, Check } from 'lucide-react';
-import { updateUserSettings } from '../../utils/firebaseHelpers';
+import { updateUserSettings } from '../../utils/supabaseHelpers';
 
 const GeneralSettings = ({ user, userSettings }) => {
     const [monthStartDay, setMonthStartDay] = useState(userSettings?.monthStartDay || 1);

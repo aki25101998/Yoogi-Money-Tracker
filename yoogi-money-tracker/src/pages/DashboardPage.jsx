@@ -7,7 +7,7 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
 import { categorizeTransaction } from '../utils/aiCategorizer';
-import { addTransaction, incrementMemoryUsage, updateWalletOrder, addWallet } from '../utils/firebaseHelpers';
+import { addTransaction, incrementMemoryUsage, updateWalletOrder, addWallet } from '../utils/supabaseHelpers';
 import TransactionModal from '../components/modals/TransactionModal';
 import WalletModal from '../components/modals/WalletModal';
 import UpgradeProModal from '../components/modals/UpgradeProModal';
@@ -34,7 +34,7 @@ const SortableWalletCard = ({ w, isSelected, onClick, onClickEdit, onLongPress }
     } = useSortable({ id: w.id });
 
     const style = {
-        transform: CSS.Transform.toString(transform),
+        transform: CSS.Translate.toString(transform),
         transition: isDragging ? 'none' : transition,
         zIndex: isDragging ? 10 : 1,
         opacity: isDragging ? 0.8 : 1,
@@ -69,7 +69,7 @@ const SortableWalletCard = ({ w, isSelected, onClick, onClickEdit, onLongPress }
             {...attributes} 
             {...listeners}
             {...longPressProps}
-            className={`min-w-[140px] flex-shrink-0 rounded-2xl p-4 border cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'scale-105 shadow-xl border-emerald-500' : isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
+            className={`min-w-[140px] flex-shrink-0 rounded-2xl p-4 border cursor-grab active:cursor-grabbing transition-colors ${isDragging ? 'scale-105 shadow-xl border-emerald-500' : isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300'}`}
         >
             <div className="flex items-center justify-between mb-2">
                 <span className="text-lg">{w.icon}</span>
@@ -107,7 +107,21 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
         localStorage.setItem('yoogi_selected_wallet_ids', JSON.stringify(selectedWalletIds));
     }, [selectedWalletIds]);
     
+    // Validate selectedWalletIds against loaded wallets to remove old Firebase IDs
+    useEffect(() => {
+        if (wallets && wallets.length > 0 && selectedWalletIds.length > 0) {
+            const validIds = selectedWalletIds.filter(id => wallets.some(w => w.id === id));
+            if (validIds.length !== selectedWalletIds.length) {
+                setSelectedWalletIds(validIds);
+            }
+        }
+    }, [wallets, selectedWalletIds]);
     // UI States
+    const [localWallets, setLocalWallets] = useState([]);
+    useEffect(() => {
+        setLocalWallets(wallets || []);
+    }, [wallets]);
+    
     const [isAIContextOpen, setIsAIContextOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -150,13 +164,19 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
     const handleDragEnd = async (event) => {
         const { active, over } = event;
         if (over && active.id !== over.id) {
-            const oldIndex = walletBalances.findIndex(w => w.id === active.id);
-            const newIndex = walletBalances.findIndex(w => w.id === over.id);
-            const newWallets = arrayMove(walletBalances, oldIndex, newIndex);
+            const oldIndex = localWallets.findIndex(w => w.id === active.id);
+            const newIndex = localWallets.findIndex(w => w.id === over.id);
+            const newWallets = arrayMove(localWallets, oldIndex, newIndex);
+            
+            // Eagerly update local state for smooth UX
+            setLocalWallets(newWallets);
+            
             try {
                 await updateWalletOrder(user.uid, newWallets.map(w => w.id));
             } catch (error) {
                 console.error(error);
+                // Revert on error
+                setLocalWallets(wallets || []);
             }
         }
     };
@@ -165,7 +185,7 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
         if (!user) return;
         try {
             if (walletModalMode === 'edit' && editingWallet) {
-                const { updateWallet } = await import('../utils/firebaseHelpers');
+                const { updateWallet } = await import('../utils/supabaseHelpers');
                 await updateWallet(user.uid, editingWallet.id, {
                     name: formData.name,
                     icon: formData.icon,
@@ -189,7 +209,7 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
     // --- Calculations ---
     const walletBalances = useMemo(() => {
         const balances = {};
-        wallets?.forEach(w => { balances[w.id] = { ...w, balance: w.initialBalance || 0 }; });
+        localWallets.forEach(w => { balances[w.id] = { ...w, balance: w.initialBalance || 0 }; });
         
         transactions.forEach(t => {
             if (t.type === 'income' && balances[t.walletId]) {
@@ -207,8 +227,8 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                 balances[t.walletId].balance -= (t.amount || 0);
             }
         });
-        return Object.values(balances);
-    }, [transactions, wallets]);
+        return localWallets.map(w => balances[w.id]);
+    }, [transactions, localWallets]);
 
     const totalBalance = useMemo(() => {
         if (selectedWalletIds.length === 0) {
@@ -281,7 +301,7 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
         if (!user) return;
         try {
             if (editingTransaction) {
-                const { updateTransaction, processCorrections } = await import('../utils/firebaseHelpers');
+                const { updateTransaction, processCorrections } = await import('../utils/supabaseHelpers');
                 await processCorrections(user.uid, editingTransaction, formData);
                 await updateTransaction(user.uid, editingTransaction.id, formData);
             } else {
@@ -298,7 +318,7 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
     const handleDeleteTransaction = async (transactionId) => {
         if (!user) return;
         try {
-            const { deleteTransaction } = await import('../utils/firebaseHelpers');
+            const { deleteTransaction } = await import('../utils/supabaseHelpers');
             await deleteTransaction(user.uid, transactionId);
             setIsModalOpen(false);
             setIsTransferModalOpen(false);
@@ -312,7 +332,7 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
         if (!user || !deleteModal.id) return;
         setIsDeleting(true);
         try {
-            const { deleteTransaction } = await import('../utils/firebaseHelpers');
+            const { deleteTransaction } = await import('../utils/supabaseHelpers');
             await deleteTransaction(user.uid, deleteModal.id);
             setDeleteModal({ isOpen: false, id: null });
         } catch (error) {

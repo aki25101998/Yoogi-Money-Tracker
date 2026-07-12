@@ -6,7 +6,7 @@ import { formatCurrency } from '../utils/formatters';
 import { calculateItemStats, monthDiff } from '../utils/calculations';
 
 const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, onMinimumPayment, isReadOnly, kyIndex, transactions, onEditTransaction }) => {
-    const stats = calculateItemStats(item, referenceDate);
+    const stats = calculateItemStats(item, referenceDate, transactions);
     const paidCount = Array.isArray(item.paidMonths) ? item.paidMonths.length : stats.effectiveMonths;
     const cannotTickMore = !isPaid && paidCount >= item.term;
     const isDisabled = isReadOnly || cannotTickMore;
@@ -21,15 +21,19 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
 
     // Partial payment logic for this specific month
     const currentMonthStr = `${referenceDate.getFullYear()}-${String(referenceDate.getMonth() + 1).padStart(2, '0')}`;
-    const partialPaid = (item.partialPayments && item.partialPayments[currentMonthStr]) || 0;
+    
+    const relatedTransactions = transactions?.filter(t => {
+        if (t.type !== 'installment_repaid') return false;
+        const txMonthStr = t.date ? `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}` : null;
+        return (
+            (t.installmentId === item.id && txMonthStr === currentMonthStr) ||
+            ((t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`) || t.description?.startsWith(`Trả tối thiểu ${item.name}`)) && !t.installmentId && txMonthStr === currentMonthStr)
+        );
+    }) || [];
+
+    const partialPaid = relatedTransactions.reduce((acc, t) => acc + (t.amount || 0), 0);
     const partialProgress = item.monthlyPayment > 0 ? Math.min(Math.round((partialPaid / item.monthlyPayment) * 100), 100) : 0;
     const monthlyRemaining = Math.max(item.monthlyPayment - partialPaid, 0);
-
-    const relatedTransactions = transactions?.filter(t => 
-        t.type === 'installment_repaid' && 
-        ( (t.installmentId === item.id && t.monthStr === currentMonthStr) || 
-          ((t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`) || t.description?.startsWith(`Trả tối thiểu ${item.name}`)) && !t.installmentId && currentMonthStr === `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}`) )
-    ) || [];
 
     return (
         <Card className={`overflow-hidden transition-all duration-200 group border-slate-200 dark:border-slate-700 ${isPaid ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : 'bg-white dark:bg-slate-800'}`}>

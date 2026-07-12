@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronDown } from 'lucide-react';
-import { updateDebt, addTransaction } from '../../utils/firebaseHelpers';
+import { updateDebt, addTransaction } from '../../utils/supabaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
 import AmountInput from '../ui/AmountInput';
 
-const RepayDebtModal = ({ isOpen, onClose, user, wallets, debt }) => {
+const RepayDebtModal = ({ isOpen, onClose, user, wallets, debt, categories }) => {
     const [form, setForm] = useState({
         amount: '',
         walletId: '',
@@ -55,12 +55,14 @@ const RepayDebtModal = ({ isOpen, onClose, user, wallets, debt }) => {
                 }
             }
 
+            const matchedCategoryId = categories?.find(c => c.type === 'loan_repaid')?.id || 'loan_repaid';
+
             // 2. Tạo giao dịch cộng tiền (loan_repaid)
             const transactionData = {
                 type: 'loan_repaid',
                 amount: amountNum,
                 description: `${debt.personName} trả nợ: ${form.notes}`,
-                categoryId: 'loan_repaid',
+                categoryId: matchedCategoryId,
                 subcategoryId: '',
                 date: new Date(form.date).toISOString(),
                 time: `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`,

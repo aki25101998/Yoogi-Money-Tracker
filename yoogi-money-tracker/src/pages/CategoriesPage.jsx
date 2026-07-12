@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import {
     addCategory, updateCategory, deleteCategory, updateCategoryOrder, applyDefaultCategories
-} from '../utils/firebaseHelpers';
+} from '../utils/supabaseHelpers';
 
 import {
     DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors,

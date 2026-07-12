@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronDown } from 'lucide-react';
 import AmountInput from '../ui/AmountInput';
-import { addDebt, addTransaction } from '../../utils/firebaseHelpers';
+import { addDebt, addTransaction } from '../../utils/supabaseHelpers';
 
 const AddDebtModal = ({ isOpen, onClose, user, wallets, payers, onAddPayer }) => {
     const [form, setForm] = useState({

@@ -4,7 +4,7 @@ import { formatCurrency } from '../utils/formatters';
 import AddDebtModal from '../components/modals/AddDebtModal';
 import RepayDebtModal from '../components/modals/RepayDebtModal';
 import DebtDetailsModal from '../components/modals/DebtDetailsModal';
-import { addDebtor, deleteDebtor, deleteDebt, updateDebt, updateDebtor } from '../utils/firebaseHelpers';
+import { addDebtor, deleteDebtor, deleteDebt, updateDebt, updateDebtor } from '../utils/supabaseHelpers';
 
 const DebtsPage = ({ user, debts, transactions, wallets, categories, payers }) => {
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -18,10 +18,10 @@ const DebtsPage = ({ user, debts, transactions, wallets, categories, payers }) =
     const [selectedDetailsKey, setSelectedDetailsKey] = useState(null);
 
     const totalLent = debts.reduce((acc, d) => d.status === 'active' ? acc + (d.totalAmount - (d.repaidAmount || 0)) : acc, 0);
-    const totalRepaid = debts.reduce((acc, d) => d.status === 'active' ? acc + (d.repaidAmount || 0) : acc, 0);
+    const totalRepaid = debts.reduce((acc, d) => acc + (d.repaidAmount || 0), 0);
 
     const groupedDebtsObj = debts.reduce((acc, d) => {
-        const key = d.personName.trim().toLowerCase();
+        const key = (d.personName || 'Khác').trim().toLowerCase();
         if (!acc[key]) {
             acc[key] = {
                 id: key,
@@ -34,9 +34,11 @@ const DebtsPage = ({ user, debts, transactions, wallets, categories, payers }) =
             };
         }
         
+        // Luôn cộng dồn để hiển thị tổng quan lịch sử (Đã mượn, Đã trả)
+        acc[key].totalAmount += d.totalAmount;
+        acc[key].repaidAmount += (d.repaidAmount || 0);
+        
         if (d.status === 'active') {
-            acc[key].totalAmount += d.totalAmount;
-            acc[key].repaidAmount += (d.repaidAmount || 0);
             acc[key].status = 'active';
         }
         
@@ -395,6 +397,7 @@ const DebtsPage = ({ user, debts, transactions, wallets, categories, payers }) =
                     user={user}
                     wallets={wallets}
                     debt={groupedDebtsObj[selectedGroupKey]}
+                    categories={categories}
                 />
             )}
 

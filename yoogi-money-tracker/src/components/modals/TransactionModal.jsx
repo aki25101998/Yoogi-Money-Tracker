@@ -26,14 +26,29 @@ const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, walle
     useEffect(() => {
         if (isOpen) {
             if (initialData) {
+                let parsedDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                let parsedTime = initialData.time || (initialData.createdAt ? new Date(initialData.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }) : getCurrentTime());
+
+                if (initialData.date) {
+                    if (initialData.date.includes('T')) {
+                        // It's an ISO string
+                        const d = new Date(initialData.date);
+                        parsedDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                        parsedTime = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+                    } else {
+                        // It's just a date string 'yyyy-mm-dd'
+                        parsedDate = initialData.date;
+                    }
+                }
+
                 setForm({
                     type: initialData.type || 'expense',
                     amount: initialData.amount || '',
-                    description: initialData.description || '',
+                    description: initialData.description || initialData.note || '',
                     categoryId: initialData.categoryId || '',
                     subcategoryId: initialData.subcategoryId || '',
-                    date: initialData.date || new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
-                    time: initialData.time || getCurrentTime(),
+                    date: parsedDate,
+                    time: parsedTime,
                     walletId: initialData.walletId || defaultWallet,
                 });
             } else {
@@ -55,8 +70,23 @@ const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, walle
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        
+        let combinedDate = form.date;
+        try {
+            // Create a proper date object using local time
+            const d = new Date();
+            const [year, month, day] = form.date.split('-');
+            const [hours, minutes] = form.time.split(':');
+            d.setFullYear(year, month - 1, day);
+            d.setHours(hours, minutes, 0, 0);
+            combinedDate = d.toISOString();
+        } catch (err) {
+            console.error('Error combining date', err);
+        }
+
         onSave({
             ...form,
+            date: combinedDate,
             amount: parseFloat(form.amount) || 0,
         });
     };

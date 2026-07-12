@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Check, ArrowRight, Loader2 } from 'lucide-react';
-import { updateUserSettings } from '../../utils/firebaseHelpers';
+import { updateUserSettings } from '../../utils/supabaseHelpers';
 
 const PRO_PRICE = 99000;
 const BANK_ID = "970403"; // Sacombank
@@ -17,12 +17,9 @@ const UpgradeProModal = ({ isOpen, onClose, user }) => {
             const code = Math.floor(100000 + Math.random() * 900000).toString();
             setOrderCode(code);
             
-            // Save to Firestore so webhook can find this user
-            import('firebase/firestore').then(({ doc, setDoc }) => {
-                const { db, APP_ID } = require('../../config/firebase');
-                setDoc(doc(db, `artifacts/${APP_ID}/users/${user.uid}`), {
-                    pendingOrderCode: `YGT${code}`
-                }, { merge: true });
+            // Save to Supabase so webhook can find this user
+            import('../../config/supabase').then(({ supabase }) => {
+                supabase.from('users').update({ pendingOrderCode: `YGT${code}` }).eq('id', user.uid).then(() => {});
             }).catch(console.error);
         }
     }, [isOpen, step, user]);

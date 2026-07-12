@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Wallet, Check, ChevronDown, Clock, Repeat, BellRing } from 'lucide-react';
-import { addRecurringTransaction } from '../../utils/firebaseHelpers';
+import { addRecurringTransaction } from '../../utils/supabaseHelpers';
 import AmountInput from '../ui/AmountInput';
 
 const AddRecurringTransactionModal = ({ isOpen, onClose, categories, user, wallets }) => {

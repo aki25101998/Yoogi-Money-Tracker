@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Filter, Calendar, Pencil, Trash2, AlertTriangle, ArrowDownRight, ArrowUpRight, ChevronDown, X, Check, Clock } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
-import { deleteTransaction, deleteMultipleTransactions, updateTransaction, processCorrections, updateDebt, getTransactionByDebtId } from '../utils/firebaseHelpers';
+import { deleteTransaction, deleteMultipleTransactions, updateTransaction, processCorrections, updateDebt, getTransactionByDebtId } from '../utils/supabaseHelpers';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import TransactionModal from '../components/modals/TransactionModal';
 import TransferFundsModal from '../components/modals/TransferFundsModal';
@@ -25,6 +25,17 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
     React.useEffect(() => {
         localStorage.setItem('yoogi_selected_wallet_ids', JSON.stringify(selectedWalletIds));
     }, [selectedWalletIds]);
+    
+    // Validate selectedWalletIds against loaded wallets to remove old Firebase IDs
+    React.useEffect(() => {
+        if (wallets && wallets.length > 0 && selectedWalletIds.length > 0) {
+            const validIds = selectedWalletIds.filter(id => wallets.some(w => w.id === id));
+            if (validIds.length !== selectedWalletIds.length) {
+                setSelectedWalletIds(validIds);
+            }
+        }
+    }, [wallets, selectedWalletIds]);
+    
     const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
     const [selectedSubcategoryIds, setSelectedSubcategoryIds] = useState([]);
 
@@ -386,17 +397,17 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
                                                     : `${wallet?.name || 'Chưa phân ví'} • ${cat?.name || '❓ Chưa phân loại'} ${txn.subcategoryId && cat?.subcategories?.find(s => s.id === txn.subcategoryId) ? `> ${cat.subcategories.find(s => s.id === txn.subcategoryId).name}` : ''}`))}
                                                 </p>
                                                 <div className="flex flex-col gap-1 mt-0.5">
-                                                    {txn.time && (
+                                                    {(txn.time || txn.createdAt) && (
                                                         <div className="flex items-center">
                                                             <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md">
                                                                 <Clock className="w-3 h-3" />
-                                                                {txn.time}
+                                                                {txn.time || new Date(txn.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                                                             </span>
                                                         </div>
                                                     )}
-                                                    {txn.description && (
+                                                    {(txn.description || txn.note) && (
                                                         <p className="font-medium text-slate-500 dark:text-slate-400 text-xs line-clamp-1">
-                                                            {isLoan && txn.description ? txn.description.replace(/^(?:Cho )?.*?(?:mượn|trả nợ):\s*/, '') : txn.description}
+                                                            {isLoan && (txn.description || txn.note) ? (txn.description || txn.note).replace(/^(?:Cho )?.*?(?:mượn|trả nợ):\s*/, '') : (txn.description || txn.note)}
                                                         </p>
                                                     )}
                                                 </div>

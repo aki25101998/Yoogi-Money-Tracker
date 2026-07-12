@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Trash2, Pencil, Check, ChevronDown, RefreshCw } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
-import { updateDebt, updateTransaction, getTransactionByDebtId, deleteTransaction } from '../../utils/firebaseHelpers';
+import { updateDebt, updateTransaction, getTransactionByDebtId, deleteTransaction } from '../../utils/supabaseHelpers';
 import AmountInput from '../ui/AmountInput';
 
 const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wallets, transactions }) => {
@@ -66,7 +66,7 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
 
     const startEditPayment = (payment) => {
         setEditingPaymentId(payment.id);
-        const notesMatch = payment.description.match(/trả nợ:\s*(.*)/);
+        const notesMatch = (payment.description || payment.note || '').match(/trả nợ:\s*(.*)/);
         const notes = notesMatch ? notesMatch[1] : '';
         setPaymentEditForm({ amount: payment.amount, walletId: payment.walletId, notes });
     };
@@ -95,7 +95,7 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                 if (diff > 0) {
                     const activeDebts = groupedDebt.debts
                         .filter(d => d.status === 'active')
-                        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                        .sort((a, b) => new Date(a.date || a.createdAt) - new Date(b.date || b.createdAt));
                         
                     for (const d of activeDebts) {
                         if (amountToDistribute <= 0) break;
@@ -113,7 +113,7 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                         }
                     }
                 } else {
-                    const allDebts = [...groupedDebt.debts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    const allDebts = [...groupedDebt.debts].sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
                     
                     for (const d of allDebts) {
                         if (amountToDistribute <= 0) break;
@@ -146,7 +146,7 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
         if (window.confirm('Bạn có chắc muốn xóa lịch sử trả này? Dữ liệu nợ sẽ bị cộng ngược lại.')) {
             try {
                 let amountToDistribute = payment.amount;
-                const allDebts = [...groupedDebt.debts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                const allDebts = [...groupedDebt.debts].sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
                 
                 for (const d of allDebts) {
                     if (amountToDistribute <= 0) break;
@@ -172,13 +172,17 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
     };
 
     // Sort debts by date descending
-    const sortedDebts = [...groupedDebt.debts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const sortedDebts = [...groupedDebt.debts].sort((a, b) => {
+        const dateA = new Date(a.date || a.createdAt);
+        const dateB = new Date(b.date || b.createdAt);
+        return dateB - dateA;
+    });
     const activeDebts = sortedDebts.filter(d => d.status === 'active');
     const paidDebts = sortedDebts.filter(d => d.status === 'paid');
 
     const paymentHistory = transactions?.filter(t => 
         t.type === 'loan_repaid' && 
-        (groupedDebt.debts.some(d => d.id === t.debtId) || t.description.includes(groupedDebt.personName))
+        (groupedDebt.debts.some(d => d.id === t.debtId) || (t.description || t.note || '').includes(groupedDebt.personName))
     ).sort((a, b) => new Date(b.date) - new Date(a.date)) || [];
 
     const handleTabChange = (tab) => {
@@ -288,7 +292,7 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                                                 <div className="flex items-center justify-between mb-3">
                                                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                                         <Calendar className="w-[18px] h-[18px]" />
-                                                        <span className="text-[15px] font-semibold">{new Date(debt.createdAt).toLocaleDateString('vi-VN')}</span>
+                                                        <span className="text-[15px] font-semibold">{new Date(debt.date || debt.createdAt).toLocaleDateString('vi-VN')}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         {debt.status === 'paid' && (

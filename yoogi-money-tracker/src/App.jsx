@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, LogIn, Sparkles, CreditCard, Plus, PenSquare, Bot, ArrowRightLeft, Repeat } from 'lucide-react';
-import {
-    signInWithPopup, signInWithRedirect, getRedirectResult, signOut,
-    onAuthStateChanged, signInWithCredential, GoogleAuthProvider
-} from 'firebase/auth';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
-import {
-    collection, onSnapshot, query
-} from 'firebase/firestore';
-
-// Config
-import { auth, db, googleProvider, APP_ID } from './config/firebase';
+import { supabase } from './config/supabase';
 
 // Layout
 import Layout from './components/Layout';
@@ -29,6 +20,9 @@ import AIContextModal from './components/modals/AIContextModal';
 import TransferFundsModal from './components/modals/TransferFundsModal';
 import AddRecurringTransactionModal from './components/modals/AddRecurringTransactionModal';
 
+// Components
+import GlobalErrorBanner from './components/GlobalErrorBanner';
+
 // Helpers
 import {
     seedDefaultCategories,
@@ -45,8 +39,9 @@ import {
     updateRecurringTransaction,
     subscribeLenders,
     subscribeUserSettings,
-    subscribeAbbreviations
-} from './utils/firebaseHelpers';
+    subscribeAbbreviations,
+    subscribeInstallments
+} from './utils/supabaseHelpers';
 
 export default function App() {
     // --- Auth ---
@@ -101,11 +96,6 @@ export default function App() {
 
     // --- Auth Effect ---
     useEffect(() => {
-        if (!auth) {
-            setIsAuthLoading(false);
-            return;
-        }
-
         // Initialize GoogleAuth plugin for Capacitor
         if (window.Capacitor || navigator.userAgent.includes('Capacitor')) {
             GoogleAuth.initialize({
@@ -115,22 +105,16 @@ export default function App() {
             });
         }
 
-        // Handle redirect result (for mobile WebView sign-in)
-        getRedirectResult(auth).then((result) => {
-            if (result?.user) {
-                console.log('Redirect sign-in successful:', result.user.uid);
-            }
-        }).catch((error) => {
-            if (error.code !== 'auth/redirect-cancelled-by-user') {
-                console.error('Redirect result error:', error);
-            }
-        });
-
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser);
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ? { ...session.user, uid: session.user.id } : null);
             setIsAuthLoading(false);
         });
-        return () => unsubscribe();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ? { ...session.user, uid: session.user.id } : null);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     // --- Data Subscriptions ---
@@ -174,17 +158,8 @@ export default function App() {
             }
         };
 
-        // Subscribe to installments (legacy path)
-        const instQuery = query(
-            collection(db, 'artifacts', APP_ID, 'users', user.uid, 'installments')
-        );
-        const unsubInst = onSnapshot(instQuery, (snapshot) => {
-            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            items.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-            setInstallments(items);
-        });
-
-        // Subscribe to categories
+        // Subscribe to installments
+        const unsubInst = subscribeInstallments(user.uid, setInstallments);
         const unsubCats = subscribeCategories(user.uid, setCategories);
 
         // Subscribe to transactions
@@ -240,7 +215,7 @@ export default function App() {
             unsubSettings();
             unsubAbbreviations();
         };
-    }, [user]);
+    }, [user?.uid]);
 
     // --- Recurring Transactions Check Effect ---
     useEffect(() => {
@@ -312,40 +287,31 @@ export default function App() {
     };
 
     const handleGoogleLogin = async () => {
-        if (!auth) {
-            alert("Chế độ Offline: Chưa cấu hình Firebase. Vui lòng cập nhật file .env để đăng nhập.");
-            return;
-        }
         try {
             if (isMobileOrWebView()) {
-                // Use Native Google Sign-In via Capacitor Plugin
                 const googleUser = await GoogleAuth.signIn();
                 if (googleUser && googleUser.authentication) {
-                    const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken);
-                    await signInWithCredential(auth, credential);
+                    await supabase.auth.signInWithIdToken({
+                        provider: 'google',
+                        token: googleUser.authentication.idToken,
+                    });
                 } else {
                     throw new Error("Không lấy được token xác thực từ Google.");
                 }
             } else {
-                await signInWithPopup(auth, googleProvider);
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google'
+                });
+                if (error) throw error;
             }
         } catch (error) {
             console.error("Login Error:", error);
-            // If popup fails, fallback to redirect (only for non-capacitor mobile web)
-            if (error.code === 'auth/popup-blocked' || error.code === 'auth/network-request-failed') {
-                try {
-                    await signInWithRedirect(auth, googleProvider);
-                } catch (redirectError) {
-                    alert("Đăng nhập thất bại: " + redirectError.message);
-                }
-            } else {
-                alert("Đăng nhập thất bại: " + error.message);
-            }
+            alert("Đăng nhập thất bại: " + error.message);
         }
     };
 
     const handleLogout = async () => {
-        try { await signOut(auth); } catch (error) { console.error("Logout Error:", error); }
+        try { await supabase.auth.signOut(); } catch (error) { console.error("Logout Error:", error); }
     };
 
     const handleGlobalSaveTransaction = async (formData) => {
@@ -412,11 +378,7 @@ export default function App() {
                         Đăng nhập với Google
                     </button>
 
-                    {!auth && (
-                        <p className="text-xs text-rose-500 bg-rose-50 dark:bg-rose-900/20 p-2 rounded-lg border border-rose-100 dark:border-rose-900/30 mt-4">
-                            ⚠️ Lỗi cấu hình Firebase. Vui lòng kiểm tra file .env
-                        </p>
-                    )}
+
                 </div>
             </div>
         );
@@ -469,6 +431,7 @@ export default function App() {
                     isLoading={false}
                     wallets={wallets}
                     transactions={transactions}
+                    categories={categories}
                 />
             );
         } else if (activePage === 'debts') {
@@ -619,6 +582,8 @@ export default function App() {
                     />
                 </>
             )}
+            
+            <GlobalErrorBanner />
         </Layout>
     );
 }

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Wallet, Plus, Pencil, Trash2, AlertTriangle, GripVertical, ChevronDown, Download } from 'lucide-react';
-import { addWallet, updateWallet, deleteWallet, updateWalletOrder, applyDefaultWallets } from '../../utils/firebaseHelpers';
+import { addWallet, updateWallet, deleteWallet, updateWalletOrder, applyDefaultWallets } from '../../utils/supabaseHelpers';
 import ConfirmModal from '../modals/ConfirmModal';
 import WalletModal from '../modals/WalletModal';
 import UpgradeProModal from '../modals/UpgradeProModal';
@@ -59,11 +59,17 @@ const SortableWalletItem = ({ wallet, onEdit, onDelete, onSetDefault }) => {
 };
 
 const WalletsSettings = ({ user, wallets, userSettings }) => {
+    const [localWallets, setLocalWallets] = useState(wallets || []);
     const [editModal, setEditModal] = useState({ isOpen: false, mode: 'add', data: null });
     const [confirmState, setConfirmState] = useState({ isOpen: false, data: null });
     const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isApplyingDefaults, setIsApplyingDefaults] = useState(false);
+
+    // Sync local state when wallets prop changes (e.g. after DB refetch)
+    useEffect(() => {
+        setLocalWallets(wallets || []);
+    }, [wallets]);
 
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -135,12 +141,18 @@ const WalletsSettings = ({ user, wallets, userSettings }) => {
     const handleDragEnd = async (event) => {
         const { active, over } = event;
         if (over && active.id !== over.id) {
-            const oldIndex = wallets.findIndex(w => w.id === active.id);
-            const newIndex = wallets.findIndex(w => w.id === over.id);
-            const newWallets = arrayMove(wallets, oldIndex, newIndex);
+            const oldIndex = localWallets.findIndex(w => w.id === active.id);
+            const newIndex = localWallets.findIndex(w => w.id === over.id);
+            const newWallets = arrayMove(localWallets, oldIndex, newIndex);
+
+            // Eagerly update local state for smooth UX
+            setLocalWallets(newWallets);
+
             try {
                 await updateWalletOrder(user.uid, newWallets.map(w => w.id));
             } catch (error) {
+                // Revert on error
+                setLocalWallets(wallets || []);
                 alert('Lỗi cập nhật vị trí: ' + error.message);
             }
         }
@@ -195,12 +207,12 @@ const WalletsSettings = ({ user, wallets, userSettings }) => {
             </div>
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={wallets.map(w => w.id)} strategy={verticalListSortingStrategy}>
+                <SortableContext items={localWallets.map(w => w.id)} strategy={verticalListSortingStrategy}>
                     <div className="grid gap-3">
-                        {wallets.length === 0 ? (
+                        {localWallets.length === 0 ? (
                             <div className="text-center p-6 text-slate-400">Chưa có ví nào</div>
                         ) : (
-                            wallets.map(wallet => (
+                            localWallets.map(wallet => (
                                 <SortableWalletItem 
                                     key={wallet.id} 
                                     wallet={wallet} 

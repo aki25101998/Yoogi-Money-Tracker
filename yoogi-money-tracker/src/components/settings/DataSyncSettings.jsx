@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { AlertTriangle, CheckCircle2, Loader2, Database, Download, Upload } from 'lucide-react';
-import { exportUserData, importUserData } from '../../utils/firebaseHelpers';
+import { exportUserData, importUserData } from '../../utils/supabaseHelpers';
 
 const DataSyncSettings = ({ user }) => {
     const [isExporting, setIsExporting] = useState(false);

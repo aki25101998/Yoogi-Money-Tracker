@@ -24,7 +24,7 @@ export const getYearMonth = (date) => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 
-export const calculateItemStats = (item, referenceDate = new Date()) => {
+export const calculateItemStats = (item, referenceDate = new Date(), transactions = null) => {
     const start = new Date(item.startDate);
     const now = new Date(referenceDate);
 
@@ -42,7 +42,16 @@ export const calculateItemStats = (item, referenceDate = new Date()) => {
         
         // Add partial payments for months that are NOT fully paid
         let totalPartialPaid = 0;
-        if (item.partialPayments) {
+        
+        if (transactions && Array.isArray(transactions)) {
+            const related = transactions.filter(t => t.type === 'installment_repaid' && (t.installmentId === item.id || (!t.installmentId && t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`))));
+            for (const t of related) {
+                const txMonthStr = t.date ? `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}` : null;
+                if (txMonthStr && !item.paidMonths.includes(txMonthStr)) {
+                    totalPartialPaid += (t.amount || 0);
+                }
+            }
+        } else if (item.partialPayments) {
             for (const [mStr, amount] of Object.entries(item.partialPayments)) {
                 if (!item.paidMonths.includes(mStr)) {
                     totalPartialPaid += amount;

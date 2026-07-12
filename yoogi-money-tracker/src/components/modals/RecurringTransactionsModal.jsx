@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, CalendarClock, Trash2 } from 'lucide-react';
 import AddRecurringTransactionModal from './AddRecurringTransactionModal';
-import { deleteRecurringTransaction } from '../../utils/firebaseHelpers';
+import { deleteRecurringTransaction } from '../../utils/supabaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
 
 const RecurringTransactionsModal = ({ isOpen, onClose, categories, user, wallets, recurringTransactions = [] }) => {

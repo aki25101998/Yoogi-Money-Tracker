@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Bot, User, Loader2, Pencil, Trash2, CheckCircle2, ChevronRight, ChevronDown, Settings, CalendarClock, ArrowRightLeft } from 'lucide-react';
 import { categorizeTransaction } from '../../utils/aiCategorizer';
-import { addTransaction, incrementMemoryUsage, learnFromCorrection, processCorrections, updateTransaction, deleteTransaction, addDebt, updateDebt, addDebtor, subscribeAIChatHistory, updateAIChatHistory, clearAIChatHistory } from '../../utils/firebaseHelpers';
+import { addTransaction, incrementMemoryUsage, learnFromCorrection, processCorrections, updateTransaction, deleteTransaction, addDebt, updateDebt, addDebtor, subscribeAIChatHistory, updateAIChatHistory, clearAIChatHistory } from '../../utils/supabaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
-import { APP_ID, db } from '../../config/firebase';
-import { collection, addDoc, query, where, getDocs, limit } from 'firebase/firestore';
+import { supabase } from '../../config/supabase';
 import TransferFundsModal from '../modals/TransferFundsModal';
 import TransactionModal from '../modals/TransactionModal';
 import RecurringTransactionsModal from '../modals/RecurringTransactionsModal';
@@ -144,7 +143,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                 createdAt: new Date().toISOString()
             };
 
-            const docRef = await addDoc(collection(db, `artifacts/${APP_ID}/users/${user.uid}/transactions`), transferTxn);
+            const docRef = await addTransaction(user.uid, transferTxn);
 
             const aiMsg = {
                 id: Date.now().toString(),
@@ -277,14 +276,11 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                     debtId = debtRef.id;
                 } else if (result.type === 'loan_repaid') {
                     // Cố gắng tìm khoản nợ đang active của người này
-                    const debtsRef = collection(db, 'artifacts', APP_ID, 'users', user.uid, 'debts');
-                    const q = query(debtsRef, where('personName', '==', personName), where('status', '==', 'active'), limit(1));
-                    const querySnapshot = await getDocs(q);
+                    const { data } = await supabase.from('debts').select('*').eq('user_id', user.uid).eq('personName', personName).eq('status', 'active').limit(1);
                     
-                    if (!querySnapshot.empty) {
-                        const debtDoc = querySnapshot.docs[0];
-                        const debtData = debtDoc.data();
-                        debtId = debtDoc.id;
+                    if (data && data.length > 0) {
+                        const debtData = data[0];
+                        debtId = debtData.id;
                         
                         const newRepaidAmount = (debtData.repaidAmount || 0) + amountNum;
                         const newStatus = newRepaidAmount >= debtData.totalAmount ? 'completed' : 'active';
@@ -302,7 +298,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                     description: result.type === 'loan_given' 
                         ? `${personName} mượn${result.debtNotes ? ': ' + result.debtNotes : ''}` 
                         : `${personName} trả nợ${result.debtNotes ? ': ' + result.debtNotes : ''}`,
-                    categoryId: result.type,
+                    categoryId: categories.find(c => c.type === result.type)?.id || '',
                     subcategoryId: '',
                     date: result.date || new Date().toISOString(),
                     time: getCurrentTime(),
@@ -317,7 +313,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                     type: 'transfer',
                     amount: result.amount,
                     description: result.description || 'Chuyển tiền',
-                    categoryId: 'transfer',
+                    categoryId: categories.find(c => c.type === 'transfer')?.id || '',
                     subcategoryId: '',
                     date: result.date || new Date().toISOString(),
                     time: getCurrentTime(),

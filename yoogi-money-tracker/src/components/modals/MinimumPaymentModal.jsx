@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Wallet, ChevronDown } from 'lucide-react';
-import { addTransaction } from '../../utils/firebaseHelpers';
-import { db, APP_ID } from '../../config/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { addTransaction, updateInstallmentPartialPayment } from '../../utils/supabaseHelpers';
+
 import AmountInput from '../ui/AmountInput';
 import { formatCurrency } from '../../utils/formatters';
 
-const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item, monthStr }) => {
+const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item, monthStr, categories }) => {
     const [form, setForm] = useState({
         amount: '',
         walletId: '',
@@ -40,27 +39,26 @@ const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item, monthStr })
             const ownerName = item.owner || 'Tôi';
             const isPaying = ownerName === 'Tôi';
 
+            const matchedCategoryId = isPaying 
+                ? (categories?.find(c => c.type === 'installment_repaid')?.id || 'tra_no_tra_gop') 
+                : (categories?.find(c => c.type === 'loan_repaid')?.id || 'loan_repaid');
+
             const transactionData = {
                 type: isPaying ? 'installment_repaid' : 'loan_repaid',
                 amount: amountNum,
                 description: form.notes.trim() || `Trả tối thiểu ${item.name}`,
-                categoryId: isPaying ? 'tra_no_tra_gop' : 'loan_repaid',
+                categoryId: matchedCategoryId,
                 subcategoryId: isPaying ? 'tra_gop' : '',
                 date: new Date(form.date).toISOString(),
                 time: `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`,
                 walletId: form.walletId,
-                installmentId: item.id,
-                monthStr: monthStr,
+                installmentId: item.id
             };
 
             await addTransaction(user.uid, transactionData);
 
             if (monthStr && item?.id) {
-                const docRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', item.id);
-                const currentPartial = (item.partialPayments && item.partialPayments[monthStr]) || 0;
-                await updateDoc(docRef, {
-                    [`partialPayments.${monthStr}`]: currentPartial + amountNum
-                });
+                await updateInstallmentPartialPayment(user.uid, item.id, monthStr, amountNum);
             }
 
             onClose();

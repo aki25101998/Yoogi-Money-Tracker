@@ -5,13 +5,8 @@ import {
     Sparkles, X, AlertTriangle, Trash2,
     RotateCcw, ChevronUp, ChevronDown, Check, ChevronRight
 } from 'lucide-react';
-import {
-    collection, addDoc, deleteDoc, updateDoc, doc,
-    onSnapshot, query
-} from 'firebase/firestore';
 
-import { db, APP_ID } from '../config/firebase';
-import { addPayer, deletePayer, addLender, deleteLender, updateLender, deleteTransaction } from '../utils/firebaseHelpers';
+import { addPayer, deletePayer, addLender, deleteLender, updateLender, deleteTransaction, addInstallment, updateInstallment, deleteInstallment } from '../utils/supabaseHelpers';
 import { formatCurrency } from '../utils/formatters';
 import { calculateLoan, calculateItemStats, getYearMonth } from '../utils/calculations';
 
@@ -23,7 +18,7 @@ import InstallmentDetailsModal from '../components/modals/InstallmentDetailsModa
 import MinimumPaymentModal from '../components/modals/MinimumPaymentModal';
 import LoanEditModal from '../components/modals/LoanEditModal';
 
-const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, transactions }) => {
+const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, transactions, categories }) => {
     // Modal States
     const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
@@ -79,8 +74,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
             if (Array.isArray(item.paidMonths) && item.paidMonths.length > item.term) {
                 const newPaidMonths = item.paidMonths.slice(0, item.term);
                 try {
-                    const docRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', item.id);
-                    await updateDoc(docRef, { paidMonths: newPaidMonths });
+                    await updateInstallment(user.uid, item.id, { paidMonths: newPaidMonths });
                     console.log(`Auto-fixed item ${item.name}: ${item.paidMonths.length} -> ${item.term}`);
                 } catch (e) {
                     console.error("Auto-fix error:", e);
@@ -310,10 +304,9 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
         if (user) {
             try {
                 if (editingItem) {
-                    const docRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', editingItem.id);
-                    await updateDoc(docRef, { ...itemData, updatedAt: new Date().toISOString() });
+                    await updateInstallment(user.uid, editingItem.id, { ...itemData, updatedAt: new Date().toISOString() });
                 } else {
-                    await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'installments'), {
+                    await addInstallment(user.uid, {
                         ...itemData, createdAt: new Date().toISOString()
                     });
                 }
@@ -336,8 +329,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
             newPaidMonths = [...currentPaidMonths, monthStr].sort();
         }
         try {
-            const docRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', item.id);
-            await updateDoc(docRef, { paidMonths: newPaidMonths });
+            await updateInstallment(user.uid, item.id, { paidMonths: newPaidMonths });
         } catch (err) {
             alert("Lỗi cập nhật trạng thái: " + err.message);
         }
@@ -361,7 +353,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
         setIsProcessing(true);
         if (user) {
             try {
-                await deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', id));
+                await deleteInstallment(user.uid, id);
             } catch (err) { console.error(err); }
         }
         setIsProcessing(false);
@@ -394,7 +386,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                 await deletePayer(user.uid, payerId);
                 const itemsToDelete = items.filter(item => item.owner === ownerName);
                 for (const item of itemsToDelete) {
-                    await deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', item.id));
+                    await deleteInstallment(user.uid, item.id);
                 }
                 setFilterOwner('all');
             } catch (err) {
@@ -494,7 +486,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                     const totalPayable = monthlyPayment * term;
                     const cleanItem = { name, originalAmount: amount, term, rate, startDate, owner, monthlyPayment, totalPayable, createdAt: new Date().toISOString() };
                     if (user) {
-                        await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'installments'), cleanItem);
+                        await addInstallment(user.uid, cleanItem);
                         successCount++;
                     }
                 }
@@ -551,7 +543,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
         setAiAdvice(null);
         try {
             const summaryData = filteredItems.map(item => {
-                const stats = calculateItemStats(item);
+                const stats = calculateItemStats(item, new Date(), transactions);
                 return { item: item.name, debt: Math.round(stats.remainingAmount), left: item.term - stats.effectiveMonths };
             }).filter(i => i.left > 0);
 
@@ -623,8 +615,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                 // 2. Cập nhật tất cả các khoản trả góp của lender cũ sang lender mới
                 const itemsToUpdate = items.filter(item => (item.lender || 'Khác') === group.lenderName);
                 for (const item of itemsToUpdate) {
-                    const docRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'installments', item.id);
-                    await updateDoc(docRef, { lender: trimmedName, updatedAt: new Date().toISOString() });
+                    await updateInstallment(user.uid, item.id, { lender: trimmedName, updatedAt: new Date().toISOString() });
                 }
             } catch (err) {
                 console.error(err);
@@ -1093,6 +1084,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                 wallets={wallets}
                 item={selectedMinPaymentItem?.item}
                 monthStr={selectedMinPaymentItem?.monthStr}
+                categories={categories}
             />
 
             <LoanEditModal

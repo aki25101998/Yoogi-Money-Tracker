@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Users, Plus, Pencil, Trash2, X, AlertTriangle } from 'lucide-react';
-import { addPayer, updatePayer, deletePayer } from '../../utils/firebaseHelpers';
+import { addPayer, updatePayer, deletePayer } from '../../utils/supabaseHelpers';
 import ConfirmModal from '../modals/ConfirmModal';
 
 const PayersSettings = ({ user, payers }) => {
