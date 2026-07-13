@@ -105,13 +105,25 @@ export default function App() {
             });
         }
 
+        const processUser = (u) => {
+            if (!u) return null;
+            const photoURL = u.user_metadata?.avatar_url || u.user_metadata?.picture || u.photoURL || null;
+            const displayName = u.user_metadata?.full_name || u.user_metadata?.name || u.displayName || null;
+            return {
+                ...u,
+                uid: u.id,
+                photoURL,
+                displayName
+            };
+        };
+
         supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ? { ...session.user, uid: session.user.id } : null);
+            setUser(processUser(session?.user));
             setIsAuthLoading(false);
         });
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ? { ...session.user, uid: session.user.id } : null);
+            setUser(processUser(session?.user));
         });
 
         return () => subscription.unsubscribe();

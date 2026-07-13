@@ -510,9 +510,15 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                             {/* Avatar */}
                             <div className="flex-shrink-0 mt-auto mb-1">
                                 {msg.type === 'user' ? (
-                                    <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
-                                        {user?.photoURL ? <img src={user.photoURL} alt="user" className="w-8 h-8 rounded-full" /> : <User className="w-4 h-4 text-cyan-600" />}
-                                    </div>
+                                    user?.photoURL ? (
+                                        <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center overflow-hidden">
+                                            <img src={user.photoURL} alt="user" className="w-full h-full object-cover" />
+                                        </div>
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                                            {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                                        </div>
+                                    )
                                 ) : (
                                     <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center overflow-hidden">
                                         <img src="/logo.jpg" alt="AI Avatar" className="w-full h-full object-cover" />

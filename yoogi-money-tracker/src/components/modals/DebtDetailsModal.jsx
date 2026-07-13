@@ -193,7 +193,7 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
 
     return createPortal(
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md h-[85vh] max-h-[800px] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
                 <div className="px-6 py-4 flex flex-col gap-3 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
                     <div className="flex justify-between items-center">
                         <div>
@@ -225,7 +225,7 @@ const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wa
                     </div>
                 </div>
 
-                <div className="overflow-y-auto p-4 space-y-3">
+                <div className="overflow-y-auto flex-1 p-4 space-y-3">
                     {activeTab !== 'history' ? (
                         (activeTab === 'active' ? activeDebts : paidDebts).length === 0 ? (
                             <div className="text-center text-slate-500 py-8">
