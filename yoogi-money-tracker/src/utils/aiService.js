@@ -30,7 +30,7 @@ export const parseLoanInfo = async (text) => {
     `;
 
     try {
-        console.log(`AI Service: Sending REST request to ${MODEL_NAME}...`);
+        // Sending AI request...
         const response = await fetch(URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -51,7 +51,7 @@ export const parseLoanInfo = async (text) => {
             throw new Error("No response from AI");
         }
 
-        console.log("AI Service: Received response:", textResponse);
+        // AI response received successfully
 
         // Clean up JSON response
         let jsonString = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();

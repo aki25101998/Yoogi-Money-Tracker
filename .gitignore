@@ -28,3 +28,16 @@ jdk-*/
 *.apk
 build_no_space.bat  
 .vercel
+
+# Sensitive files (SECURITY)
+**/serviceAccountKey.json
+**/.env
+**/.env.*
+**/chat_history.txt
+**/fix*.cjs
+**/fix*.mjs
+**/test_*.cjs
+**/test_*.js
+**/test_data.js
+**/migrate*.cjs
+**/sync_*.cjs

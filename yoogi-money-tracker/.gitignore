@@ -1,1 +1,43 @@
+# Vercel
 .vercel
+
+# Environment files (CRITICAL - contains API keys)
+.env
+.env.*
+.env.local
+.env.production
+
+# Fix/Migration scripts (contain hardcoded secrets)
+fix*.cjs
+fix*.mjs
+migrate*.cjs
+sync_*.cjs
+test_*.cjs
+test_*.js
+test_data.js
+
+# Migration folder (contains serviceAccountKey)
+migration/serviceAccountKey.json
+
+# Old/backup files
+old_app.*
+chat_history.txt
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
