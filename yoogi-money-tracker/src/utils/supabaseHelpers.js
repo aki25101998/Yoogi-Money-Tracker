@@ -119,9 +119,24 @@ const createSubscription = (table, userId, callback, orderCol = 'created_at', as
     };
     window.addEventListener('supabase_mutate', handleLocalChange);
 
+    // Auto-refresh when tab becomes visible (handles cross-device changes)
+    const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+            fetchAll();
+        }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Periodic polling every 30s as fallback for Realtime delays (only when tab is visible)
+    const pollInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') fetchAll();
+    }, 30000);
+
     return () => { 
         supabase.removeChannel(channel); 
         window.removeEventListener('supabase_mutate', handleLocalChange);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        clearInterval(pollInterval);
     };
 };
 
@@ -558,9 +573,21 @@ export const subscribeAIMemory = (userId, callback) => createSubscription('ai_me
 // INSTALLMENTS
 // ============================================================
 export const subscribeInstallments = (userId, callback) => createSubscription('installments', userId, callback);
-export const addInstallment = async (userId, data) => await supabase.from('installments').insert([mapToSnakeCase({ ...data, user_id: userId })]);
-export const updateInstallment = async (userId, id, updates) => await supabase.from('installments').update(mapToSnakeCase(updates)).eq('id', id).eq('user_id', userId);
-export const deleteInstallment = async (userId, id) => await supabase.from('installments').delete().eq('id', id).eq('user_id', userId);
+export const addInstallment = async (userId, data) => {
+    const result = await supabase.from('installments').insert([mapToSnakeCase({ ...data, user_id: userId })]);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'installments' }));
+    return result;
+};
+export const updateInstallment = async (userId, id, updates) => {
+    const result = await supabase.from('installments').update(mapToSnakeCase(updates)).eq('id', id).eq('user_id', userId);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'installments' }));
+    return result;
+};
+export const deleteInstallment = async (userId, id) => {
+    const result = await supabase.from('installments').delete().eq('id', id).eq('user_id', userId);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'installments' }));
+    return result;
+};
 
 export const updateInstallmentPartialPayment = async (userId, installmentId, monthStr, diffAmount) => {
     const { data, error } = await supabase.from('installments').select('partial_payments').eq('id', installmentId).eq('user_id', userId).single();
