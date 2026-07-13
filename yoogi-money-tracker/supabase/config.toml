@@ -1,0 +1,17 @@
+project_id = "default"
+
+[api]
+enabled = true
+port = 54321
+
+[db]
+port = 54322
+shadow_port = 54320
+
+[studio]
+enabled = true
+port = 54323
+pgadmin_port = 54324
+
+[functions.gemini-ai]
+verify_jwt = true

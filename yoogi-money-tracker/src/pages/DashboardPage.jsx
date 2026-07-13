@@ -447,12 +447,15 @@ QUY TẮC TRÌNH BÀY (BẮT BUỘC):
 ✅ Giữa các phần cách nhau bằng 1 dòng trống.
 ✅ Tối đa 400 chữ.`;
 
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GENERATIVE_AI_KEY || ""}`,
-                { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
-            );
-            const data = await response.json();
-            setAiAnalysisResult(data.candidates?.[0]?.content?.parts?.[0]?.text || "Không thể phân tích lúc này.");
+            const { supabase } = await import('../config/supabase');
+            const { data, error } = await supabase.functions.invoke('gemini-ai', {
+                body: {
+                    action: 'analyze_finances',
+                    payload: { contents: [{ parts: [{ text: prompt }] }] }
+                }
+            });
+            if (error) throw error;
+            setAiAnalysisResult(data?.candidates?.[0]?.content?.parts?.[0]?.text || "Không thể phân tích lúc này.");
         } catch (error) {
             console.error('AI Analysis error:', error);
             setAiAnalysisResult("Hệ thống đang bận, vui lòng thử lại sau.");

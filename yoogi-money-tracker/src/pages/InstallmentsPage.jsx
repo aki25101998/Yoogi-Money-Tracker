@@ -549,12 +549,15 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
 
             const prompt = `Hãy đóng vai một Chuyên Gia Phân Tích Tài Chính Cấp Cao.\nDựa trên dữ liệu: ${JSON.stringify(summaryData)}.\nHãy lập BÁO CÁO TÀI CHÍNH NGẮN GỌN (tối đa 300 chữ) theo 3 phần:\n1. TỔNG QUAN DANH MỤC NỢ 📊\n2. KHUYẾN NGHỊ THANH KHOẢN 🎯\n3. GIẢI PHÁP TỐI ƯU DÒNG TIỀN 💡\nQUY TẮC TRÌNH BÀY (BẮT BUỘC TUÂN THỦ):\n⛔ CẤM TUYỆT ĐỐI dùng Markdown.\n⛔ KHÔNG dùng gạch đầu dòng.\n✅ Văn phong: Chuyên nghiệp, súc tích.\n✅ Chỉ dùng Emoji ở đầu câu.`;
 
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GENERATIVE_AI_KEY || ""}`,
-                { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
-            );
-            const data = await response.json();
-            setAiAdvice(data.candidates?.[0]?.content?.parts?.[0]?.text || "Lỗi AI.");
+            const { supabase } = await import('../config/supabase');
+            const { data, error } = await supabase.functions.invoke('gemini-ai', {
+                body: {
+                    action: 'analyze_installments',
+                    payload: { contents: [{ parts: [{ text: prompt }] }] }
+                }
+            });
+            if (error) throw error;
+            setAiAdvice(data?.candidates?.[0]?.content?.parts?.[0]?.text || "Lỗi AI.");
         } catch (error) {
             setAiAdvice("Hệ thống bận.");
         } finally {

@@ -9,8 +9,8 @@
  * 5. Return categorized transaction data
  */
 
-const API_KEY = import.meta.env.VITE_GENERATIVE_AI_KEY;
 const MODEL_NAME = 'gemini-2.5-flash';
+import { supabase } from '../config/supabase';
 
 /**
  * Parse a natural language input into amount + description
@@ -145,11 +145,6 @@ const findDefaultUncategorized = (categories, type) => {
  * Call Gemini API to extract FULL transaction context
  */
 const callGeminiWithFullContext = async (rawInput, amount, categories, wallets, payers, debtors) => {
-    if (!API_KEY) {
-        console.warn('No Gemini API key, falling back to uncategorized');
-        return null;
-    }
-
     // Build contexts
     const categoryContext = categories.map(cat => ({
         id: cat.id,
@@ -214,19 +209,21 @@ Lưu ý:
 - YÊU CẦU QUAN TRỌNG VỀ ĐỊNH DẠNG: Thuộc tính \`formattedDescription\` (áp dụng cho expense/income/transfer) phải là một mô tả giao dịch được định dạng đẹp, viết hoa chữ cái đầu CỦA MỖI TỪ (ví dụ: "ăn sáng" -> "Ăn Sáng", "đổ xăng" -> "Đổ Xăng", "nạp 4g" -> "Nạp 4G"). Thuộc tính \`debtNotes\` cũng phải được định dạng tương tự.`;
 
     try {
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                }),
+        const { data, error } = await supabase.functions.invoke('gemini-ai', {
+            body: {
+                action: 'categorize',
+                payload: {
+                    contents: [{ parts: [{ text: prompt }] }]
+                }
             }
-        );
+        });
 
-        const data = await response.json();
-        const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (error) {
+            console.error('Edge function error:', error);
+            return null;
+        }
+
+        const textResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!textResponse) return null;
 

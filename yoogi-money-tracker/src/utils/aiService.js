@@ -1,16 +1,9 @@
 // Helper function to call Gemini API directly via fetch
 // Uses the EXACT model found in App.jsx (gemini-2.5-flash-preview-09-2025)
 
-const API_KEY = import.meta.env.VITE_GENERATIVE_AI_KEY;
+import { supabase } from '../config/supabase';
 
 export const parseLoanInfo = async (text) => {
-    if (!API_KEY) {
-        throw new Error("Missing Gemini API Key");
-    }
-
-    // UPDATE: Use the model proven to work in App.jsx
-    const MODEL_NAME = "gemini-2.5-flash";
-    const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
 
     const prompt = `
       Bạn là một trợ lý ảo giúp trích xuất thông tin tài chính từ văn bản tiếng Việt.
@@ -30,22 +23,20 @@ export const parseLoanInfo = async (text) => {
     `;
 
     try {
-        // Sending AI request...
-        const response = await fetch(URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            }),
+        const { data, error } = await supabase.functions.invoke('gemini-ai', {
+            body: {
+                action: 'parse_loan',
+                payload: {
+                    contents: [{ parts: [{ text: prompt }] }]
+                }
+            }
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`API Error: ${response.status} - ${JSON.stringify(errorData)}`);
+        if (error) {
+            throw new Error(`Edge Function Error: ${error.message}`);
         }
 
-        const data = await response.json();
-        const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const textResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!textResponse) {
             throw new Error("No response from AI");
@@ -66,6 +57,6 @@ export const parseLoanInfo = async (text) => {
 
     } catch (error) {
         console.error("AI Service Error:", error);
-        throw new Error(`[${MODEL_NAME}] ${error.message}`);
+        throw new Error(`[AI Service] ${error.message}`);
     }
 };
