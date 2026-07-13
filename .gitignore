@@ -27,3 +27,4 @@ android-sdk/
 jdk-*/
 *.apk
 build_no_space.bat  
+.vercel

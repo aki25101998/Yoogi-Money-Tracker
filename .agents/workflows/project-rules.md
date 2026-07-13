@@ -83,9 +83,13 @@ description: Bộ quy tắc chuẩn, liệt kê kiến trúc core và các đi�
 - **Micro-interactions:** Bắt buộc dùng `transition-all`, `hover:`, `active:scale-95` cho các nút bấm để tạo cảm giác mượt mà (Glassmorphism, bóng đổ shadow-lg).
 
 ### 3.4. Auto-Deploy & Workflow (QUY TẮC BẮT BUỘC)
-- **Quy tắc:** Mọi thay đổi về code sau khi hoàn thành (hoặc sau mỗi tác vụ User yêu cầu) BẮT BUỘC AI phải tự động thực hiện quy trình Backup và Deploy mà KHÔNG CẦN User phải nhắc nhở (Nếu có setup hosting).
+- **Kiến trúc Hosting:** Frontend được host trên **Vercel**, tự động deploy mỗi khi code được push lên nhánh master trên GitHub. Backend và Database nằm trên **Supabase**.
+- **Cấu hình Git bắt buộc:** Để Vercel không chặn (Block) tiến trình deploy tự động (do tính năng Deployment Protection), tài khoản Git thực hiện commit **BẮT BUỘC** phải khớp với email của dự án:
+  - Tên: `aki25101998`
+  - Email: `aki251098@gmail.com` (Tuyệt đối KHÔNG dùng email ẩn danh dạng `noreply.github.com`).
+- **Quy tắc Deploy:** Mọi thay đổi về code sau khi hoàn thành (hoặc sau mỗi tác vụ User yêu cầu) BẮT BUỘC AI phải tự động thực hiện quy trình đẩy code lên GitHub (`git add .`, `git commit`, `git push`) để Vercel tự động build mà KHÔNG CẦN User phải nhắc nhở.
+- **Xử lý sự cố Vercel:** Nếu đẩy code lên GitHub thành công nhưng Vercel báo lỗi thư mục quá lớn (`Too many files`) khi chạy thủ công, hãy đảm bảo đã cấu hình file `.vercelignore` chặn `node_modules`, `android-sdk`, `jdk-*`, `.git`, v.v. Nếu Vercel báo `Blocked`, cần kiểm tra lại ngay thông tin email trong Git Config.
 
----
 
 ## 4. Những điều CẤM (Anti-patterns)
 1. **KHÔNG** quên `dispatchEvent('supabase_mutate')` khi thay đổi dữ liệu.

@@ -95,7 +95,7 @@ const InstallmentDetailsModal = ({
 
     return createPortal(
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-lg h-[85vh] max-h-[800px] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
                 <div className="px-6 py-4 flex flex-col gap-3 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
                     <div className="flex justify-between items-center">
                         <div>
@@ -124,33 +124,29 @@ const InstallmentDetailsModal = ({
                         </div>
                     </div>
 
-                    <div className="relative group w-full">
-                        <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors group-hover:bg-slate-100 dark:group-hover:bg-slate-800/50 w-full cursor-pointer">
-                            <div className="flex items-center gap-2">
-                                {activeTab === 'active' && <span className="w-2 h-2 rounded-full bg-indigo-500"></span>}
-                                {activeTab === 'paid' && <span className="w-2 h-2 rounded-full bg-emerald-500"></span>}
-                                {activeTab === 'history' && <span className="w-2 h-2 rounded-full bg-slate-500"></span>}
-                                <span className={`font-bold ${activeTab === 'active' ? 'text-indigo-600 dark:text-indigo-400' : activeTab === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                                    {activeTab === 'active' ? `Đang chờ thanh toán (${activeItems.length})` : 
-                                     activeTab === 'paid' ? `Đã hoàn thành (${paidItems.length})` : 
-                                     `Lịch sử giao dịch (${historyItems.length})`}
-                                </span>
-                            </div>
-                            <ChevronDown className="w-4 h-4 text-slate-400" />
-                        </div>
-                        <select 
-                            value={activeTab} 
-                            onChange={(e) => handleTabChange(e.target.value)} 
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-lg">
+                        <button 
+                            onClick={() => handleTabChange('active')}
+                            className={`flex-1 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${activeTab === 'active' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                         >
-                            <option value="active">Đang chờ thanh toán ({activeItems.length})</option>
-                            <option value="paid">Đã hoàn thành ({paidItems.length})</option>
-                            <option value="history">Lịch sử giao dịch ({historyItems.length})</option>
-                        </select>
+                            Đang chờ ({activeItems.length})
+                        </button>
+                        <button 
+                            onClick={() => handleTabChange('paid')}
+                            className={`flex-1 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${activeTab === 'paid' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                        >
+                            Đã xong ({paidItems.length})
+                        </button>
+                        <button 
+                            onClick={() => handleTabChange('history')}
+                            className={`flex-1 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${activeTab === 'history' ? 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                        >
+                            Lịch sử ({historyItems.length})
+                        </button>
                     </div>
                 </div>
 
-                <div className="overflow-y-auto p-4 space-y-3 bg-slate-50 dark:bg-slate-900/20">
+                <div className="overflow-y-auto flex-1 p-4 space-y-3 bg-slate-50 dark:bg-slate-900/20">
                     {displayItems.length === 0 ? (
                         <div className="text-center text-slate-500 py-8">
                             Không có mục nào trong danh sách này.
