@@ -1,17 +1,3 @@
--- XÓA BẢNG CŨ NẾU CÓ ĐỂ TẠO LẠI (TRÁNH LỖI)
-drop table if exists public.abbreviations;
-drop table if exists public.ai_memory;
-drop table if exists public.recurring_transactions;
-drop table if exists public.transactions;
-drop table if exists public.installments;
-drop table if exists public.debts;
-drop table if exists public.lenders;
-drop table if exists public.debtors;
-drop table if exists public.payers;
-drop table if exists public.wallets;
-drop table if exists public.categories;
-drop table if exists public.settings;
-
 -- 1. BẢNG CÀI ĐẶT (SETTINGS)
 create table public.settings (
     id text default gen_random_uuid()::text primary key,
@@ -45,9 +31,6 @@ create table public.wallets (
     name text not null,
     icon text,
     balance numeric default 0,
-    initial_balance numeric default 0,
-    is_default boolean default false,
-    "order" integer default 0,
     created_at timestamp with time zone default timezone('utc'::text, now()),
     updated_at timestamp with time zone default timezone('utc'::text, now())
 );
@@ -147,7 +130,6 @@ create table public.transactions (
     to_wallet_id text references public.wallets,
     payer_id text references public.payers,
     installment_id text,
-    debt_id text references public.debts,
     fee numeric default 0,
     note text,
     is_recurring boolean default false,
@@ -160,7 +142,7 @@ create policy "Users can only access their own transactions" on public.transacti
 create index transactions_date_idx on public.transactions(date);
 create index transactions_user_id_idx on public.transactions(user_id);
 
--- 8. BẢNG GIAO DỊCH ĐỊNH KỲ (RECURRING TRANSACTIONS)
+-- 9. BẢNG GIAO DỊCH ĐỊNH KỲ (RECURRING TRANSACTIONS)
 create table public.recurring_transactions (
     id text default gen_random_uuid()::text primary key,
     user_id uuid references auth.users not null,
@@ -180,21 +162,19 @@ alter table public.recurring_transactions enable row level security;
 create policy "Users can only access their own recurring txns" on public.recurring_transactions for all using (auth.uid() = user_id);
 
 
--- 9. BẢNG AI MEMORY
+-- 10. BẢNG AI MEMORY
 create table public.ai_memory (
     id text default gen_random_uuid()::text primary key,
     user_id uuid references auth.users not null,
     context text not null,
     category_id text,
-    subcategory_id text,
-    usage_count integer default 1,
     created_at timestamp with time zone default timezone('utc'::text, now()),
     updated_at timestamp with time zone default timezone('utc'::text, now())
 );
 alter table public.ai_memory enable row level security;
 create policy "Users can only access their own ai memory" on public.ai_memory for all using (auth.uid() = user_id);
 
--- 10. BẢNG TỪ VIẾT TẮT (ABBREVIATIONS)
+-- 11. BẢNG TỪ VIẾT TẮT (ABBREVIATIONS)
 create table public.abbreviations (
     id text default gen_random_uuid()::text primary key,
     user_id uuid references auth.users not null,
@@ -206,7 +186,7 @@ create table public.abbreviations (
 alter table public.abbreviations enable row level security;
 create policy "Users can only access their own abbreviations" on public.abbreviations for all using (auth.uid() = user_id);
 
--- 11. BẢNG AI CHAT HISTORY
+-- 12. BẢNG AI CHAT HISTORY
 create table public.ai_chat_history (
     id text default gen_random_uuid()::text primary key,
     user_id uuid references auth.users not null,

@@ -7,7 +7,6 @@ import { DEFAULT_CATEGORIES, DEFAULT_WALLETS } from './defaultCategories';
 // --- MAPPING HELPERS ---
 const toCamelCase = (str) => {
     if (str === 'fb_id') return 'fb_id';
-    if (str === 'installment_id') return 'debtId';
     if (str === 'person_id') return 'personId';
     if (str === 'person_name') return 'personName';
     if (str === 'wallet_id') return 'walletId';
@@ -34,7 +33,6 @@ const toCamelCase = (str) => {
 
 const toSnakeCase = (str) => {
     if (str === 'fb_id') return 'fb_id';
-    if (str === 'debtId') return 'installment_id';
     if (str === 'personId') return 'person_id';
     if (str === 'personName') return 'person_name';
     if (str === 'walletId') return 'wallet_id';
@@ -67,6 +65,13 @@ export const mapToCamelCase = (obj) => {
         for (const key in obj) {
             newObj[toCamelCase(key)] = obj[key];
         }
+        // Backward compatibility: old debt transactions saved debt_id in installment_id
+        if (newObj.type && ['loan_given', 'loan_repaid', 'debt'].includes(newObj.type)) {
+            if (newObj.installmentId && !newObj.debtId) {
+                newObj.debtId = newObj.installmentId;
+                delete newObj.installmentId;
+            }
+        }
         return newObj;
     }
     return obj;
@@ -93,8 +98,13 @@ const createSubscription = (table, userId, callback, orderCol = 'created_at', as
             .select('*')
             .eq('user_id', userId)
             .order(orderCol, { ascending });
-        if (error) console.error(`Error fetching ${table}:`, error);
-        else callback(mapToCamelCase(data || []));
+        if (error) {
+            console.error(`Error fetching ${table}:`, error);
+            // Always call callback to avoid infinite loading states
+            callback([]); 
+        } else {
+            callback(mapToCamelCase(data || []));
+        }
     };
     fetchAll();
 
@@ -290,6 +300,8 @@ export const deleteTransaction = async (userId, id, txn = null) => {
                 }).eq('id', txn.debtId).eq('user_id', userId);
                 if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debts' }));
             }
+        } else if (txn.type === 'loan_given' && (txn.debtId || txn.installmentId)) {
+            return await deleteDebt(userId, txn.debtId || txn.installmentId);
         } else if (txn.type === 'installment_repaid' && txn.installmentId) {
             const txMonthStr = txn.date ? `${new Date(txn.date).getFullYear()}-${String(new Date(txn.date).getMonth() + 1).padStart(2, '0')}` : null;
             if (txMonthStr) {
@@ -303,7 +315,7 @@ export const deleteTransaction = async (userId, id, txn = null) => {
     return result;
 };
 export const getTransactionByDebtId = async (userId, debtId) => {
-    const { data } = await supabase.from('transactions').select('*').eq('user_id', userId).eq('installment_id', debtId);
+    const { data } = await supabase.from('transactions').select('*').eq('user_id', userId).or(`debt_id.eq.${debtId},installment_id.eq.${debtId}`);
     return data;
 };
 export const deleteMultipleTransactions = async (userId, ids) => {
@@ -329,6 +341,8 @@ export const deleteMultipleTransactions = async (userId, ids) => {
                 if (txMonthStr) {
                     await updateInstallmentPartialPayment(userId, txn.installmentId, txMonthStr, -txn.amount);
                 }
+            } else if (txn.type === 'loan_given' && (txn.debtId || txn.installmentId)) {
+                await deleteDebt(userId, txn.debtId || txn.installmentId);
             }
         }
     }
@@ -397,8 +411,16 @@ export const updateDebt = async (userId, id, updates) => {
 };
 
 export const deleteDebt = async (userId, id) => {
+    // Xóa các giao dịch liên quan đến khoản nợ này trước
+    await supabase.from('transactions').delete().eq('debt_id', id).eq('user_id', userId);
+    // Cleanup cũ do mapping sai trước đây (lưu debtId vào installment_id)
+    await supabase.from('transactions').delete().eq('installment_id', id).in('type', ['loan_given', 'loan_repaid', 'debt']).eq('user_id', userId);
+    
     const result = await supabase.from('debts').delete().eq('id', id).eq('user_id', userId);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debts' }));
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'transactions' }));
+        window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debts' }));
+    }
     return result;
 };
 
@@ -434,27 +456,75 @@ export const deleteRecurringTransaction = async (userId, id) => await supabase.f
 // WALLETS
 // ============================================================
 export const subscribeWallets = (userId, callback) => createSubscription('wallets', userId, callback, 'order', true);
-export const addWallet = async (userId, data) => await supabase.from('wallets').insert([mapToSnakeCase({ ...data, user_id: userId })]);
-export const updateWallet = async (userId, id, updates) => await supabase.from('wallets').update(mapToSnakeCase(updates)).eq('id', id).eq('user_id', userId);
-export const deleteWallet = async (userId, id) => await supabase.from('wallets').delete().eq('id', id).eq('user_id', userId);
+export const addWallet = async (userId, data) => {
+    const { error } = await supabase.from('wallets').insert([mapToSnakeCase({ ...data, user_id: userId })]);
+    if (error) throw error;
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'wallets' }));
+};
+export const updateWallet = async (userId, id, updates) => {
+    const { error } = await supabase.from('wallets').update(mapToSnakeCase(updates)).eq('id', id).eq('user_id', userId);
+    if (error) throw error;
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'wallets' }));
+};
+export const deleteWallet = async (userId, id) => {
+    await supabase.from('ai_chat_history').delete().eq('wallet_id', id).eq('user_id', userId);
+    await supabase.from('transactions').update({ wallet_id: null }).eq('wallet_id', id).eq('user_id', userId);
+    await supabase.from('transactions').update({ to_wallet_id: null }).eq('to_wallet_id', id).eq('user_id', userId);
+    await supabase.from('debts').update({ wallet_id: null }).eq('wallet_id', id).eq('user_id', userId);
+    await supabase.from('recurring_transactions').update({ wallet_id: null }).eq('wallet_id', id).eq('user_id', userId);
+    const { error } = await supabase.from('wallets').delete().eq('id', id).eq('user_id', userId);
+    if (error) throw error;
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'wallets' }));
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'transactions' }));
+};
 
 // ============================================================
 // PAYERS, DEBTORS, LENDERS
 // ============================================================
 export const subscribePayers = (userId, callback) => createSubscription('payers', userId, callback);
-export const addPayer = async (userId, data) => await supabase.from('payers').insert([mapToSnakeCase({ ...data, user_id: userId })]);
-export const updatePayer = async (userId, id, updates) => await supabase.from('payers').update(mapToSnakeCase(updates)).eq('id', id).eq('user_id', userId);
-export const deletePayer = async (userId, id) => await supabase.from('payers').delete().eq('id', id).eq('user_id', userId);
+export const addPayer = async (userId, data) => {
+    await supabase.from('payers').insert([mapToSnakeCase({ ...data, user_id: userId })]);
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'payers' }));
+};
+export const updatePayer = async (userId, id, updates) => {
+    await supabase.from('payers').update(mapToSnakeCase(updates)).eq('id', id).eq('user_id', userId);
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'payers' }));
+};
+export const deletePayer = async (userId, id) => {
+    await supabase.from('transactions').update({ payer_id: null }).eq('payer_id', id).eq('user_id', userId);
+    const { error } = await supabase.from('payers').delete().eq('id', id).eq('user_id', userId);
+    if (error) throw error;
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'payers' }));
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'transactions' }));
+};
 
 export const subscribeDebtors = (userId, callback) => createSubscription('debtors', userId, callback);
-export const addDebtor = async (userId, data) => await supabase.from('debtors').insert([mapToSnakeCase({ ...data, user_id: userId })]);
-export const deleteDebtor = async (userId, id) => await supabase.from('debtors').delete().eq('id', id).eq('user_id', userId);
-export const updateDebtor = async (userId, id, updates) => await supabase.from('debtors').update(mapToSnakeCase(updates)).eq('id', id).eq('user_id', userId);
+export const addDebtor = async (userId, data) => {
+    await supabase.from('debtors').insert([mapToSnakeCase({ ...data, user_id: userId })]);
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debtors' }));
+};
+export const deleteDebtor = async (userId, id) => {
+    await supabase.from('debtors').delete().eq('id', id).eq('user_id', userId);
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debtors' }));
+};
+export const updateDebtor = async (userId, id, updates) => {
+    await supabase.from('debtors').update(mapToSnakeCase(updates)).eq('id', id).eq('user_id', userId);
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debtors' }));
+};
 
 export const subscribeLenders = (userId, callback) => createSubscription('lenders', userId, callback);
-export const addLender = async (userId, data) => await supabase.from('lenders').insert([mapToSnakeCase({ ...data, user_id: userId })]);
-export const updateLender = async (userId, id, updates) => await supabase.from('lenders').update(mapToSnakeCase(updates)).eq('id', id).eq('user_id', userId);
-export const deleteLender = async (userId, id) => await supabase.from('lenders').delete().eq('id', id).eq('user_id', userId);
+export const addLender = async (userId, data) => {
+    await supabase.from('lenders').insert([mapToSnakeCase({ ...data, user_id: userId })]);
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'lenders' }));
+};
+export const updateLender = async (userId, id, updates) => {
+    await supabase.from('lenders').update(mapToSnakeCase(updates)).eq('id', id).eq('user_id', userId);
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'lenders' }));
+};
+export const deleteLender = async (userId, id) => {
+    await supabase.from('lenders').delete().eq('id', id).eq('user_id', userId);
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'lenders' }));
+};
 
 // ============================================================
 // ABBREVIATIONS
@@ -532,7 +602,28 @@ export const deleteAIMemory = async (userId, id) => {
     window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'ai_memory' }));
 };
 export const incrementMemoryUsage = async (userId, id) => {};
-export const learnFromCorrection = async (userId, data) => {};
+export const learnFromCorrection = async (userId, keyword, categoryId, subcategoryId) => {
+    if (!keyword || !categoryId) return;
+    
+    const normalizedKeyword = keyword.trim().toLowerCase();
+    
+    // Check if memory already exists
+    const { data: existing } = await supabase.from('ai_memory').select('id').eq('user_id', userId).eq('context', normalizedKeyword).maybeSingle();
+    
+    if (existing) {
+        await updateAIMemory(userId, existing.id, {
+            categoryId,
+            subcategoryId: subcategoryId || ''
+        });
+    } else {
+        await addAIMemory(userId, {
+            keyword: normalizedKeyword,
+            categoryId,
+            subcategoryId: subcategoryId || '',
+            usageCount: 1
+        });
+    }
+};
 
 export const subscribeAIChatHistory = (userId, walletId, callback) => { 
     const fetchHistory = async () => {

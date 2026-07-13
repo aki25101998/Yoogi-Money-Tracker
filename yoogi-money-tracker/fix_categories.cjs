@@ -41,11 +41,15 @@ async function fixCategories() {
             const usages = cats.map(c => {
                 const usedInTxn = txns.filter(t => t.category_id === c.id).length;
                 const usedInRec = recurrings.filter(r => r.category_id === c.id).length;
-                return { id: c.id, count: usedInTxn + usedInRec };
+                const isUUID = c.id.length === 36 && c.id.includes('-');
+                return { id: c.id, count: usedInTxn + usedInRec, isUUID };
             });
 
-            // Decide which one to keep: The one with highest usage, or the first one if all 0
-            usages.sort((a, b) => b.count - a.count);
+            // Decide which one to keep: Priority 1: non-UUID, Priority 2: Usage count
+            usages.sort((a, b) => {
+                if (a.isUUID !== b.isUUID) return a.isUUID ? 1 : -1;
+                return b.count - a.count;
+            });
             const keepId = usages[0].id;
             
             console.log(`Keeping ID: ${keepId} (Usage: ${usages[0].count})`);

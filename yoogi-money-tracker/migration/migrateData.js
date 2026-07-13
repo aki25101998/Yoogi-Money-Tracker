@@ -120,7 +120,7 @@ async function migrateData() {
                     else if (key === 'categoryId') mappedData['category_id'] = value;
                     else if (key === 'subcategoryId') mappedData['subcategory_id'] = value;
                     else if (key === 'walletId') mappedData['wallet_id'] = value;
-                    else if (key === 'toWalletId') mappedData['to_wallet_id'] = value;
+                    else if (key === 'toWalletId' || key === 'transferTo') mappedData['to_wallet_id'] = value;
                     else if (key === 'payerId') mappedData['payer_id'] = value;
                     else if (key === 'installmentId') mappedData['installment_id'] = value;
                     else if (key === 'personId') mappedData['person_id'] = value;

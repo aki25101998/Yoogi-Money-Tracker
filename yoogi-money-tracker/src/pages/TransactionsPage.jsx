@@ -385,7 +385,7 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
 
                                             {/* Icon */}
                                             <div className={`w-12 h-12 rounded-2xl flex flex-shrink-0 items-center justify-center text-2xl shadow-inner ${isIncome ? 'bg-emerald-100 dark:bg-emerald-900/30' : (isExpense ? 'bg-rose-100 dark:bg-rose-900/30' : 'bg-slate-100 dark:bg-slate-800')}`}>
-                                                {cat?.icon || (isLoan ? (txn.type === 'loan_given' ? '📤' : '📥') : '❓')}
+                                                {cat?.icon || (isLoan ? (txn.type === 'loan_given' ? '📤' : '📥') : (txn.type === 'transfer' ? '💸' : '❓'))}
                                             </div>
                                             
                                             {/* Info */}

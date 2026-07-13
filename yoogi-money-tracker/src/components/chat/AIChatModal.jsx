@@ -543,7 +543,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                                         <div className={`flex justify-between items-center ${showCategorySelect ? 'mb-3' : ''}`}>
                                             <div className="flex items-center gap-2">
                                                 <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm">
-                                                    {categories.find(c => c.id === msg.transaction.categoryId)?.icon || '❓'}
+                                                    {categories.find(c => c.id === msg.transaction.categoryId)?.icon || (msg.transaction.type === 'transfer' ? '💸' : '❓')}
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight">{msg.transaction.description}</p>

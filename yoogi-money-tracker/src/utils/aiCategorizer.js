@@ -170,6 +170,7 @@ Hãy phân tích giao dịch trên và phân loại vào MỘT trong các nhóm 
 
 1. Chi tiêu (expense) hoặc Thu nhập (income):
    - Chọn categoryId và subcategoryId phù hợp nhất từ danh sách.
+   - NẾU danh mục (category) được chọn có chứa danh mục phụ (subcategories), BẮT BUỘC phải chọn một subcategoryId phù hợp nhất. Nếu không chắc chắn, hãy chọn một danh mục phụ chung chung nhất trong danh sách.
    - Chọn walletId (id của ví) nếu người dùng có nhắc đến tên ví (ví dụ "từ atm", "trong momo").
 
 2. Chuyển tiền nội bộ (transfer):
