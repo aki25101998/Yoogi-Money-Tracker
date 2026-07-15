@@ -39,7 +39,8 @@ import {
     updateRecurringTransaction,
     subscribeLenders,
     subscribeUserSettings,
-    subscribeInstallments
+    subscribeInstallments,
+    subscribeAbbreviations
 } from './utils/supabaseHelpers';
 
 import { useBackButton } from './hooks/useBackButton';
