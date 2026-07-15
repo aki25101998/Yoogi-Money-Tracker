@@ -1,4 +1,3 @@
-import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Trash2, ChevronDown } from 'lucide-react';
@@ -13,8 +12,7 @@ const LoanEditModal = ({
     debts,
     onDeleteRequest // Optional: If we want to handle delete externally (e.g., to open a confirm modal)
 }) => {
-    useBackButton(isOpen, onClose);
-    const [form, setForm] = useState({
+const [form, setForm] = useState({
         amount: '',
         walletId: '',
         notes: ''

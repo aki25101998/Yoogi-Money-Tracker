@@ -7,8 +7,6 @@ import { supabase } from '../../config/supabase';
 import TransferFundsModal from '../modals/TransferFundsModal';
 import TransactionModal from '../modals/TransactionModal';
 import RecurringTransactionsModal from '../modals/RecurringTransactionsModal';
-import { useBackButton } from '../../hooks/useBackButton';
-
 const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviations, wallets, payers, debtors, recurringTransactions, selectedWalletId, onOpenContextWallet }) => {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
@@ -26,9 +24,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
     const [isEditTransferModalOpen, setIsEditTransferModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
 
-    useBackButton(isOpen, onClose);
-
-    // Initialize active wallet
+// Initialize active wallet
     useEffect(() => {
         if (!isOpen) return;
         if (selectedWalletId) {

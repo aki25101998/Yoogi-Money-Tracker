@@ -1,4 +1,3 @@
-import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ArrowDownRight, ArrowUpRight, Check, Trash2, Clock } from 'lucide-react';
@@ -6,8 +5,7 @@ import { formatCurrency } from '../../utils/formatters';
 import AmountInput from '../ui/AmountInput';
 
 const TransactionModal = ({ isOpen, onClose, onSave, onDelete, categories, wallets, initialData = null, defaultWalletId = null }) => {
-    useBackButton(isOpen, onClose);
-    const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || wallets?.[0]?.id || '';
+const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || wallets?.[0]?.id || '';
     
     const getCurrentTime = () => {
         const now = new Date();

@@ -1,4 +1,3 @@
-import { useBackButton } from '../../hooks/useBackButton';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { Loader2 } from 'lucide-react';
@@ -18,8 +17,7 @@ const ConfirmModal = ({
     isProcessing = false,
     loadingText = "Đang xử lý..."
 }) => {
-    useBackButton(isOpen, onClose);
-    if (!isOpen) return null;
+if (!isOpen) return null;
 
     const btnClasses = {
         primary: "bg-indigo-600 hover:bg-indigo-700 text-white",

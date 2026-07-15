@@ -1,12 +1,10 @@
-import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
 const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfirm }) => {
-    useBackButton(isOpen, onClose);
-    const [form, setForm] = useState({
+const [form, setForm] = useState({
         walletId: '',
         date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
     });

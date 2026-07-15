@@ -1,12 +1,10 @@
-import { useBackButton } from '../../hooks/useBackButton';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, Trash2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
 const CategoryTransactionsModal = ({ isOpen, onClose, category, transactions, categories, onEditTransaction, onDeleteTransaction }) => {
-    useBackButton(isOpen, onClose);
-    if (!isOpen || !category) return null;
+if (!isOpen || !category) return null;
 
     const totalAmount = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 

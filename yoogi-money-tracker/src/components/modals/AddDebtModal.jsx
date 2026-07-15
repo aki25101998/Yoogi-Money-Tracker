@@ -1,4 +1,3 @@
-import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronDown } from 'lucide-react';
@@ -6,8 +5,7 @@ import AmountInput from '../ui/AmountInput';
 import { addDebt, addTransaction } from '../../utils/supabaseHelpers';
 
 const AddDebtModal = ({ isOpen, onClose, user, wallets, payers, onAddPayer }) => {
-    useBackButton(isOpen, onClose);
-    const [form, setForm] = useState({
+const [form, setForm] = useState({
         personName: '',
         amount: '',
         walletId: '',

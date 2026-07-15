@@ -43,7 +43,7 @@ import {
     subscribeAbbreviations
 } from './utils/supabaseHelpers';
 
-import { useBackButton } from './hooks/useBackButton';
+
 
 export default function App() {
     // --- Auth ---
@@ -73,45 +73,7 @@ export default function App() {
     const [userSettings, setUserSettings] = useState({ monthStartDay: 1 });
     const [isDataLoading, setIsDataLoading] = useState(true);
 
-    // --- Navigation ---
-    const [activePage, setActivePage] = useState(() => {
-        const hash = window.location.hash.replace('#', '');
-        if (hash && !hash.startsWith('modal-')) {
-            return hash;
-        }
-        return 'dashboard';
-    });
-
-    // Hash-based Page History Management
-    useEffect(() => {
-        const handleHashChange = () => {
-            const hash = window.location.hash.replace('#', '');
-            if (hash.startsWith('modal-')) return; // Được xử lý bởi useBackButton
-            
-            if (hash && hash !== activePage) {
-                setActivePage(hash);
-            } else if (!hash) {
-                setActivePage('dashboard');
-            }
-        };
-
-        window.addEventListener('hashchange', handleHashChange);
-        
-        // Khởi tạo hash mặc định nếu chưa có
-        if (!window.location.hash || window.location.hash === '') {
-            window.history.replaceState(null, '', '#dashboard');
-        }
-
-        return () => window.removeEventListener('hashchange', handleHashChange);
-    }, [activePage]);
-
-    const handleNavigate = (page) => {
-        if (page === activePage) return;
-        window.location.hash = page;
-        setActivePage(page);
-    };
-
-    useBackButton(isGlobalFabOpen, () => setIsGlobalFabOpen(false));
+    const [activePage, setActivePage] = useState('dashboard');
 
     // --- Theme ---
     const [theme, setTheme] = useState(() => {
@@ -457,7 +419,7 @@ export default function App() {
                     wallets={wallets}
                     payers={debtors}
                     recurringTransactions={recurringTransactions}
-                    onNavigate={handleNavigate}
+                    onNavigate={setActivePage}
                 />
             );
         } else if (activePage === 'transactions') {
@@ -517,7 +479,7 @@ export default function App() {
     return (
             <Layout
                 activePage={activePage}
-                onNavigate={handleNavigate}
+                onNavigate={setActivePage}
                 user={user}
                 onLogout={handleLogout}
                 theme={theme}

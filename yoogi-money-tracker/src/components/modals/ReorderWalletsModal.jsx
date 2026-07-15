@@ -1,4 +1,3 @@
-import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, GripVertical } from 'lucide-react';
@@ -36,8 +35,7 @@ const SortableReorderItem = ({ wallet }) => {
 };
 
 const ReorderWalletsModal = ({ isOpen, onClose, wallets, onSave }) => {
-    useBackButton(isOpen, onClose);
-    const [localWallets, setLocalWallets] = useState([]);
+const [localWallets, setLocalWallets] = useState([]);
 
     useEffect(() => {
         if (isOpen) {

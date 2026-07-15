@@ -1,4 +1,3 @@
-import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Trash2, Pencil, RefreshCw, ChevronDown, Plus } from 'lucide-react';
@@ -20,8 +19,7 @@ const InstallmentDetailsModal = ({
     onEditTransaction,
     onPayInstallments
 }) => {
-    useBackButton(isOpen, onClose);
-    const [activeTab, setActiveTab] = useState('active'); // active, paid, history
+const [activeTab, setActiveTab] = useState('active'); // active, paid, history
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedItemIds, setSelectedItemIds] = useState([]);
 

@@ -1,4 +1,3 @@
-import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Check, ArrowRight, Loader2 } from 'lucide-react';
 import { updateUserSettings } from '../../utils/supabaseHelpers';
@@ -9,8 +8,7 @@ const ACCOUNT_NO = "020087095034"; // Add your actual account no here
 const ACCOUNT_NAME = "NGUYEN HUU DUY TONG"; 
 
 const UpgradeProModal = ({ isOpen, onClose, user }) => {
-    useBackButton(isOpen, onClose);
-    const [step, setStep] = useState(1); // 1: Info, 2: QR Code, 3: Success (Mock)
+const [step, setStep] = useState(1); // 1: Info, 2: QR Code, 3: Success (Mock)
     const [orderCode, setOrderCode] = useState('');
 
     useEffect(() => {

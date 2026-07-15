@@ -1,12 +1,10 @@
-import { useBackButton } from '../../hooks/useBackButton';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import AINotesPage from '../../pages/AINotesPage';
 
 const AIContextModal = ({ isOpen, onClose, user, aiMemories, abbreviations, categories }) => {
-    useBackButton(isOpen, onClose);
-    if (!isOpen) return null;
+if (!isOpen) return null;
 
     return createPortal(
         <div className="fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">

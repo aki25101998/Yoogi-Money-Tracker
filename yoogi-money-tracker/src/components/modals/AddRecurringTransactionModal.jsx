@@ -1,4 +1,3 @@
-import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Wallet, Check, ChevronDown, Clock, Repeat, BellRing } from 'lucide-react';
@@ -6,8 +5,7 @@ import { addRecurringTransaction } from '../../utils/supabaseHelpers';
 import AmountInput from '../ui/AmountInput';
 
 const AddRecurringTransactionModal = ({ isOpen, onClose, categories, user, wallets }) => {
-    useBackButton(isOpen, onClose);
-    const [form, setForm] = useState({
+const [form, setForm] = useState({
         type: 'expense',
         description: '',
         amount: '',
