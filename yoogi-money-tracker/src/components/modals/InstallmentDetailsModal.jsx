@@ -153,7 +153,21 @@ const InstallmentDetailsModal = ({
                     </div>
 
                     {activeTab === 'active' && activeItems.length > 0 && (
-                        <div className="flex justify-end mt-2">
+                        <div className="flex justify-end gap-2 mt-2">
+                            {isSelectionMode && (
+                                <button
+                                    onClick={() => {
+                                        if (selectedItemIds.length === activeItems.length) {
+                                            setSelectedItemIds([]);
+                                        } else {
+                                            setSelectedItemIds(activeItems.map(w => `${w.item.id}-${w.index}`));
+                                        }
+                                    }}
+                                    className="text-xs font-bold px-3 py-1.5 rounded-lg transition-colors bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400"
+                                >
+                                    {selectedItemIds.length === activeItems.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                                </button>
+                            )}
                             <button
                                 onClick={() => {
                                     setIsSelectionMode(!isSelectionMode);
