@@ -10,6 +10,17 @@ const InstallmentDetailsModal = ({
     isOpen, 
     onClose, 
     groupedLender, 
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { X, Calendar, Trash2, Pencil, RefreshCw, ChevronDown, Plus } from 'lucide-react';
+import { formatCurrency } from '../../utils/formatters';
+import InstallmentItem from '../InstallmentItem';
+import { calculateItemStats, getYearMonth } from '../../utils/calculations';
+
+const InstallmentDetailsModal = ({ 
+    isOpen, 
+    onClose, 
+    groupedLender, 
     onEditItem, 
     onDeleteItem, 
     onTogglePaid,
@@ -17,10 +28,13 @@ const InstallmentDetailsModal = ({
     onAddNewItem,
     onMinimumPayment,
     transactions,
-    onEditTransaction
+    onEditTransaction,
+    onPayInstallments
 }) => {
     useBackButton(isOpen, onClose);
     const [activeTab, setActiveTab] = useState('active'); // active, paid, history
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedItemIds, setSelectedItemIds] = useState([]);
 
     if (!isOpen || !groupedLender) return null;
 
@@ -85,6 +99,8 @@ const InstallmentDetailsModal = ({
 
     const handleTabChange = (tab) => {
         setActiveTab(tab);
+        setIsSelectionMode(false);
+        setSelectedItemIds([]);
     };
 
     const getDisplayItems = () => {
@@ -146,6 +162,20 @@ const InstallmentDetailsModal = ({
                             Lịch sử ({historyItems.length})
                         </button>
                     </div>
+
+                    {activeTab === 'active' && activeItems.length > 0 && (
+                        <div className="flex justify-end mt-2">
+                            <button
+                                onClick={() => {
+                                    setIsSelectionMode(!isSelectionMode);
+                                    setSelectedItemIds([]);
+                                }}
+                                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${isSelectionMode ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300' : 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'}`}
+                            >
+                                {isSelectionMode ? 'Hủy chọn nhiều' : 'Chọn nhiều để thanh toán'}
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="overflow-y-auto flex-1 p-4 space-y-3 bg-slate-50 dark:bg-slate-900/20">
@@ -154,25 +184,69 @@ const InstallmentDetailsModal = ({
                             Không có mục nào trong danh sách này.
                         </div>
                     ) : (
-                        displayItems.map(wrapper => (
-                            <div key={`${wrapper.item.id}-${wrapper.index}`} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700/50 overflow-hidden mb-3">
-                                <InstallmentItem
-                                    item={wrapper.item}
-                                    onEdit={() => onEditItem(wrapper.item)}
-                                    onDelete={onDeleteItem}
-                                    referenceDate={wrapper.refDate}
-                                    isPaid={activeTab === 'paid' || activeTab === 'history'}
-                                    onTogglePaid={(item) => onTogglePaid(item, wrapper.monthStr)}
-                                    onMinimumPayment={(item) => onMinimumPayment(item, wrapper.monthStr)}
-                                    isReadOnly={false}
-                                    kyIndex={wrapper.index}
-                                    transactions={transactions}
-                                    onEditTransaction={onEditTransaction}
-                                />
-                            </div>
-                        ))
+                        displayItems.map(wrapper => {
+                            const itemId = `${wrapper.item.id}-${wrapper.index}`;
+                            const isSelected = selectedItemIds.includes(itemId);
+                            return (
+                                <div key={itemId} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700/50 overflow-hidden mb-3">
+                                    <InstallmentItem
+                                        item={wrapper.item}
+                                        onEdit={() => onEditItem(wrapper.item)}
+                                        onDelete={onDeleteItem}
+                                        referenceDate={wrapper.refDate}
+                                        isPaid={activeTab === 'paid' || activeTab === 'history'}
+                                        onTogglePaid={(item) => onTogglePaid(item, wrapper.monthStr)}
+                                        onMinimumPayment={(item) => onMinimumPayment(item, wrapper.monthStr)}
+                                        isReadOnly={false}
+                                        kyIndex={wrapper.index}
+                                        transactions={transactions}
+                                        onEditTransaction={onEditTransaction}
+                                        isSelectable={isSelectionMode}
+                                        isSelected={isSelected}
+                                        onToggleSelect={() => {
+                                            if (isSelected) {
+                                                setSelectedItemIds(prev => prev.filter(id => id !== itemId));
+                                            } else {
+                                                setSelectedItemIds(prev => [...prev, itemId]);
+                                            }
+                                        }}
+                                        onPayItem={() => {
+                                            if (onPayInstallments) {
+                                                onPayInstallments([wrapper]);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            );
+                        })
                     )}
                 </div>
+
+                {isSelectionMode && selectedItemIds.length > 0 && (
+                    <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <p className="text-xs text-slate-500 font-bold uppercase">Đã chọn {selectedItemIds.length} khoản</p>
+                                <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                                    {formatCurrency(
+                                        activeItems.filter(w => selectedItemIds.includes(`${w.item.id}-${w.index}`)).reduce((sum, w) => sum + w.item.monthlyPayment, 0)
+                                    )}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    if (onPayInstallments) {
+                                        const selectedWrappers = activeItems.filter(w => selectedItemIds.includes(`${w.item.id}-${w.index}`));
+                                        onPayInstallments(selectedWrappers);
+                                    }
+                                }}
+                                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-sm transition-colors"
+                            >
+                                Thanh toán
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>,
         document.body

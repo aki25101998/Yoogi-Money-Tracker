@@ -5,7 +5,7 @@ import Badge from './ui/Badge';
 import { formatCurrency } from '../utils/formatters';
 import { calculateItemStats, monthDiff } from '../utils/calculations';
 
-const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, onMinimumPayment, isReadOnly, kyIndex, transactions, onEditTransaction }) => {
+const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, onMinimumPayment, isReadOnly, kyIndex, transactions, onEditTransaction, isSelectable, isSelected, onToggleSelect, onPayItem }) => {
     const stats = calculateItemStats(item, referenceDate, transactions);
     const paidCount = Array.isArray(item.paidMonths) ? item.paidMonths.length : stats.effectiveMonths;
     const cannotTickMore = !isPaid && paidCount >= item.term;
@@ -36,8 +36,18 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
     const monthlyRemaining = Math.max(item.monthlyPayment - partialPaid, 0);
 
     return (
-        <Card className={`overflow-hidden transition-all duration-200 group border-slate-200 dark:border-slate-700 ${isPaid ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : 'bg-white dark:bg-slate-800'}`}>
-            <div className="p-4 sm:p-5">
+        <Card className={`overflow-hidden transition-all duration-200 group border-slate-200 dark:border-slate-700 ${isPaid ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : 'bg-white dark:bg-slate-800'} ${isSelectable ? 'cursor-pointer hover:border-indigo-400' : ''} ${isSelected ? 'ring-2 ring-indigo-500 border-indigo-500' : ''}`}
+            onClick={() => isSelectable && onToggleSelect && onToggleSelect()}
+        >
+            <div className="flex">
+                {isSelectable && (
+                    <div className="pl-4 sm:pl-5 pt-4 sm:pt-5 flex flex-col items-center justify-start">
+                        <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-slate-300 dark:border-slate-600'}`}>
+                            {isSelected && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                        </div>
+                    </div>
+                )}
+            <div className={`p-4 sm:p-5 flex-1 ${isSelectable ? 'pointer-events-none' : ''}`}>
                 <div className="flex justify-between items-start mb-4">
                     <div>
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -64,9 +74,9 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                             <span className="font-semibold text-slate-700 dark:text-slate-300">Gốc: {formatCurrency(item.monthlyPayment * item.term)}</span>
                         </div>
                     </div>
-                    <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => onEdit(item)} className="text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 p-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => onDelete(item.id)} className="text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 p-2 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    <div className={`flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity ${isSelectable ? 'pointer-events-auto' : ''}`}>
+                        <button onClick={(e) => { e.stopPropagation(); onEdit(item); }} className="text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 p-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); onDelete(item.id); }} className="text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 p-2 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                     </div>
                 </div>
 
@@ -92,17 +102,20 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                     {/* Payment Toggle Button */}
                     <div className="flex-1 flex justify-end items-center gap-2">
                         {!isPaid && !isDisabled && onMinimumPayment && (
-                            <button
-                                onClick={() => onMinimumPayment(item)}
-                                className={`px-3 py-2 rounded-lg font-bold text-sm transition-all border ${partialPaid > 0 ? 'border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50 dark:hover:bg-indigo-900/40' : 'border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 hover:border-orange-300 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800/50 dark:hover:bg-orange-900/40'} active:scale-95`}
-                            >
-                                {partialPaid > 0 ? 'Trả thêm' : 'Trả tối thiểu'}
-                            </button>
+                            <div className={`${isSelectable ? 'pointer-events-auto' : ''}`}>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onMinimumPayment(item); }}
+                                    className={`px-3 py-2 rounded-lg font-bold text-sm transition-all border ${partialPaid > 0 ? 'border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50 dark:hover:bg-indigo-900/40' : 'border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 hover:border-orange-300 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800/50 dark:hover:bg-orange-900/40'} active:scale-95`}
+                                >
+                                    {partialPaid > 0 ? 'Trả thêm' : 'Trả tối thiểu'}
+                                </button>
+                            </div>
                         )}
-                        <button
-                            onClick={() => onTogglePaid && onTogglePaid(item)}
-                            disabled={isDisabled}
-                            title={cannotTickMore ? "Đã đạt số kỳ tối đa" : ""}
+                        <div className={`${isSelectable ? 'pointer-events-auto' : ''}`}>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); isPaid ? (onTogglePaid && onTogglePaid(item)) : (onPayItem ? onPayItem(item) : (onTogglePaid && onTogglePaid(item))); }}
+                                disabled={isDisabled}
+                                title={cannotTickMore ? "Đã đạt số kỳ tối đa" : ""}
                             className={`
                                 flex items-center gap-2 px-3 py-2 rounded-lg font-bold text-sm transition-all
                                 ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}
@@ -127,6 +140,7 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                                 <span>Chưa trả</span>
                             )}
                         </button>
+                        </div>
                     </div>
                 </div>
 
@@ -152,17 +166,18 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                         <p className="text-[10px] uppercase font-bold text-slate-500 mb-1.5 px-1">Lịch sử trả tối thiểu kỳ này</p>
                         <div className="space-y-1">
                             {relatedTransactions.map(t => (
-                                <button 
-                                    key={t.id} 
-                                    onClick={() => onEditTransaction && onEditTransaction(t)}
-                                    className="w-full flex justify-between items-center text-xs px-2 py-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-left"
-                                >
-                                    <span className="text-slate-500 flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                        {new Date(t.date).toLocaleDateString('vi-VN')} {t.time && `• ${t.time}`}
-                                    </span>
-                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">+{formatCurrency(t.amount)}</span>
-                                </button>
+                                <div className={`${isSelectable ? 'pointer-events-auto' : ''}`} key={t.id}>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); onEditTransaction && onEditTransaction(t); }}
+                                        className="w-full flex justify-between items-center text-xs px-2 py-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-left"
+                                    >
+                                        <span className="text-slate-500 flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            {new Date(t.date).toLocaleDateString('vi-VN')} {t.time && `• ${t.time}`}
+                                        </span>
+                                        <span className="font-bold text-emerald-600 dark:text-emerald-400">+{formatCurrency(t.amount)}</span>
+                                    </button>
+                                </div>
                             ))}
                         </div>
                     </div>
@@ -179,6 +194,7 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                         </div>
                     </div>
                 )}
+            </div>
             </div>
         </Card>
     );

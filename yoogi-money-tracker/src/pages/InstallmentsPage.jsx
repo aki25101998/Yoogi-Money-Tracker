@@ -17,6 +17,7 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 import InstallmentDetailsModal from '../components/modals/InstallmentDetailsModal';
 import MinimumPaymentModal from '../components/modals/MinimumPaymentModal';
 import LoanEditModal from '../components/modals/LoanEditModal';
+import PayInstallmentModal from '../components/modals/PayInstallmentModal';
 
 const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, transactions, categories }) => {
     // Modal States
@@ -33,6 +34,10 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
     // Edit Transaction States
     const [isLoanEditOpen, setIsLoanEditOpen] = useState(false);
     const [editingLoanTxn, setEditingLoanTxn] = useState(null);
+
+    // Pay Installment States
+    const [isPayInstallmentOpen, setIsPayInstallmentOpen] = useState(false);
+    const [selectedItemsForPayment, setSelectedItemsForPayment] = useState([]);
 
     // Confirm Modal States
     const [confirmModalState, setConfirmModalState] = useState({
@@ -633,6 +638,53 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
         setIsDetailsOpen(true);
     };
 
+    const handleConfirmPayment = async (paymentData) => {
+        if (!user) return;
+        setIsProcessing(true);
+        try {
+            const { walletId, date, totalAmount, items: paidItems } = paymentData;
+
+            // 1. Cập nhật paidMonths cho từng khoản
+            for (const wrapper of paidItems) {
+                const item = wrapper.item;
+                const monthStr = wrapper.monthStr;
+                const currentPaidMonths = item.paidMonths || [];
+                if (!currentPaidMonths.includes(monthStr)) {
+                    const newPaidMonths = [...currentPaidMonths, monthStr].sort();
+                    await updateInstallment(user.uid, item.id, { paidMonths: newPaidMonths });
+                }
+
+                // 2. Tạo giao dịch tương ứng cho từng khoản
+                const amountNum = item.monthlyPayment;
+                if (amountNum > 0) {
+                    const ownerName = item.owner || 'Tôi';
+                    const isPaying = ownerName === 'Tôi';
+                    const matchedCategoryId = isPaying 
+                        ? (categories?.find(c => c.type === 'installment_repaid')?.id || 'tra_no_tra_gop') 
+                        : (categories?.find(c => c.type === 'loan_repaid')?.id || 'loan_repaid');
+
+                    const transactionData = {
+                        type: isPaying ? 'installment_repaid' : 'loan_repaid',
+                        amount: amountNum,
+                        description: `Trả góp ${item.name} (T${monthStr.split('-')[1]})`,
+                        categoryId: matchedCategoryId,
+                        subcategoryId: isPaying ? 'tra_gop' : '',
+                        date: new Date(date).toISOString(),
+                        time: `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`,
+                        walletId: walletId,
+                        installmentId: item.id
+                    };
+                    const { addTransaction } = await import('../utils/supabaseHelpers');
+                    await addTransaction(user.uid, transactionData);
+                }
+            }
+        } catch (error) {
+            alert('Lỗi khi thanh toán: ' + error.message);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400">
@@ -1078,6 +1130,10 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                     setEditingLoanTxn(txn);
                     setIsLoanEditOpen(true);
                 }}
+                onPayInstallments={(items) => {
+                    setSelectedItemsForPayment(items);
+                    setIsPayInstallmentOpen(true);
+                }}
             />
 
             <MinimumPaymentModal
@@ -1100,6 +1156,14 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                 user={user}
                 wallets={wallets}
                 onDeleteRequest={handleDeleteTxnRequest}
+            />
+
+            <PayInstallmentModal
+                isOpen={isPayInstallmentOpen}
+                onClose={() => { setIsPayInstallmentOpen(false); setSelectedItemsForPayment([]); }}
+                wallets={wallets}
+                selectedItems={selectedItemsForPayment}
+                onConfirm={handleConfirmPayment}
             />
         </>
     );
