@@ -1,3 +1,4 @@
+import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Wallet, ChevronDown } from 'lucide-react';
@@ -7,6 +8,7 @@ import AmountInput from '../ui/AmountInput';
 import { formatCurrency } from '../../utils/formatters';
 
 const MinimumPaymentModal = ({ isOpen, onClose, user, wallets, item, monthStr, categories }) => {
+    useBackButton(isOpen, onClose);
     const [form, setForm] = useState({
         amount: '',
         walletId: '',

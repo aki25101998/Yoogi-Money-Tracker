@@ -39,9 +39,10 @@ import {
     updateRecurringTransaction,
     subscribeLenders,
     subscribeUserSettings,
-    subscribeAbbreviations,
     subscribeInstallments
 } from './utils/supabaseHelpers';
+
+import { useBackButton } from './hooks/useBackButton';
 
 export default function App() {
     // --- Auth ---
@@ -73,6 +74,35 @@ export default function App() {
 
     // --- Navigation ---
     const [activePage, setActivePage] = useState('dashboard');
+
+    // Page History Management
+    useEffect(() => {
+        if (!window.history.state || !window.history.state.page) {
+            window.history.replaceState({ page: 'dashboard' }, '', '');
+        }
+
+        const handlePopState = (e) => {
+            if (e.state && e.state.page) {
+                setActivePage(e.state.page);
+            } else {
+                // If it's not a page state (e.g. a modal state that was manually popped but we caught it here, though useBackButton handles its own pops)
+                // Actually, if it's a modal state, we don't want to change the page.
+                // But modal states don't have .page. So we should preserve the activePage if it's a modal state popping in.
+                // Better logic: if there is e.state.page, set it. Otherwise leave it alone.
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
+    const handleNavigate = (page) => {
+        if (page === activePage) return;
+        window.history.pushState({ page }, '', '');
+        setActivePage(page);
+    };
+
+    useBackButton(isGlobalFabOpen, () => setIsGlobalFabOpen(false));
 
     // --- Theme ---
     const [theme, setTheme] = useState(() => {
@@ -418,7 +448,7 @@ export default function App() {
                     wallets={wallets}
                     payers={debtors}
                     recurringTransactions={recurringTransactions}
-                    onNavigate={setActivePage}
+                    onNavigate={handleNavigate}
                 />
             );
         } else if (activePage === 'transactions') {
@@ -476,14 +506,14 @@ export default function App() {
     };
 
     return (
-        <Layout
-            activePage={activePage}
-            onNavigate={setActivePage}
-            user={user}
-            onLogout={handleLogout}
-            theme={theme}
-            onToggleTheme={toggleTheme}
-        >
+            <Layout
+                activePage={activePage}
+                onNavigate={handleNavigate}
+                user={user}
+                onLogout={handleLogout}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+            >
             {renderPage()}
 
             {/* Global FAB Menu */}

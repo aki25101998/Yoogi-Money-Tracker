@@ -1,3 +1,4 @@
+import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Trash2, Pencil, Check, ChevronDown, RefreshCw } from 'lucide-react';
@@ -6,6 +7,7 @@ import { updateDebt, updateTransaction, getTransactionByDebtId, deleteTransactio
 import AmountInput from '../ui/AmountInput';
 
 const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wallets, transactions }) => {
+    useBackButton(isOpen, onClose);
     const [activeTab, setActiveTab] = useState('active'); // active, paid, history
     const [editingDebtId, setEditingDebtId] = useState(null);
     const [editForm, setEditForm] = useState({ amount: '', walletId: '', notes: '' });

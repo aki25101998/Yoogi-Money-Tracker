@@ -1,9 +1,11 @@
+import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ArrowRightLeft, Check, Clock } from 'lucide-react';
 import AmountInput from '../ui/AmountInput';
 
 const TransferFundsModal = ({ isOpen, onClose, wallets, onSave, onDelete, initialData }) => {
+    useBackButton(isOpen, onClose);
     const getCurrentTime = () => {
         const now = new Date();
         return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;

@@ -1,3 +1,4 @@
+import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Sparkles, Plus, ChevronDown } from 'lucide-react';
@@ -15,6 +16,7 @@ const AddEditModal = ({
     onAddLender,
     initialLender
 }) => {
+    useBackButton(isOpen, onClose);
     const [formData, setFormData] = useState({
         name: '',
         amount: '',

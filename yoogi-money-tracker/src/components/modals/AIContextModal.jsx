@@ -1,9 +1,11 @@
+import { useBackButton } from '../../hooks/useBackButton';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import AINotesPage from '../../pages/AINotesPage';
 
 const AIContextModal = ({ isOpen, onClose, user, aiMemories, abbreviations, categories }) => {
+    useBackButton(isOpen, onClose);
     if (!isOpen) return null;
 
     return createPortal(

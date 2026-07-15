@@ -1,3 +1,4 @@
+import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
@@ -6,6 +7,7 @@ import AmountInput from '../ui/AmountInput';
 const EMOJI_PICKS = ['💵', '💳', '🏦', '📱', '💰', '💼', '🐖'];
 
 const WalletModal = ({ isOpen, onClose, mode = 'add', initialData = null, onSave }) => {
+    useBackButton(isOpen, onClose);
     const [formName, setFormName] = useState('');
     const [formIcon, setFormIcon] = useState('💵');
     const [initialBalance, setInitialBalance] = useState('');

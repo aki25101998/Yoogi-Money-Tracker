@@ -1,3 +1,4 @@
+import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Trash2, Pencil, RefreshCw, ChevronDown, Plus } from 'lucide-react';
@@ -18,6 +19,7 @@ const InstallmentDetailsModal = ({
     transactions,
     onEditTransaction
 }) => {
+    useBackButton(isOpen, onClose);
     const [activeTab, setActiveTab] = useState('active'); // active, paid, history
 
     if (!isOpen || !groupedLender) return null;

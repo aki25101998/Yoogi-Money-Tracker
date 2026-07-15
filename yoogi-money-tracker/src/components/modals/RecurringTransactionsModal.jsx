@@ -1,3 +1,4 @@
+import { useBackButton } from '../../hooks/useBackButton';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, CalendarClock, Trash2 } from 'lucide-react';
@@ -6,6 +7,7 @@ import { deleteRecurringTransaction } from '../../utils/supabaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
 
 const RecurringTransactionsModal = ({ isOpen, onClose, categories, user, wallets, recurringTransactions = [] }) => {
+    useBackButton(isOpen, onClose);
     const [isAddOpen, setIsAddOpen] = useState(false);
 
     if (!isOpen) return null;
