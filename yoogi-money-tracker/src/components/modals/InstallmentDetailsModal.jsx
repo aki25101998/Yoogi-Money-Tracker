@@ -10,17 +10,6 @@ const InstallmentDetailsModal = ({
     isOpen, 
     onClose, 
     groupedLender, 
-import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { X, Calendar, Trash2, Pencil, RefreshCw, ChevronDown, Plus } from 'lucide-react';
-import { formatCurrency } from '../../utils/formatters';
-import InstallmentItem from '../InstallmentItem';
-import { calculateItemStats, getYearMonth } from '../../utils/calculations';
-
-const InstallmentDetailsModal = ({ 
-    isOpen, 
-    onClose, 
-    groupedLender, 
     onEditItem, 
     onDeleteItem, 
     onTogglePaid,
