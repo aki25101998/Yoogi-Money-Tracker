@@ -330,6 +330,18 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
         let newPaidMonths;
         if (isPaid) {
             newPaidMonths = currentPaidMonths.filter(m => m !== monthStr);
+            // Undo payment: delete related transactions
+            const relatedTxns = transactions?.filter(t => 
+                t.installmentId === item.id && 
+                (t.type === 'installment_repaid' || t.type === 'loan_repaid') &&
+                t.date && `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}` === monthStr
+            ) || [];
+            
+            for (const t of relatedTxns) {
+                try {
+                    await deleteTransaction(user.uid, t.id, t);
+                } catch(e) { console.error("Error deleting related txn", e); }
+            }
         } else {
             newPaidMonths = [...currentPaidMonths, monthStr].sort();
         }
