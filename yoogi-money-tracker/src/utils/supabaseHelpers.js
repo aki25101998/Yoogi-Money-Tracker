@@ -321,6 +321,13 @@ export const deleteTransaction = async (userId, id, txn = null) => {
             const txMonthStr = txn.date ? `${new Date(txn.date).getFullYear()}-${String(new Date(txn.date).getMonth() + 1).padStart(2, '0')}` : null;
             if (txMonthStr) {
                 await updateInstallmentPartialPayment(userId, txn.installmentId, txMonthStr, -txn.amount);
+                
+                const { data: inst } = await supabase.from('installments').select('paid_months').eq('id', txn.installmentId).eq('user_id', userId).single();
+                if (inst && inst.paid_months && inst.paid_months.includes(txMonthStr)) {
+                    const newPaidMonths = inst.paid_months.filter(m => m !== txMonthStr);
+                    await supabase.from('installments').update({ paid_months: newPaidMonths }).eq('id', txn.installmentId).eq('user_id', userId);
+                    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'installments' }));
+                }
             }
         }
     }
@@ -355,6 +362,13 @@ export const deleteMultipleTransactions = async (userId, ids) => {
                 const txMonthStr = txn.date ? `${new Date(txn.date).getFullYear()}-${String(new Date(txn.date).getMonth() + 1).padStart(2, '0')}` : null;
                 if (txMonthStr) {
                     await updateInstallmentPartialPayment(userId, txn.installmentId, txMonthStr, -txn.amount);
+                    
+                    const { data: inst } = await supabase.from('installments').select('paid_months').eq('id', txn.installmentId).eq('user_id', userId).single();
+                    if (inst && inst.paid_months && inst.paid_months.includes(txMonthStr)) {
+                        const newPaidMonths = inst.paid_months.filter(m => m !== txMonthStr);
+                        await supabase.from('installments').update({ paid_months: newPaidMonths }).eq('id', txn.installmentId).eq('user_id', userId);
+                        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'installments' }));
+                    }
                 }
             } else if (txn.type === 'loan_given' && (txn.debtId || txn.installmentId)) {
                 await deleteDebt(userId, txn.debtId || txn.installmentId);
