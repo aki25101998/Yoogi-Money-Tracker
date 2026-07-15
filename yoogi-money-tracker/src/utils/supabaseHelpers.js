@@ -144,9 +144,15 @@ const createSubscription = (table, userId, callback, orderCol = 'created_at', as
 // CATEGORIES
 // ============================================================
 
+let isSeeding = false;
+let isEnsuring = false;
+
 export const seedDefaultCategories = async (userId) => {
-    const { data } = await supabase.from('categories').select('id').eq('user_id', userId);
-    if (data && data.length > 0) return false;
+    if (isSeeding) return false;
+    isSeeding = true;
+    try {
+        const { data } = await supabase.from('categories').select('id').eq('user_id', userId);
+        if (data && data.length > 0) return false;
 
     // Insert categories
     const categoriesToInsert = DEFAULT_CATEGORIES.map(cat => ({
@@ -180,9 +186,14 @@ export const seedDefaultCategories = async (userId) => {
     await supabase.from('settings').insert([{ month_start_day: 1, user_id: userId }]);
 
     return true;
+    } finally {
+        isSeeding = false;
+    }
 };
 
 export const ensureRequiredCategories = async (userId) => {
+    if (isEnsuring) return;
+    isEnsuring = true;
     try {
         const { data: categories } = await supabase.from('categories').select('id, type').eq('user_id', userId);
         if (!categories) return;
@@ -238,6 +249,8 @@ export const ensureRequiredCategories = async (userId) => {
         }
     } catch (error) {
         console.error('Error ensuring required categories:', error);
+    } finally {
+        isEnsuring = false;
     }
 };
 
