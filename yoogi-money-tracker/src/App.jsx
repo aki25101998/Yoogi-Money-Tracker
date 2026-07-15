@@ -44,7 +44,6 @@ import {
 } from './utils/supabaseHelpers';
 
 import { useBackButton } from './hooks/useBackButton';
-import { App as CapacitorApp } from '@capacitor/app';
 
 export default function App() {
     // --- Auth ---
@@ -75,62 +74,42 @@ export default function App() {
     const [isDataLoading, setIsDataLoading] = useState(true);
 
     // --- Navigation ---
-    const [activePage, setActivePage] = useState('dashboard');
-
-    // Page History Management
-    useEffect(() => {
-        if (!window.history.state || !window.history.state.page) {
-            window.history.replaceState({ page: 'dashboard' }, '', '');
+    const [activePage, setActivePage] = useState(() => {
+        const hash = window.location.hash.replace('#', '');
+        if (hash && !hash.startsWith('modal-')) {
+            return hash;
         }
+        return 'dashboard';
+    });
 
-        const handlePopState = (e) => {
-            if (e.state && e.state.page) {
-                setActivePage(e.state.page);
-            } else {
-                // If it's not a page state (e.g. a modal state that was manually popped but we caught it here, though useBackButton handles its own pops)
-                // Actually, if it's a modal state, we don't want to change the page.
-                // But modal states don't have .page. So we should preserve the activePage if it's a modal state popping in.
-                // Better logic: if there is e.state.page, set it. Otherwise leave it alone.
+    // Hash-based Page History Management
+    useEffect(() => {
+        const handleHashChange = () => {
+            const hash = window.location.hash.replace('#', '');
+            if (hash.startsWith('modal-')) return; // Được xử lý bởi useBackButton
+            
+            if (hash && hash !== activePage) {
+                setActivePage(hash);
+            } else if (!hash) {
+                setActivePage('dashboard');
             }
         };
 
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, []);
+        window.addEventListener('hashchange', handleHashChange);
+        
+        // Khởi tạo hash mặc định nếu chưa có
+        if (!window.location.hash || window.location.hash === '') {
+            window.history.replaceState(null, '', '#dashboard');
+        }
+
+        return () => window.removeEventListener('hashchange', handleHashChange);
+    }, [activePage]);
 
     const handleNavigate = (page) => {
         if (page === activePage) return;
-        window.history.pushState({ page }, '', `?page=${page.split(':')[0]}`);
+        window.location.hash = page;
         setActivePage(page);
     };
-
-    // Capacitor Hardware Back Button Logic
-    useEffect(() => {
-        if (!window.Capacitor?.isNativePlatform()) return;
-
-        const handleBackButton = () => {
-            const event = new CustomEvent('hardwareBack', { cancelable: true });
-            window.dispatchEvent(event);
-
-            if (event.defaultPrevented) {
-                // A modal handled it
-                return;
-            }
-
-            if (activePage !== 'dashboard') {
-                setActivePage('dashboard');
-                window.history.pushState({ page: 'dashboard' }, '', '?page=dashboard');
-            } else {
-                CapacitorApp.exitApp();
-            }
-        };
-
-        const listenerPromise = CapacitorApp.addListener('backButton', handleBackButton);
-
-        return () => {
-            listenerPromise.then(l => l.remove());
-        };
-    }, [activePage]);
 
     useBackButton(isGlobalFabOpen, () => setIsGlobalFabOpen(false));
 
