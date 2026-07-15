@@ -45,6 +45,8 @@ description: Bộ quy tắc chuẩn, liệt kê kiến trúc core và các đi�
   - Bảng: `payers` và `installments`.
   - Phục vụ cho tính năng **Trả Góp** (InstallmentsPage).
   - Các hợp đồng trả góp có kỳ hạn (mua cho mình hoặc mua giùm người khác).
+  - **Rule Bắt buộc về đồng bộ giao dịch:** Khi đóng tiền trả góp, hệ thống sẽ tạo một transaction. Vì người dùng có thể đóng trễ (VD: đóng kỳ tháng 6 vào tháng 7), `date` của transaction KHÔNG đại diện cho kỳ hạn. Do đó, **bắt buộc** phải chèn tháng kỳ hạn vào mô tả giao dịch theo cú pháp `(TMM/YYYY)` (ví dụ: `(T06/2026)`).
+  - Khi xoá giao dịch trả góp (bất kể là xóa từ Sổ giao dịch hay hoàn tác ở tab Đã xong), hệ thống phải bóc tách Regex từ `description` giao dịch để tìm ra chính xác kỳ hạn đã đóng, từ đó loại bỏ kỳ hạn này khỏi mảng `paid_months` của bảng `installments`. (Liên kết 2 chiều).
 
 ### 2.4. Trợ lý AI (AI Categorizer) & AI Memory
 - **Luồng xử lý (Flow):** 
@@ -102,6 +104,7 @@ description: Bộ quy tắc chuẩn, liệt kê kiến trúc core và các đi�
 8. **KHÔNG** Migrate dữ liệu mà không đối chiếu kỹ Data Schema. Cần đảm bảo các trường dữ liệu (fields) quan trọng như khóa ngoại được mapping chính xác (VD: trong phiên bản cũ là `transferTo`, khi qua Supabase phải map đúng vào `to_wallet_id`). Việc map sai hoặc sót sẽ làm gãy liên kết dữ liệu và làm sai số dư.
 9. **KHÔNG** để giao dịch tham chiếu đến một `category_id` không tồn tại. Khi migrate hoặc xóa danh mục, bắt buộc phải re-map giao dịch sang danh mục khác. Nếu không, giao dịch sẽ bị hiển thị là "Chưa phân loại" trên UI và mất ngữ cảnh.
 10. **KHÔNG** code tràn lan trong một file. Giữ file dưới 1000 dòng.
+11. **KHÔNG** gọi sự kiện (ví dụ: `onClick`) trên một Component dùng chung (ví dụ: `<Card>`) mà chưa kiểm tra xem Component đó có được định nghĩa để rải (spread) `...props` xuống thẻ gốc HTML hay không. Việc này sẽ khiến các sự kiện bị "nuốt" và không được thực thi.
 
 ---
 *Tài liệu này được tạo ra để AI lấy làm gốc rễ tham chiếu. Trong mọi yêu cầu refactor, fix bug hay add feature, quy tắc tại đây là tối cao.*

@@ -44,6 +44,7 @@ import {
 } from './utils/supabaseHelpers';
 
 import { useBackButton } from './hooks/useBackButton';
+import { App as CapacitorApp } from '@capacitor/app';
 
 export default function App() {
     // --- Auth ---
@@ -102,6 +103,34 @@ export default function App() {
         window.history.pushState({ page }, '', '');
         setActivePage(page);
     };
+
+    // Capacitor Hardware Back Button Logic
+    useEffect(() => {
+        if (!window.Capacitor?.isNativePlatform()) return;
+
+        const handleBackButton = () => {
+            const event = new CustomEvent('hardwareBack', { cancelable: true });
+            window.dispatchEvent(event);
+
+            if (event.defaultPrevented) {
+                // A modal handled it
+                return;
+            }
+
+            if (activePage !== 'dashboard') {
+                setActivePage('dashboard');
+                window.history.pushState({ page: 'dashboard' }, '', '');
+            } else {
+                CapacitorApp.exitApp();
+            }
+        };
+
+        const listenerPromise = CapacitorApp.addListener('backButton', handleBackButton);
+
+        return () => {
+            listenerPromise.then(l => l.remove());
+        };
+    }, [activePage]);
 
     useBackButton(isGlobalFabOpen, () => setIsGlobalFabOpen(false));
 
