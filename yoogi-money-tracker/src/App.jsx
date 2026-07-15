@@ -100,7 +100,7 @@ export default function App() {
 
     const handleNavigate = (page) => {
         if (page === activePage) return;
-        window.history.pushState({ page }, '', '');
+        window.history.pushState({ page }, '', `?page=${page.split(':')[0]}`);
         setActivePage(page);
     };
 
@@ -119,7 +119,7 @@ export default function App() {
 
             if (activePage !== 'dashboard') {
                 setActivePage('dashboard');
-                window.history.pushState({ page: 'dashboard' }, '', '');
+                window.history.pushState({ page: 'dashboard' }, '', '?page=dashboard');
             } else {
                 CapacitorApp.exitApp();
             }

@@ -49,7 +49,9 @@ export function useBackButton(isOpen, onClose) {
 
         // Khi modal mở, delay việc push state một chút để tránh xung đột
         const pushTimeout = setTimeout(() => {
-            window.history.pushState({ modalOpen: true }, '', '');
+            // Thêm hash vào URL để ép Android WebView nhận diện là có lịch sử trang (tránh lỗi canGoBack = false)
+            const uniqueHash = '#modal-' + Math.random().toString(36).substring(2, 8);
+            window.history.pushState({ modalOpen: true }, '', window.location.pathname + window.location.search + uniqueHash);
             hasPushedStateRef.current = true;
         }, 50);
 
