@@ -318,7 +318,16 @@ export const deleteTransaction = async (userId, id, txn = null) => {
         } else if (txn.type === 'loan_given' && (txn.debtId || txn.installmentId)) {
             return await deleteDebt(userId, txn.debtId || txn.installmentId);
         } else if (txn.type === 'installment_repaid' && txn.installmentId) {
-            const txMonthStr = txn.date ? `${new Date(txn.date).getFullYear()}-${String(new Date(txn.date).getMonth() + 1).padStart(2, '0')}` : null;
+            let txMonthStr = null;
+            const match = txn.description?.match(/\(T(\d{2})\/(\d{4})\)$/);
+            if (match) {
+                txMonthStr = `${match[2]}-${match[1]}`;
+            } else if (txn.description?.match(/\(T(\d{2})\)$/)) {
+                const m = txn.description.match(/\(T(\d{2})\)$/)[1];
+                txMonthStr = txn.date ? `${new Date(txn.date).getFullYear()}-${m}` : null;
+            } else {
+                txMonthStr = txn.date ? `${new Date(txn.date).getFullYear()}-${String(new Date(txn.date).getMonth() + 1).padStart(2, '0')}` : null;
+            }
             if (txMonthStr) {
                 await updateInstallmentPartialPayment(userId, txn.installmentId, txMonthStr, -txn.amount);
                 
@@ -359,7 +368,16 @@ export const deleteMultipleTransactions = async (userId, ids) => {
                     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debts' }));
                 }
             } else if (txn.type === 'installment_repaid' && txn.installmentId) {
-                const txMonthStr = txn.date ? `${new Date(txn.date).getFullYear()}-${String(new Date(txn.date).getMonth() + 1).padStart(2, '0')}` : null;
+                let txMonthStr = null;
+                const match = txn.description?.match(/\(T(\d{2})\/(\d{4})\)$/);
+                if (match) {
+                    txMonthStr = `${match[2]}-${match[1]}`;
+                } else if (txn.description?.match(/\(T(\d{2})\)$/)) {
+                    const m = txn.description.match(/\(T(\d{2})\)$/)[1];
+                    txMonthStr = txn.date ? `${new Date(txn.date).getFullYear()}-${m}` : null;
+                } else {
+                    txMonthStr = txn.date ? `${new Date(txn.date).getFullYear()}-${String(new Date(txn.date).getMonth() + 1).padStart(2, '0')}` : null;
+                }
                 if (txMonthStr) {
                     await updateInstallmentPartialPayment(userId, txn.installmentId, txMonthStr, -txn.amount);
                     

@@ -331,11 +331,22 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
         if (isPaid) {
             newPaidMonths = currentPaidMonths.filter(m => m !== monthStr);
             // Undo payment: delete related transactions
-            const relatedTxns = transactions?.filter(t => 
-                t.installmentId === item.id && 
-                (t.type === 'installment_repaid' || t.type === 'loan_repaid') &&
-                t.date && `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}` === monthStr
-            ) || [];
+            const relatedTxns = transactions?.filter(t => {
+                if (t.installmentId !== item.id || (t.type !== 'installment_repaid' && t.type !== 'loan_repaid')) return false;
+                
+                let txMonthStr = null;
+                const match = t.description?.match(/\(T(\d{2})\/(\d{4})\)$/);
+                if (match) {
+                    txMonthStr = `${match[2]}-${match[1]}`;
+                } else if (t.description?.match(/\(T(\d{2})\)$/)) {
+                    const m = t.description.match(/\(T(\d{2})\)$/)[1];
+                    txMonthStr = t.date ? `${new Date(t.date).getFullYear()}-${m}` : null;
+                } else {
+                    txMonthStr = t.date ? `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}` : null;
+                }
+                
+                return txMonthStr === monthStr;
+            }) || [];
             
             for (const t of relatedTxns) {
                 try {
@@ -678,7 +689,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                     const transactionData = {
                         type: isPaying ? 'installment_repaid' : 'loan_repaid',
                         amount: amountNum,
-                        description: `Trả góp ${item.name} (T${monthStr.split('-')[1]})`,
+                        description: `Trả góp ${item.name} (T${monthStr.split('-')[1]}/${monthStr.split('-')[0]})`,
                         categoryId: matchedCategoryId,
                         subcategoryId: isPaying ? 'tra_gop' : '',
                         date: new Date(date).toISOString(),
