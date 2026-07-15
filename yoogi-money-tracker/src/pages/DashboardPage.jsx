@@ -256,8 +256,9 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                 }
             }
 
-            if (dateRange.start && t.date < dateRange.start) return false;
-            if (dateRange.end && t.date > dateRange.end) return false;
+            const tDateOnly = t.date ? t.date.split('T')[0] : '';
+            if (dateRange.start && tDateOnly < dateRange.start) return false;
+            if (dateRange.end && tDateOnly > dateRange.end) return false;
 
             return true;
         });

@@ -61,8 +61,9 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
         return transactions.filter(t => {
             if (!t.date) return false;
             
-            if (dateRange.start && t.date < dateRange.start) return false;
-            if (dateRange.end && t.date > dateRange.end) return false;
+            const tDateOnly = t.date ? t.date.split('T')[0] : '';
+            if (dateRange.start && tDateOnly < dateRange.start) return false;
+            if (dateRange.end && tDateOnly > dateRange.end) return false;
             
             if (selectedWalletIds.length > 0) {
                 if (t.type === 'transfer') {
