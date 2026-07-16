@@ -736,6 +736,40 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                 iconColorClass="text-rose-600"
                 iconBgClass="bg-rose-100"
             />
+
+            {/* Template Modal */}
+            {showTemplateModal && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                            <h3 className="font-bold text-slate-800 dark:text-white">Lưu mẫu danh mục</h3>
+                            <button onClick={() => setShowTemplateModal(false)} className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-4 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tên mẫu</label>
+                                <input
+                                    type="text"
+                                    value={templateName}
+                                    onChange={e => setTemplateName(e.target.value)}
+                                    placeholder="Ví dụ: Mẫu cơ bản, Mẫu chi tiết..."
+                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none text-slate-800 dark:text-white"
+                                    autoFocus
+                                />
+                            </div>
+                            <button
+                                onClick={handleSaveTemplate}
+                                disabled={!templateName.trim()}
+                                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold disabled:opacity-50 transition-all"
+                            >
+                                Lưu mẫu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
