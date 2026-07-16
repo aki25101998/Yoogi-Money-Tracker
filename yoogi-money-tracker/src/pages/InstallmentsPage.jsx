@@ -552,7 +552,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
 
                 <div className="flex gap-2 ml-auto items-center">
                     <div className="relative flex items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg p-0.5 transition-colors">
-                        <div className="border-r border-slate-200 dark:border-slate-700 pr-3 mr-1">
+                        <div className="border-r border-slate-200 dark:border-slate-700 pr-[11px] mr-1">
                             <select 
                                 value={!filterDate ? 'all' : filterDate.length === 4 ? 'year' : 'month'}
                                 onChange={(e) => {
