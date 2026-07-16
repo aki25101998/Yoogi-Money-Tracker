@@ -24,7 +24,7 @@ const AmountInput = ({ value, onChange, placeholder, className, required, id, na
                 onChange={handleAmountChange}
                 className={className || "w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none"}
             />
-            {value && !isNaN(value) && parseFloat(value) > 0 && (
+            {Boolean(value) && !isNaN(value) && parseFloat(value) > 0 && (
                 <div className="flex gap-2 mt-2 overflow-x-auto pb-1 hide-scrollbar">
                     {[10, 100, 1000, 10000, 100000, 1000000]
                         .map(multiplier => parseFloat(value) * multiplier)
