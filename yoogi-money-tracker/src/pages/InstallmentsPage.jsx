@@ -560,12 +560,13 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                 else if (val === 'year') setFilterDate(new Date().getFullYear().toString());
                                 else setFilterDate(getYearMonth(new Date()));
                             }}
-                            className="bg-transparent text-xs font-medium text-slate-600 dark:text-slate-300 outline-none cursor-pointer border-r border-slate-200 dark:border-slate-700 py-1.5 pl-3 pr-7"
+                            className="bg-transparent text-xs font-medium text-slate-600 dark:text-slate-300 outline-none cursor-pointer py-1.5 pl-3 pr-6"
                         >
                             <option value="month">Theo tháng</option>
                             <option value="year">Theo năm</option>
                             <option value="all">Mọi thời gian</option>
                         </select>
+                        <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
                         {!filterDate && (
                             <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-400">
