@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, Plus, Pencil, Trash2, AlertTriangle, GripVertical, ChevronDown, Download } from 'lucide-react';
-import { addWallet, updateWallet, deleteWallet, updateWalletOrder, applyDefaultWallets } from '../../utils/supabaseHelpers';
+import { Wallet, Plus, Pencil, Trash2, AlertTriangle, GripVertical } from 'lucide-react';
+import { addWallet, updateWallet, deleteWallet, updateWalletOrder } from '../../utils/supabaseHelpers';
 import ConfirmModal from '../modals/ConfirmModal';
 import WalletModal from '../modals/WalletModal';
 import UpgradeProModal from '../modals/UpgradeProModal';
@@ -64,7 +64,6 @@ const WalletsSettings = ({ user, wallets, userSettings }) => {
     const [confirmState, setConfirmState] = useState({ isOpen: false, data: null });
     const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [isApplyingDefaults, setIsApplyingDefaults] = useState(false);
 
     // Sync local state when wallets prop changes (e.g. after DB refetch)
     useEffect(() => {
@@ -158,21 +157,6 @@ const WalletsSettings = ({ user, wallets, userSettings }) => {
         }
     };
 
-    const handleLoadDefaultWallets = async () => {
-        if (!user || isApplyingDefaults) return;
-        
-        if (window.confirm("Thêm các ví mặc định (Tiền mặt, Tài khoản ngân hàng, Thẻ tín dụng, Ví điện tử)? Các ví hiện tại của bạn vẫn sẽ được giữ nguyên.")) {
-            setIsApplyingDefaults(true);
-            try {
-                const added = await applyDefaultWallets(user.uid);
-                alert(`Đã tải thêm ${added} ví mặc định.`);
-            } catch (error) {
-                alert('Lỗi tải ví: ' + error.message);
-            }
-            setIsApplyingDefaults(false);
-        }
-    };
-
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
@@ -181,22 +165,6 @@ const WalletsSettings = ({ user, wallets, userSettings }) => {
                     Quản lý Ví tiền
                 </h3>
                 <div className="flex items-center gap-2">
-                    <div className="relative group">
-                        <button
-                            className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-lg text-sm font-bold transition-colors"
-                        >
-                            Mẫu <ChevronDown className="w-4 h-4" />
-                        </button>
-                        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
-                            <button
-                                onClick={handleLoadDefaultWallets}
-                                disabled={isApplyingDefaults}
-                                className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
-                            >
-                                <Download className="w-4 h-4" /> {isApplyingDefaults ? 'Đang tải...' : 'Tải mẫu ví chuẩn'}
-                            </button>
-                        </div>
-                    </div>
                     <button
                         onClick={openAdd}
                         className="flex items-center gap-1 px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-800/50 dark:text-emerald-300 rounded-lg text-sm font-bold transition-colors"
