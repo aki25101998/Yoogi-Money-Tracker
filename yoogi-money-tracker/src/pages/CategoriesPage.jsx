@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import {
     addCategory, updateCategory, deleteCategory, updateCategoryOrder, applyDefaultCategories,
-    getCategoryTemplates, saveCategoryTemplate, deleteCategoryTemplate, applyCategoryTemplate
+    getCategoryTemplates, saveCategoryTemplate, deleteCategoryTemplate, applyCategoryTemplate,
 } from '../utils/supabaseHelpers';
 
 import {
@@ -165,6 +165,57 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
 
     const [localCategories, setLocalCategories] = useState([]);
     const initialCategoryIdRef = useRef(null);
+
+    // Template state
+    const [templates, setTemplates] = useState([]);
+    const [showTemplateModal, setShowTemplateModal] = useState(false);
+    const [templateName, setTemplateName] = useState('');
+
+    useEffect(() => {
+        if (user?.uid) {
+            getCategoryTemplates(user.uid).then(setTemplates).catch(console.error);
+        }
+    }, [user]);
+
+    const handleSaveTemplate = async () => {
+        if(!templateName.trim()) return;
+        try {
+            await saveCategoryTemplate(user.uid, templateName, categories);
+            alert('Lưu mẫu thành công!');
+            setShowTemplateModal(false);
+            setTemplateName('');
+            const newTemplates = await getCategoryTemplates(user.uid);
+            setTemplates(newTemplates);
+        } catch(e) {
+            alert('Lỗi: ' + e.message);
+        }
+    };
+
+    const handleLoadTemplate = async (template) => {
+        if (window.confirm(`Bạn có chắc muốn áp dụng mẫu "${template.name}"? Toàn bộ danh mục hiện tại sẽ bị xóa!`)) {
+            setIsApplyingDefaults(true);
+            try {
+                await applyCategoryTemplate(user.uid, template.categories);
+                alert('Áp dụng mẫu thành công!');
+            } catch (e) {
+                alert('Lỗi: ' + e.message);
+            }
+            setIsApplyingDefaults(false);
+        }
+    };
+    
+    const handleDeleteTemplate = async (e, id) => {
+        e.stopPropagation();
+        if (window.confirm('Bạn có chắc muốn xóa mẫu này?')) {
+            try {
+                await deleteCategoryTemplate(user.uid, id);
+                const newTemplates = await getCategoryTemplates(user.uid);
+                setTemplates(newTemplates);
+            } catch (e) {
+                alert('Lỗi: ' + e.message);
+            }
+        }
+    };
 
     useEffect(() => {
         const sorted = [...categories.filter(c => c.type === activeTab)].sort((a, b) => {
