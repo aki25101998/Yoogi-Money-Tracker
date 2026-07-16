@@ -170,10 +170,11 @@ const VersionHistorySidebar = ({ isOpen, onClose, user }) => {
                                                         <div className="font-medium text-slate-800 dark:text-slate-200">
                                                             {new Date(v.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                                                         </div>
-                                                        <div className="text-sm text-slate-500 flex items-center gap-1 mt-0.5">
-                                                            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                                            {v.name || 'Bản lưu tự động'}
-                                                        </div>
+                                                        {v.name && v.name !== 'Tự động lưu' && (
+                                                            <div className="text-sm text-slate-500 mt-0.5">
+                                                                {v.name.replace(/^Tự động lưu(:\s*)?/, '')}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <button className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                                                         <MoreVertical className="w-4 h-4" />
