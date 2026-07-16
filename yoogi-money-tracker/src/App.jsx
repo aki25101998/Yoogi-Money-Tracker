@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, LogIn, Sparkles, CreditCard, Plus, PenSquare, Bot, ArrowRightLeft, Repeat } from 'lucide-react';
+import { Loader2, LogIn, Sparkles, CreditCard, Plus, PenSquare, Bot, ArrowRightLeft, Repeat, Clock } from 'lucide-react';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { supabase } from './config/supabase';
 
@@ -22,6 +22,7 @@ import AddRecurringTransactionModal from './components/modals/AddRecurringTransa
 
 // Components
 import GlobalErrorBanner from './components/GlobalErrorBanner';
+import VersionHistorySidebar from './components/VersionHistorySidebar';
 
 // Helpers
 import {
