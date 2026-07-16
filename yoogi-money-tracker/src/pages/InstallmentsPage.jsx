@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react';
+import { useInstallments } from '../hooks/useInstallments';
 import {
     Plus, CreditCard, Calendar, TrendingUp, Target,
     Loader2, Filter, FileJson, Upload,
@@ -13,12 +14,12 @@ import { calculateLoan, calculateItemStats, getYearMonth } from '../utils/calcul
 
 import Card from '../components/ui/Card';
 import InstallmentItem from '../components/InstallmentItem';
-import AddEditModal from '../components/modals/AddEditModal';
-import ConfirmModal from '../components/modals/ConfirmModal';
-import InstallmentDetailsModal from '../components/modals/InstallmentDetailsModal';
-import MinimumPaymentModal from '../components/modals/MinimumPaymentModal';
-import LoanEditModal from '../components/modals/LoanEditModal';
-import PayInstallmentModal from '../components/modals/PayInstallmentModal';
+const AddEditModal = lazy(() => import('../components/modals/AddEditModal'));
+const ConfirmModal = lazy(() => import('../components/modals/ConfirmModal'));
+const InstallmentDetailsModal = lazy(() => import('../components/modals/InstallmentDetailsModal'));
+const MinimumPaymentModal = lazy(() => import('../components/modals/MinimumPaymentModal'));
+const LoanEditModal = lazy(() => import('../components/modals/LoanEditModal'));
+const PayInstallmentModal = lazy(() => import('../components/modals/PayInstallmentModal'));
 
 const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, transactions, categories }) => {
     // Modal States
@@ -69,218 +70,24 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
     const dateInputRef = useRef(null);
 
     // --- Derived State ---
-    const uniqueOwners = useMemo(() => {
-        return ['all', ...(payers?.map(p => p.name) || [])];
-    }, [payers]);
-
-    // Auto-fix data hook: Remove over-ticked months
-    useEffect(() => {
-        if (!user || items.length === 0) return;
-        items.forEach(async (item) => {
-            if (Array.isArray(item.paidMonths) && item.paidMonths.length > item.term) {
-                const newPaidMonths = item.paidMonths.slice(0, item.term);
-                try {
-                    await updateInstallment(user.uid, item.id, { paidMonths: newPaidMonths });
-                    console.log(`Auto-fixed item ${item.name}: ${item.paidMonths.length} -> ${item.term}`);
-                } catch (e) {
-                    console.error("Auto-fix error:", e);
-                }
-            }
-        });
-    }, [items, user]);
-
-    const activeReferenceDate = useMemo(() => {
-        if (filterDate && filterDate.length === 7) {
-            const [y, m] = filterDate.split('-').map(Number);
-            return new Date(y, m - 1, 1);
-        }
-        return new Date();
-    }, [filterDate]);
-
-    const filteredItems = useMemo(() => {
-        let result = items;
-        if (filterOwner !== 'all') {
-            result = result.filter(item => (item.owner || 'Tôi') === filterOwner);
-        }
-        return result;
-    }, [items, filterOwner]);
-
-    const paymentHistoryGroups = useMemo(() => {
-        const history = [];
-        filteredItems.forEach(item => {
-            if (Array.isArray(item.paidMonths)) {
-                item.paidMonths.forEach(month => {
-                    let match = false;
-                    if (!filterDate) match = true;
-                    else if (filterDate.length === 4) match = month.startsWith(filterDate);
-                    else if (filterDate.length === 7) match = month === filterDate;
-                    
-                    if (match) {
-                        history.push({
-                            id: `${item.id}-${month}`,
-                            item: item,
-                            itemName: item.name,
-                            owner: item.owner,
-                            month: month,
-                            amount: item.monthlyPayment
-                        });
-                    }
-                });
-            }
-        });
-        
-        const groups = {};
-        history.forEach(txn => {
-            if (!groups[txn.month]) {
-                groups[txn.month] = { month: txn.month, total: 0, items: [] };
-            }
-            groups[txn.month].items.push(txn);
-            groups[txn.month].total += txn.amount;
-        });
-        
-        return Object.values(groups).sort((a, b) => b.month.localeCompare(a.month));
-    }, [filteredItems, filterDate]);
-
-    const groupedLenders = useMemo(() => {
-        const groups = {};
-        
-        filteredItems.forEach(item => {
-            const lenderName = item.lender || 'Khác';
-            if (!groups[lenderName]) {
-                groups[lenderName] = {
-                    lenderName,
-                    totalAmount: 0,
-                    repaidAmount: 0,
-                    items: [],
-                    status: 'paid'
-                };
-            }
-            
-            groups[lenderName].items.push(item);
-            
-            const totalPayable = item.monthlyPayment * item.term;
-            const paidCount = Math.min((item.paidMonths || []).length, item.term);
-            const repaid = item.monthlyPayment * paidCount;
-            
-            if (paidCount < item.term) {
-                groups[lenderName].totalAmount += totalPayable;
-                groups[lenderName].repaidAmount += repaid;
-                groups[lenderName].status = 'active';
-            }
-        });
-        
-        return Object.values(groups).sort((a, b) => {
-            const aActive = a.status === 'active';
-            const bActive = b.status === 'active';
-            if (aActive !== bActive) return aActive ? -1 : 1;
-            return b.totalAmount - a.totalAmount;
-        });
-    }, [filteredItems]);
-
-    const { inProgressItems, completedItems } = useMemo(() => {
-        const targetDate = activeReferenceDate;
-        const targetMonthStr = getYearMonth(targetDate);
-        const inProgress = [];
-        const completed = [];
-        
-        filteredItems.forEach(item => {
-            const start = new Date(item.startDate);
-            const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-            const monthsDiff = (target.getFullYear() - start.getFullYear()) * 12 + (target.getMonth() - start.getMonth());
-            
-            if (monthsDiff < 0) return;
-
-            if (filterDate && filterDate.length === 7) {
-                if (monthsDiff < item.term) {
-                    const isPaid = item.paidMonths?.includes(targetMonthStr);
-                    if (isPaid) {
-                        completed.push({ item, monthStr: targetMonthStr, index: monthsDiff + 1, refDate: targetDate });
-                    } else {
-                        inProgress.push({ item, monthStr: targetMonthStr, index: monthsDiff + 1, refDate: targetDate });
-                    }
-                }
-            } else {
-                const maxCheckMonth = Math.min(monthsDiff, item.term - 1);
-                
-                for (let i = 0; i <= maxCheckMonth; i++) {
-                    const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
-                    const mStr = getYearMonth(d);
-                    const isPaid = item.paidMonths?.includes(mStr);
-                    
-                    if (isPaid && mStr === targetMonthStr) {
-                        completed.push({ item, monthStr: mStr, index: i + 1, refDate: d });
-                    } else if (!isPaid) {
-                        inProgress.push({ item, monthStr: mStr, index: i + 1, refDate: d });
-                    }
-                }
-            }
-        });
-        
-        inProgress.sort((a, b) => a.monthStr.localeCompare(b.monthStr));
-        
-        return { inProgressItems: inProgress, completedItems: completed };
-    }, [filteredItems, activeReferenceDate, filterDate]);
-
-    const totalStats = useMemo(() => {
-        let monthlyTotal = 0;
-        let remainingTotal = 0;
-        let projectedRemainingTotal = 0;
-        let periodPaidTotal = 0;
-        const targetDate = activeReferenceDate;
-
-        const today = new Date();
-        filteredItems.forEach(item => {
-            let effectiveMonths = 0;
-            if (Array.isArray(item.paidMonths)) {
-                effectiveMonths = Math.min(item.paidMonths.length, item.term);
-                
-                item.paidMonths.forEach(month => {
-                    let match = false;
-                    if (!filterDate) match = true;
-                    else if (filterDate.length === 4) match = month.startsWith(filterDate);
-                    else if (filterDate.length === 7) match = month === filterDate;
-                    
-                    if (match) {
-                        periodPaidTotal += item.monthlyPayment;
-                    }
-                });
-            } else {
-                const start = new Date(item.startDate);
-                let monthsPassed = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
-                if (today < start) monthsPassed = 0;
-                effectiveMonths = Math.min(monthsPassed, item.term);
-            }
-            
-            const paidAmount = effectiveMonths * item.monthlyPayment;
-            remainingTotal += (item.totalPayable - paidAmount);
-
-            const start = new Date(item.startDate);
-            const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-            let monthsDiff = (target.getFullYear() - start.getFullYear()) * 12 + (target.getMonth() - start.getMonth());
-            if (monthsDiff < 0) monthsDiff = 0;
-            
-            const projectedPayments = Math.min(monthsDiff, item.term);
-            const projectedPaidAmount = projectedPayments * item.monthlyPayment;
-            projectedRemainingTotal += (item.totalPayable - projectedPaidAmount);
-        });
-
-        inProgressItems.forEach(wrapper => {
-            monthlyTotal += wrapper.item.monthlyPayment;
-        });
-
-        return { monthlyTotal, remainingTotal, projectedRemainingTotal, periodPaidTotal };
-    }, [filteredItems, inProgressItems, activeReferenceDate, filterDate]);
-
-    const currentLenderDetails = useMemo(() => {
-        if (!selectedLenderName) return null;
-        
-        const items = filteredItems.filter(item => (item.lender || 'Khác') === selectedLenderName);
-
-        return {
-            lenderName: selectedLenderName,
-            items: items
-        };
-    }, [selectedLenderName, filteredItems]);
+    const {
+        uniqueOwners,
+        activeReferenceDate,
+        filteredItems,
+        paymentHistoryGroups,
+        groupedLenders,
+        inProgressItems,
+        completedItems,
+        totalStats,
+        currentLenderDetails
+    } = useInstallments({
+        items,
+        payers,
+        user,
+        filterOwner,
+        filterDate,
+        selectedLenderName
+    });
 
     // --- Handlers ---
     const handleOpenAdd = () => { setEditingItem(null); setInitialLender(''); setIsAddEditModalOpen(true); };
@@ -1107,88 +914,99 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
             )}
 
             {/* Modals */}
-            <AddEditModal
-                isOpen={isAddEditModalOpen}
-                onClose={() => setIsAddEditModalOpen(false)}
-                onSave={handleSaveItem}
-                editingItem={editingItem}
-                uniqueOwners={payers}
-                onAddPayer={handleQuickAddPayer}
-                lenders={lenders}
-                onAddLender={handleQuickAddLender}
-                initialLender={initialLender}
-            />
-            <ConfirmModal
-                isOpen={confirmModalState.isOpen}
-                onClose={() => setConfirmModalState({ ...confirmModalState, isOpen: false })}
-                onConfirm={handleConfirmAction}
-                title={confirmModalState.title}
-                description={confirmModalState.description}
-                confirmText="Xác nhận"
-                confirmVariant={confirmModalState.confirmVariant}
-                isProcessing={isProcessing}
-                Icon={confirmModalState.icon}
-                iconColorClass={confirmModalState.iconColorClass}
-                iconBgClass={confirmModalState.iconBgClass}
-            />
-            <InstallmentDetailsModal
-                isOpen={isDetailsOpen}
-                onClose={() => setIsDetailsOpen(false)}
-                groupedLender={currentLenderDetails}
-                onEditItem={(item) => {
-                    setEditingItem(item);
-                    setInitialLender('');
-                    setIsAddEditModalOpen(true);
-                    setIsDetailsOpen(false);
-                }}
-                onDeleteItem={confirmDelete}
-                onTogglePaid={togglePaidForMonth}
-                referenceDate={activeReferenceDate}
-                onAddNewItem={handleOpenAddWithLender}
-                onMinimumPayment={(item, monthStr) => {
-                    setSelectedMinPaymentItem({ item, monthStr });
-                    setIsMinPaymentOpen(true);
-                }}
-                transactions={transactions}
-                onEditTransaction={(txn) => {
-                    setEditingLoanTxn(txn);
-                    setIsLoanEditOpen(true);
-                }}
-                onPayInstallments={(items) => {
-                    setSelectedItemsForPayment(items);
-                    setIsPayInstallmentOpen(true);
-                }}
-            />
-
-            <MinimumPaymentModal
-                isOpen={isMinPaymentOpen}
-                onClose={() => { setIsMinPaymentOpen(false); setSelectedMinPaymentItem(null); }}
-                user={user}
-                wallets={wallets}
-                item={selectedMinPaymentItem?.item}
-                monthStr={selectedMinPaymentItem?.monthStr}
-                categories={categories}
-            />
-
-            <LoanEditModal
-                isOpen={isLoanEditOpen}
-                onClose={() => {
-                    setIsLoanEditOpen(false);
-                    setEditingLoanTxn(null);
-                }}
-                transaction={editingLoanTxn}
-                user={user}
-                wallets={wallets}
-                onDeleteRequest={handleDeleteTxnRequest}
-            />
-
-            <PayInstallmentModal
-                isOpen={isPayInstallmentOpen}
-                onClose={() => { setIsPayInstallmentOpen(false); setSelectedItemsForPayment([]); }}
-                wallets={wallets}
-                selectedItems={selectedItemsForPayment}
-                onConfirm={handleConfirmPayment}
-            />
+            <Suspense fallback={null}>
+                {isAddEditModalOpen && (
+                    <AddEditModal
+                        isOpen={isAddEditModalOpen}
+                        onClose={() => setIsAddEditModalOpen(false)}
+                        onSave={handleSaveItem}
+                        editingItem={editingItem}
+                        uniqueOwners={payers}
+                        onAddPayer={handleQuickAddPayer}
+                        lenders={lenders}
+                        onAddLender={handleQuickAddLender}
+                        initialLender={initialLender}
+                    />
+                )}
+                {confirmModalState.isOpen && (
+                    <ConfirmModal
+                        isOpen={confirmModalState.isOpen}
+                        onClose={() => setConfirmModalState({ ...confirmModalState, isOpen: false })}
+                        onConfirm={handleConfirmAction}
+                        title={confirmModalState.title}
+                        description={confirmModalState.description}
+                        confirmText="Xác nhận"
+                        confirmVariant={confirmModalState.confirmVariant}
+                        isProcessing={isProcessing}
+                        Icon={confirmModalState.icon}
+                        iconColorClass={confirmModalState.iconColorClass}
+                        iconBgClass={confirmModalState.iconBgClass}
+                    />
+                )}
+                {isDetailsOpen && (
+                    <InstallmentDetailsModal
+                        isOpen={isDetailsOpen}
+                        onClose={() => setIsDetailsOpen(false)}
+                        groupedLender={currentLenderDetails}
+                        onEditItem={(item) => {
+                            setEditingItem(item);
+                            setInitialLender('');
+                            setIsAddEditModalOpen(true);
+                            setIsDetailsOpen(false);
+                        }}
+                        onDeleteItem={confirmDelete}
+                        onTogglePaid={togglePaidForMonth}
+                        referenceDate={activeReferenceDate}
+                        onAddNewItem={handleOpenAddWithLender}
+                        onMinimumPayment={(item, monthStr) => {
+                            setSelectedMinPaymentItem({ item, monthStr });
+                            setIsMinPaymentOpen(true);
+                        }}
+                        transactions={transactions}
+                        onEditTransaction={(txn) => {
+                            setEditingLoanTxn(txn);
+                            setIsLoanEditOpen(true);
+                        }}
+                        onPayInstallments={(items) => {
+                            setSelectedItemsForPayment(items);
+                            setIsPayInstallmentOpen(true);
+                        }}
+                    />
+                )}
+                {isMinPaymentOpen && (
+                    <MinimumPaymentModal
+                        isOpen={isMinPaymentOpen}
+                        onClose={() => { setIsMinPaymentOpen(false); setSelectedMinPaymentItem(null); }}
+                        user={user}
+                        wallets={wallets}
+                        item={selectedMinPaymentItem?.item}
+                        monthStr={selectedMinPaymentItem?.monthStr}
+                        categories={categories}
+                    />
+                )}
+                {isLoanEditOpen && (
+                    <LoanEditModal
+                        isOpen={isLoanEditOpen}
+                        onClose={() => {
+                            setIsLoanEditOpen(false);
+                            setEditingLoanTxn(null);
+                        }}
+                        transaction={editingLoanTxn}
+                        user={user}
+                        wallets={wallets}
+                        onDeleteRequest={handleDeleteTxnRequest}
+                    />
+                )}
+                {isPayInstallmentOpen && (
+                    <PayInstallmentModal
+                        isOpen={isPayInstallmentOpen}
+                        onClose={() => { setIsPayInstallmentOpen(false); setSelectedItemsForPayment([]); }}
+                        wallets={wallets}
+                        selectedItems={selectedItemsForPayment}
+                        onConfirm={handleConfirmPayment}
+                    />
+                )}
+            </Suspense>
         </>
     );
 };
