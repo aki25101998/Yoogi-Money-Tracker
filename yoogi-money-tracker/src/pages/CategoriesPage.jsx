@@ -451,7 +451,7 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
     };
 
     // Common emojis
-    const EMOJI_PICKS = ['🏠', '🛍️', '💼', '🌱', '🎁', '💪', '📈', '🤝', '❓', '🚗', '🎮', '📚', '🍜', '💊', '✈️', '💰', '📱', '🎵', '🏋️', '🎯'];
+    const EMOJI_PICKS = ['🏠', '🛍️', '🛒', '💼', '💳', '💸', '💎', '🌱', '🎁', '💪', '📈', '🤝', '❓', '🚗', '✈️', '💰', '📱', '🎮', '📚', '🎵', '🍜', '☕', '🍹', '🍿', '💊', '🏋️', '🎯'];
 
     return (
         <div className="space-y-6">
