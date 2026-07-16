@@ -665,11 +665,14 @@ export const updateWalletOrder = async (userId, orderedIds) => {
 export const applyDefaultWallets = async (userId) => {};
 export const applyDefaultCategories = async (userId) => {
     // 1. Delete existing categories for the user
-    await supabase.from('categories').delete().eq('user_id', userId);
+    const { error: delError } = await supabase.from('categories').delete().eq('user_id', userId);
+    if (delError) {
+        console.error("Delete error:", delError);
+        throw new Error("Không thể xóa danh mục cũ: " + delError.message);
+    }
 
-    // 2. Insert new default categories with explicit IDs to maintain internal system references
+    // 2. Insert new default categories (let DB generate random UUIDs for ID)
     const categoriesToInsert = DEFAULT_CATEGORIES.map(cat => ({
-        id: cat.id,
         name: cat.name,
         icon: cat.icon,
         type: cat.type,
@@ -678,7 +681,12 @@ export const applyDefaultCategories = async (userId) => {
         user_id: userId
     }));
     
-    await supabase.from('categories').insert(mapToSnakeCase(categoriesToInsert));
+    const { error: insError } = await supabase.from('categories').insert(mapToSnakeCase(categoriesToInsert));
+    if (insError) {
+        console.error("Insert error:", insError);
+        throw new Error("Không thể thêm danh mục mới: " + insError.message);
+    }
+
     window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'categories' }));
     return categoriesToInsert.length;
 };
