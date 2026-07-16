@@ -38,6 +38,18 @@ const AINotesPage = ({ user, aiMemories, abbreviations = [], categories, hideHea
         return true;
     });
 
+    const getCategoryLabel = (catId) => {
+        const c = categories?.find(x => x.id === catId);
+        return c ? c.name : 'Chưa rõ';
+    };
+    
+    const getSubcategoryLabel = (catId, subId) => {
+        if (!subId) return '';
+        const c = categories?.find(x => x.id === catId);
+        const s = c?.subcategories?.find(x => x.id === subId);
+        return s ? s.name : '';
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
