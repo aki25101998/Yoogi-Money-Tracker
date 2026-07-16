@@ -4,7 +4,8 @@ import {
     GripVertical, AlertTriangle, Download
 } from 'lucide-react';
 import {
-    addCategory, updateCategory, deleteCategory, updateCategoryOrder, applyDefaultCategories
+    addCategory, updateCategory, deleteCategory, updateCategoryOrder, applyDefaultCategories,
+    getCategoryTemplates, saveCategoryTemplate, deleteCategoryTemplate, applyCategoryTemplate
 } from '../utils/supabaseHelpers';
 
 import {
@@ -469,15 +470,35 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                             >
                                 Mẫu <ChevronDown className="w-4 h-4" />
                             </button>
-                            <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
-                                <button
-                                    onClick={handleLoadDefaultCategories}
-                                    disabled={isApplyingDefaults}
-                                    className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
-                                >
-                                    <Download className="w-4 h-4" /> {isApplyingDefaults ? 'Đang tải...' : 'Tải mẫu Yoogi'}
-                                </button>
-                            </div>
+                            <div className="absolute right-0 top-full mt-1 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden flex flex-col max-h-[60vh] overflow-y-auto">
+    <button
+        onClick={handleLoadDefaultCategories}
+        disabled={isApplyingDefaults}
+        className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-colors flex items-center gap-2 disabled:opacity-50 border-b border-slate-100 dark:border-slate-700"
+    >
+        <Download className="w-4 h-4" /> {isApplyingDefaults ? 'Đang tải...' : 'Tải mẫu Yoogi'}
+    </button>
+    {templates.map(t => (
+        <div key={t.id} className="flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700">
+            <button
+                onClick={() => handleLoadTemplate(t)}
+                disabled={isApplyingDefaults}
+                className="flex-1 text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-300 font-medium truncate"
+            >
+                {t.name}
+            </button>
+            <button onClick={(e) => handleDeleteTemplate(e, t.id)} className="p-3 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0">
+                <Trash2 className="w-4 h-4" />
+            </button>
+        </div>
+    ))}
+    <button
+        onClick={() => setShowTemplateModal(true)}
+        className="w-full text-left px-4 py-3 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 font-medium transition-colors flex items-center gap-2"
+    >
+        <Plus className="w-4 h-4" /> Thêm mẫu mới
+    </button>
+</div>
                         </div>
                         <button
                             onClick={openAddCategory}
@@ -496,15 +517,35 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
                         >
                             Mẫu <ChevronDown className="w-4 h-4" />
                         </button>
-                        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
-                            <button
-                                onClick={handleLoadDefaultCategories}
-                                disabled={isApplyingDefaults}
-                                className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
-                            >
-                                <Download className="w-4 h-4" /> {isApplyingDefaults ? 'Đang tải...' : 'Tải mẫu Yoogi'}
-                            </button>
-                        </div>
+                        <div className="absolute right-0 top-full mt-1 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden flex flex-col max-h-[60vh] overflow-y-auto">
+    <button
+        onClick={handleLoadDefaultCategories}
+        disabled={isApplyingDefaults}
+        className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-colors flex items-center gap-2 disabled:opacity-50 border-b border-slate-100 dark:border-slate-700"
+    >
+        <Download className="w-4 h-4" /> {isApplyingDefaults ? 'Đang tải...' : 'Tải mẫu Yoogi'}
+    </button>
+    {templates.map(t => (
+        <div key={t.id} className="flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700">
+            <button
+                onClick={() => handleLoadTemplate(t)}
+                disabled={isApplyingDefaults}
+                className="flex-1 text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-300 font-medium truncate"
+            >
+                {t.name}
+            </button>
+            <button onClick={(e) => handleDeleteTemplate(e, t.id)} className="p-3 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0">
+                <Trash2 className="w-4 h-4" />
+            </button>
+        </div>
+    ))}
+    <button
+        onClick={() => setShowTemplateModal(true)}
+        className="w-full text-left px-4 py-3 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 font-medium transition-colors flex items-center gap-2"
+    >
+        <Plus className="w-4 h-4" /> Thêm mẫu mới
+    </button>
+</div>
                     </div>
                     <button
                         onClick={openAddCategory}

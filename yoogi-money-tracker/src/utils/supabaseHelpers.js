@@ -864,3 +864,68 @@ export const restoreVersion = async (userId, versionId) => {
     await importUserData(userId, versionData.data);
 };
 
+// --- CATEGORY TEMPLATES (Saved in abbreviations for convenience) ---
+export const getCategoryTemplates = async (userId) => {
+    const { data, error } = await supabase
+        .from('abbreviations')
+        .select('id, short, full_text')
+        .eq('user_id', userId)
+        .like('short', 'TEMPLATE:%');
+    if (error) throw error;
+    return data.map(d => ({
+        id: d.id,
+        name: d.short.replace('TEMPLATE:', ''),
+        categories: JSON.parse(d.full_text)
+    }));
+};
+
+export const saveCategoryTemplate = async (userId, name, categoriesData) => {
+    // Clean up IDs before saving to prevent conflicts when loading later
+    const cleanCategories = categoriesData.map(cat => ({
+        name: cat.name,
+        icon: cat.icon,
+        type: cat.type,
+        order: cat.order,
+        subcategories: (cat.subcategories || []).map(sc => ({
+            name: sc.name,
+            description: sc.description || ''
+        }))
+    }));
+
+    const { error } = await supabase.from('abbreviations').insert([mapToSnakeCase({
+        short: `TEMPLATE:${name}`,
+        full_text: JSON.stringify(cleanCategories),
+        user_id: userId
+    })]);
+    if (error) throw error;
+};
+
+export const deleteCategoryTemplate = async (userId, id) => {
+    const { error } = await supabase.from('abbreviations').delete().eq('id', id).eq('user_id', userId);
+    if (error) throw error;
+};
+
+export const applyCategoryTemplate = async (userId, categoriesToInsert) => {
+    // 1. Delete existing categories for the user
+    const { error: delError } = await supabase.from('categories').delete().eq('user_id', userId);
+    if (delError) {
+        throw new Error("Không thể xóa danh mục cũ: " + delError.message);
+    }
+
+    // 2. Insert new categories from template
+    const toInsert = categoriesToInsert.map(cat => ({
+        name: cat.name,
+        icon: cat.icon,
+        type: cat.type,
+        order: cat.order,
+        subcategories: cat.subcategories,
+        user_id: userId
+    }));
+    
+    const { error: insError } = await supabase.from('categories').insert(mapToSnakeCase(toInsert));
+    if (insError) {
+        throw new Error("Không thể thêm danh mục mới: " + insError.message);
+    }
+
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'categories' }));
+};
