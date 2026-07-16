@@ -560,7 +560,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                 else if (val === 'year') setFilterDate(new Date().getFullYear().toString());
                                 else setFilterDate(getYearMonth(new Date()));
                             }}
-                            className="bg-transparent text-xs font-medium text-slate-600 dark:text-slate-300 outline-none cursor-pointer border-r border-slate-200 dark:border-slate-700 py-1.5 px-2"
+                            className="bg-transparent text-xs font-medium text-slate-600 dark:text-slate-300 outline-none cursor-pointer border-r border-slate-200 dark:border-slate-700 py-1.5 pl-3 pr-7"
                         >
                             <option value="month">Theo tháng</option>
                             <option value="year">Theo năm</option>
@@ -590,7 +590,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                 <select 
                                     value={filterDate} 
                                     onChange={(e) => setFilterDate(e.target.value)}
-                                    className="bg-transparent text-xs font-medium text-indigo-600 dark:text-indigo-400 outline-none cursor-pointer pr-1"
+                                    className="bg-transparent text-xs font-medium text-indigo-600 dark:text-indigo-400 outline-none cursor-pointer pr-6 pl-1"
                                 >
                                     {Array.from({length: 10}, (_, i) => new Date().getFullYear() - 5 + i).map(y => (
                                         <option key={y} value={y.toString()}>Năm {y}</option>
