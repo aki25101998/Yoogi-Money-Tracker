@@ -438,7 +438,7 @@ const CategoriesPage = ({ user, categories, hideHeader = false }) => {
     const handleLoadDefaultCategories = async () => {
         if (!user || isApplyingDefaults) return;
 
-        if (window.confirm("Tải mẫu danh mục Yoogi? Các danh mục hiện tại của bạn sẽ được giữ nguyên, chỉ thêm những danh mục chuẩn còn thiếu.")) {
+        if (window.confirm("BẠN CÓ CHẮC CHẮN? Toàn bộ danh mục hiện tại của bạn sẽ bị XÓA và thay thế bằng danh mục mặc định chuẩn của Yoogi. Hành động này không thể hoàn tác!")) {
             setIsApplyingDefaults(true);
             try {
                 const added = await applyDefaultCategories(user.uid);

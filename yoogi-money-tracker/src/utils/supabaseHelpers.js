@@ -663,7 +663,25 @@ export const updateWalletOrder = async (userId, orderedIds) => {
     window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'wallets' }));
 };
 export const applyDefaultWallets = async (userId) => {};
-export const applyDefaultCategories = async (userId) => {};
+export const applyDefaultCategories = async (userId) => {
+    // 1. Delete existing categories for the user
+    await supabase.from('categories').delete().eq('user_id', userId);
+
+    // 2. Insert new default categories with explicit IDs to maintain internal system references
+    const categoriesToInsert = DEFAULT_CATEGORIES.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        icon: cat.icon,
+        type: cat.type,
+        order: cat.order,
+        subcategories: cat.subcategories,
+        user_id: userId
+    }));
+    
+    await supabase.from('categories').insert(mapToSnakeCase(categoriesToInsert));
+    window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'categories' }));
+    return categoriesToInsert.length;
+};
 
 export const addAIMemory = async (userId, data) => {
     const { error } = await supabase.from('ai_memory').insert([mapToSnakeCase({ ...data, user_id: userId })]);
