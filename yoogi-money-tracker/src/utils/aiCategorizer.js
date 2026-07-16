@@ -211,10 +211,7 @@ Lưu ý:
     try {
         const { data, error } = await supabase.functions.invoke('gemini-ai', {
             body: {
-                action: 'categorize',
-                payload: {
-                    contents: [{ parts: [{ text: prompt }] }]
-                }
+                contents: [{ parts: [{ text: prompt }] }]
             }
         });
 

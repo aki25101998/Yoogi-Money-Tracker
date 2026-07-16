@@ -25,10 +25,7 @@ export const parseLoanInfo = async (text) => {
     try {
         const { data, error } = await supabase.functions.invoke('gemini-ai', {
             body: {
-                action: 'parse_loan',
-                payload: {
-                    contents: [{ parts: [{ text: prompt }] }]
-                }
+                contents: [{ parts: [{ text: prompt }] }]
             }
         });
 

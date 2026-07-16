@@ -19,7 +19,8 @@ serve(async (req) => {
       throw new Error('Missing Gemini API Key in Edge Function environment')
     }
 
-    const payload = await req.json()
+    const reqBody = await req.json()
+    const payload = reqBody.payload || reqBody
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`
     
