@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react';
 import { useInstallments } from '../hooks/useInstallments';
+import { useInstallmentModals } from '../hooks/useInstallmentModals';
 import {
     Plus, CreditCard, Calendar, TrendingUp, Target,
     Loader2, Filter, FileJson, Upload,
@@ -22,34 +23,22 @@ const LoanEditModal = lazy(() => import('../components/modals/LoanEditModal'));
 const PayInstallmentModal = lazy(() => import('../components/modals/PayInstallmentModal'));
 
 const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, transactions, categories }) => {
-    // Modal States
-    const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState(null);
-    const [initialLender, setInitialLender] = useState('');
-
-    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-    const [selectedLenderName, setSelectedLenderName] = useState(null);
-
-    const [isMinPaymentOpen, setIsMinPaymentOpen] = useState(false);
-    const [selectedMinPaymentItem, setSelectedMinPaymentItem] = useState(null);
-
-    // Edit Transaction States
-    const [isLoanEditOpen, setIsLoanEditOpen] = useState(false);
-    const [editingLoanTxn, setEditingLoanTxn] = useState(null);
-
-    // Pay Installment States
-    const [isPayInstallmentOpen, setIsPayInstallmentOpen] = useState(false);
-    const [selectedItemsForPayment, setSelectedItemsForPayment] = useState([]);
-
-    // Confirm Modal States
-    const [confirmModalState, setConfirmModalState] = useState({
-        isOpen: false,
-        type: null,
-        data: null,
-        title: '',
-        description: '',
-        confirmVariant: 'primary'
-    });
+    const {
+        isAddEditModalOpen, setIsAddEditModalOpen,
+        editingItem, setEditingItem,
+        initialLender, setInitialLender,
+        openAddModal, openEditModal, closeAddEditModal,
+        isDetailsOpen, setIsDetailsOpen,
+        selectedLenderName, setSelectedLenderName,
+        isMinPaymentOpen, setIsMinPaymentOpen,
+        selectedMinPaymentItem, setSelectedMinPaymentItem,
+        isLoanEditOpen, setIsLoanEditOpen,
+        editingLoanTxn, setEditingLoanTxn,
+        isPayInstallmentOpen, setIsPayInstallmentOpen,
+        selectedItemsForPayment, setSelectedItemsForPayment,
+        confirmModalState, setConfirmModalState,
+        openConfirmModal, closeConfirmModal
+    } = useInstallmentModals();
 
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -90,8 +79,8 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
     });
 
     // --- Handlers ---
-    const handleOpenAdd = () => { setEditingItem(null); setInitialLender(''); setIsAddEditModalOpen(true); };
-    const handleOpenEdit = (item) => { setEditingItem(item); setInitialLender(''); setIsAddEditModalOpen(true); };
+    const handleOpenAdd = () => openAddModal();
+    const handleOpenEdit = (item) => openEditModal(item);
     const handleOpenAddWithLender = (lenderName) => {
         setEditingItem(null);
         setInitialLender(lenderName);
