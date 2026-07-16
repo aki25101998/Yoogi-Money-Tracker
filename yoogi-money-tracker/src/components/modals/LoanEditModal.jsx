@@ -10,7 +10,8 @@ const LoanEditModal = ({
     user, 
     wallets, 
     debts,
-    onDeleteRequest // Optional: If we want to handle delete externally (e.g., to open a confirm modal)
+    onDeleteRequest, // Optional: If we want to handle delete externally (e.g., to open a confirm modal)
+    onSuccess // Optional: Callback when save is successful
 }) => {
 const [form, setForm] = useState({
         amount: '',
@@ -98,6 +99,27 @@ const [form, setForm] = useState({
                 if (transaction.installmentId && txMonthStr && diff !== 0) {
                     await updateInstallmentPartialPayment(user.uid, transaction.installmentId, txMonthStr, diff);
                 }
+            }
+            if (onSuccess) {
+                let updatedDescription = transaction.description;
+                if (transaction.type === 'loan_given' || transaction.type === 'loan_repaid') {
+                    const personMatch = transaction.description?.match(/^(.+?)(?:mượn| trả nợ)/);
+                    const personName = personMatch ? personMatch[1].trim() : '';
+                    if (transaction.type === 'loan_given') {
+                        updatedDescription = `${personName} mượn${form.notes ? ': ' + form.notes : ''}`;
+                    } else {
+                        updatedDescription = `${personName} trả nợ${form.notes ? ': ' + form.notes : ''}`;
+                    }
+                } else if (transaction.type === 'installment_repaid') {
+                    updatedDescription = form.notes.trim() || transaction.description;
+                }
+                
+                onSuccess({
+                    ...transaction,
+                    amount: amountNum,
+                    walletId: form.walletId,
+                    description: updatedDescription
+                });
             }
 
             onClose();

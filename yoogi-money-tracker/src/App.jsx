@@ -332,6 +332,7 @@ export default function App() {
                         wallets={wallets}
                         payers={payers}
                         debtors={debtors}
+                        debts={debts}
                         recurringTransactions={recurringTransactions}
                         onOpenContextWallet={() => setIsGlobalContextWalletOpen(true)}
                     />

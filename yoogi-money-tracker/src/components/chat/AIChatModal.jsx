@@ -4,11 +4,11 @@ import { categorizeTransaction } from '../../utils/aiCategorizer';
 import { addTransaction, incrementMemoryUsage, learnFromCorrection, processCorrections, updateTransaction, deleteTransaction, addDebt, updateDebt, addDebtor, subscribeAIChatHistory, updateAIChatHistory, clearAIChatHistory } from '../../utils/supabaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
 import { supabase } from '../../config/supabase';
-import TransferFundsModal from '../modals/TransferFundsModal';
 import TransactionModal from '../modals/TransactionModal';
+import LoanEditModal from '../modals/LoanEditModal';
 import ChatMessageItem from './ChatMessageItem';
 import RecurringTransactionsModal from '../modals/RecurringTransactionsModal';
-const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviations, wallets, payers, debtors, recurringTransactions, selectedWalletId, onOpenContextWallet }) => {
+const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviations, wallets, payers, debtors, debts, recurringTransactions, selectedWalletId, onOpenContextWallet }) => {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -23,6 +23,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
     // Edit Modal States
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isEditTransferModalOpen, setIsEditTransferModalOpen] = useState(false);
+    const [isLoanEditOpen, setIsLoanEditOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
 
 // Initialize active wallet
@@ -196,6 +197,10 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
 
     const openEditModal = (txn) => {
         setEditingTransaction(txn);
+        if (txn.type === 'loan_given' || txn.type === 'loan_repaid' || txn.type === 'installment_repaid') {
+            setIsLoanEditOpen(true);
+            return;
+        }
         if (txn.type === 'transfer') {
             setIsEditTransferModalOpen(true);
         } else {
@@ -623,6 +628,30 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                 user={user}
                 wallets={wallets}
                 recurringTransactions={recurringTransactions}
+            />
+
+            <LoanEditModal
+                isOpen={isLoanEditOpen}
+                onClose={() => {
+                    setIsLoanEditOpen(false);
+                    setEditingTransaction(null);
+                }}
+                transaction={editingTransaction}
+                user={user}
+                wallets={wallets}
+                debts={debts}
+                onSuccess={(updatedData) => {
+                    setMessages(prev => prev.map(msg => {
+                        if (msg.transaction && msg.transaction.id === updatedData.id) {
+                            const newMsg = { ...msg, transaction: { ...msg.transaction, ...updatedData } };
+                            updateAIChatHistory(user.uid, msg.id, newMsg.message, newMsg.transaction);
+                            return newMsg;
+                        }
+                        return msg;
+                    }));
+                    isLocalUpdateRef.current = true;
+                }}
+                onDeleteRequest={handleDeleteEditWithoutPrompt}
             />
         </div>
         </>
