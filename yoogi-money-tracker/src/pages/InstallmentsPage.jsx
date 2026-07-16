@@ -552,21 +552,22 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
 
                 <div className="flex gap-2 ml-auto items-center">
                     <div className="relative flex items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg p-0.5 transition-colors">
-                        <select 
-                            value={!filterDate ? 'all' : filterDate.length === 4 ? 'year' : 'month'}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === 'all') setFilterDate('');
-                                else if (val === 'year') setFilterDate(new Date().getFullYear().toString());
-                                else setFilterDate(getYearMonth(new Date()));
-                            }}
-                            className="bg-transparent text-xs font-medium text-slate-600 dark:text-slate-300 outline-none cursor-pointer py-1.5 pl-3 pr-6"
-                        >
-                            <option value="month">Theo tháng</option>
-                            <option value="year">Theo năm</option>
-                            <option value="all">Mọi thời gian</option>
-                        </select>
-                        <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                        <div className="border-r border-slate-200 dark:border-slate-700 pr-3 mr-1">
+                            <select 
+                                value={!filterDate ? 'all' : filterDate.length === 4 ? 'year' : 'month'}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === 'all') setFilterDate('');
+                                    else if (val === 'year') setFilterDate(new Date().getFullYear().toString());
+                                    else setFilterDate(getYearMonth(new Date()));
+                                }}
+                                className="bg-transparent text-xs font-medium text-slate-600 dark:text-slate-300 outline-none cursor-pointer py-1.5 pl-2 pr-1"
+                            >
+                                <option value="month">Theo tháng</option>
+                                <option value="year">Theo năm</option>
+                                <option value="all">Mọi thời gian</option>
+                            </select>
+                        </div>
 
                         {!filterDate && (
                             <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-400">
