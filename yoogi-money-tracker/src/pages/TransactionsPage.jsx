@@ -8,7 +8,6 @@ import TransactionModal from '../components/modals/TransactionModal';
 import TransferFundsModal from '../components/modals/TransferFundsModal';
 import DateRangeSelector from '../components/DateRangeSelector';
 import MultiSelectDropdown from '../components/MultiSelectDropdown';
-import LoanEditModal from '../components/modals/LoanEditModal';
 import TransactionFilters from '../components/transactions/TransactionFilters';
 
 const TransactionsPage = ({ user, userSettings, transactions, categories, wallets, debts }) => {
@@ -52,10 +51,6 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
     const [isSelectMode, setIsSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
     const [isBatchDeleting, setIsBatchDeleting] = useState(false);
-
-    // --- Loan Edit State ---
-    const [isLoanEditOpen, setIsLoanEditOpen] = useState(false);
-    const [editingLoanTxn, setEditingLoanTxn] = useState(null);
 
     // --- Filter Logic ---
     const filteredTransactions = useMemo(() => {
@@ -137,6 +132,28 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
         try {
             await processCorrections(user.uid, editingTransaction, formData);
             await updateTransaction(user.uid, editingTransaction.id, formData);
+            
+            // --- Sync Debt if amount changed ---
+            const diff = (parseFloat(formData.amount) || 0) - (parseFloat(editingTransaction.amount) || 0);
+            if (diff !== 0) {
+                if (editingTransaction.type === 'loan_given' && editingTransaction.debtId) {
+                    const debt = debts?.find(d => d.id === editingTransaction.debtId);
+                    if (debt) {
+                        const newTotal = debt.totalAmount + diff;
+                        const newRepaid = debt.repaidAmount || 0;
+                        const newStatus = newRepaid >= newTotal ? 'paid' : 'active';
+                        await updateDebt(user.uid, debt.id, { totalAmount: newTotal, status: newStatus });
+                    }
+                } else if (editingTransaction.type === 'loan_repaid' && editingTransaction.debtId) {
+                    const debt = debts?.find(d => d.id === editingTransaction.debtId);
+                    if (debt) {
+                        const newRepaid = Math.max(0, (debt.repaidAmount || 0) + diff);
+                        const newStatus = newRepaid >= debt.totalAmount ? 'paid' : 'active';
+                        await updateDebt(user.uid, debt.id, { repaidAmount: newRepaid, status: newStatus });
+                    }
+                }
+            }
+
             setIsModalOpen(false);
             setIsTransferModalOpen(false);
             setEditingTransaction(null);
@@ -173,23 +190,12 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
 
     const openEditModal = (e, txn) => {
         e.stopPropagation();
-        if (txn.type === 'loan_given' || txn.type === 'loan_repaid' || txn.type === 'installment_repaid') {
-            setEditingLoanTxn(txn);
-            setIsLoanEditOpen(true);
-            return;
-        }
         setEditingTransaction(txn);
         if (txn.type === 'transfer') {
             setIsTransferModalOpen(true);
         } else {
             setIsModalOpen(true);
         }
-    };
-
-    // --- Loan Edit Handlers ---
-    const closeLoanEditModal = () => {
-        setIsLoanEditOpen(false);
-        setEditingLoanTxn(null);
     };
 
     const openDeleteModal = (e, id) => {
@@ -439,17 +445,6 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
                     </button>
                 </div>
             )}
-
-            {/* Loan Edit Modal */}
-            <LoanEditModal
-                isOpen={isLoanEditOpen}
-                onClose={closeLoanEditModal}
-                transaction={editingLoanTxn}
-                user={user}
-                wallets={wallets}
-                debts={debts}
-                onDeleteRequest={(e, id) => openDeleteModal(e, id)}
-            />
         </div>
     );
 };

@@ -6,7 +6,6 @@ import { formatCurrency } from '../../utils/formatters';
 import { supabase } from '../../config/supabase';
 import TransferFundsModal from '../modals/TransferFundsModal';
 import TransactionModal from '../modals/TransactionModal';
-import LoanEditModal from '../modals/LoanEditModal';
 import ChatMessageItem from './ChatMessageItem';
 import RecurringTransactionsModal from '../modals/RecurringTransactionsModal';
 const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviations, wallets, payers, debtors, debts, recurringTransactions, selectedWalletId, onOpenContextWallet }) => {
@@ -24,7 +23,6 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
     // Edit Modal States
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isEditTransferModalOpen, setIsEditTransferModalOpen] = useState(false);
-    const [isLoanEditOpen, setIsLoanEditOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
 
 // Initialize active wallet
@@ -162,15 +160,37 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
         }
     };
 
-    const handleSaveEdit = async (formData) => {
+    const handleSaveEdit = async (updatedData) => {
         if (!user || !editingTransaction) return;
+
         try {
-            await processCorrections(user.uid, editingTransaction, formData);
-            await updateTransaction(user.uid, editingTransaction.id, formData);
+            await updateTransaction(user.uid, updatedData.id, updatedData);
+            
+            // --- Sync Debt if amount changed ---
+            const diff = (parseFloat(updatedData.amount) || 0) - (parseFloat(editingTransaction.amount) || 0);
+            if (diff !== 0) {
+                if (editingTransaction.type === 'loan_given' && editingTransaction.debtId) {
+                    const debt = debts?.find(d => d.id === editingTransaction.debtId);
+                    if (debt) {
+                        const newTotal = debt.totalAmount + diff;
+                        const newRepaid = debt.repaidAmount || 0;
+                        const newStatus = newRepaid >= newTotal ? 'completed' : 'active';
+                        await updateDebt(user.uid, debt.id, { totalAmount: newTotal, status: newStatus });
+                    }
+                } else if (editingTransaction.type === 'loan_repaid' && editingTransaction.debtId) {
+                    const debt = debts?.find(d => d.id === editingTransaction.debtId);
+                    if (debt) {
+                        const newRepaid = Math.max(0, (debt.repaidAmount || 0) + diff);
+                        const newStatus = newRepaid >= debt.totalAmount ? 'completed' : 'active';
+                        await updateDebt(user.uid, debt.id, { repaidAmount: newRepaid, status: newStatus });
+                    }
+                }
+            }
+
             isLocalUpdateRef.current = true;
             setMessages(prev => prev.map(msg => {
                 if (msg.transaction && msg.transaction.id === editingTransaction.id) {
-                    return { ...msg, transaction: { ...msg.transaction, ...formData } };
+                    return { ...msg, transaction: { ...msg.transaction, ...updatedData } };
                 }
                 return msg;
             }));
@@ -198,10 +218,6 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
 
     const openEditModal = (txn) => {
         setEditingTransaction(txn);
-        if (txn.type === 'loan_given' || txn.type === 'loan_repaid' || txn.type === 'installment_repaid') {
-            setIsLoanEditOpen(true);
-            return;
-        }
         if (txn.type === 'transfer') {
             setIsEditTransferModalOpen(true);
         } else {
@@ -631,29 +647,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                 recurringTransactions={recurringTransactions}
             />
 
-            <LoanEditModal
-                isOpen={isLoanEditOpen}
-                onClose={() => {
-                    setIsLoanEditOpen(false);
-                    setEditingTransaction(null);
-                }}
-                transaction={editingTransaction}
-                user={user}
-                wallets={wallets}
-                debts={debts}
-                onSuccess={(updatedData) => {
-                    setMessages(prev => prev.map(msg => {
-                        if (msg.transaction && msg.transaction.id === updatedData.id) {
-                            const newMsg = { ...msg, transaction: { ...msg.transaction, ...updatedData } };
-                            updateAIChatHistory(user.uid, msg.id, newMsg.message, newMsg.transaction);
-                            return newMsg;
-                        }
-                        return msg;
-                    }));
-                    isLocalUpdateRef.current = true;
-                }}
-                onDeleteRequest={handleDeleteEditWithoutPrompt}
-            />
+            
         </div>
         </>
     );
