@@ -25,7 +25,7 @@ const TransferFundsModal = lazy(() => import('../components/modals/TransferFunds
 const AIContextModal = lazy(() => import('../components/modals/AIContextModal'));
 const CategoryTransactionsModal = lazy(() => import('../components/modals/CategoryTransactionsModal'));
 const ConfirmModal = lazy(() => import('../components/modals/ConfirmModal'));
-import { Bot, PenSquare } from 'lucide-react';
+
 
 import {
     DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors,
