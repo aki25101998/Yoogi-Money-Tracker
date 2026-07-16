@@ -12,8 +12,11 @@ git config user.name "aki25101998"
 git config user.email "aki251098@gmail.com"
 ```
 
-2. Lưu toàn bộ thay đổi và đẩy lên GitHub (Vercel sẽ tự động deploy)
+2. Backup dữ liệu Database, lưu toàn bộ thay đổi và đẩy lên GitHub (Vercel sẽ tự động deploy)
 ```powershell
+cd yoogi-money-tracker
+npm run backup-db
+cd ..
 git add .
 git commit -m "Auto-backup code"
 git push
@@ -33,8 +36,12 @@ npx vercel --prod --yes
 git log --oneline -10
 ```
 
-5. Hoàn tác commit cuối
+5. Hoàn tác commit cuối (hoặc checkout về commit cũ) và phục hồi lại Database
 ```powershell
 git revert HEAD --no-edit
+# Sau khi lấy code cũ về, chạy lệnh sau để phục hồi Database
+cd yoogi-money-tracker
+npm run restore-db
+cd ..
 git push
 ```

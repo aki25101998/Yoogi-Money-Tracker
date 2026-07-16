@@ -1,0 +1,42 @@
+name: Daily Database Backup
+
+on:
+  schedule:
+    # Chạy vào 00:00 UTC (khoảng 7h sáng giờ Việt Nam) mỗi ngày
+    - cron: '0 0 * * *'
+  # Cho phép kích hoạt thủ công từ tab Actions
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: ./yoogi-money-tracker
+        run: npm ci || npm install
+
+      - name: Run Backup Script
+        working-directory: ./yoogi-money-tracker
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: npm run backup-db
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add yoogi-money-tracker/db_backup.json
+          # Commit chỉ khi có sự thay đổi
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: auto backup database" && git push)

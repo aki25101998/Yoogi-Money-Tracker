@@ -40,7 +40,9 @@ import {
     subscribeLenders,
     subscribeUserSettings,
     subscribeInstallments,
-    subscribeAbbreviations
+    subscribeAbbreviations,
+    saveVersion,
+    cleanupOldAutoVersions
 } from './utils/supabaseHelpers';
 
 
@@ -227,6 +229,37 @@ export default function App() {
             unsubLenders();
             unsubSettings();
             unsubAbbreviations();
+        };
+    }, [user?.uid]);
+
+    // --- Auto Backup & Cleanup ---
+    useEffect(() => {
+        if (!user) return;
+
+        // Clean up old auto versions on app load
+        cleanupOldAutoVersions(user.uid);
+
+        let timeoutId;
+        const handleMutate = (e) => {
+            // Ignore mutation events that are just UI refreshes for 'all' during restore
+            if (e.detail === 'all') return;
+            
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(async () => {
+                try {
+                    await saveVersion(user.uid, 'Tự động lưu');
+                    console.log('Auto-saved new version');
+                } catch (error) {
+                    console.error('Failed to auto-save version:', error);
+                }
+            }, 5000);
+        };
+
+        window.addEventListener('supabase_mutate', handleMutate);
+
+        return () => {
+            window.removeEventListener('supabase_mutate', handleMutate);
+            clearTimeout(timeoutId);
         };
     }, [user?.uid]);
 

@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "backup-db": "node scripts/backup_db.cjs",
+    "restore-db": "node scripts/restore_db.cjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.0",

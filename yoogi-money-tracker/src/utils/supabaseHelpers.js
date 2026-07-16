@@ -730,6 +730,104 @@ export const updateAbbreviation = async (userId, id, updates) => {
     window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'abbreviations' }));
 };
 
-export const exportUserData = async (userId) => ({});
-export const importUserData = async (userId, data) => {};
+const TABLES_DELETE_ORDER = [
+    'transactions', 'recurring_transactions', 'debts', 'installments', 'wallets', 
+    'categories', 'payers', 'debtors', 'lenders', 'ai_memory', 'abbreviations', 'settings'
+];
+
+const TABLES_INSERT_ORDER = [
+    'settings', 'abbreviations', 'ai_memory', 'lenders', 'debtors', 'payers', 
+    'categories', 'wallets', 'installments', 'debts', 'recurring_transactions', 'transactions'
+];
+
+export const exportUserData = async (userId) => {
+    const data = {};
+    for (const table of TABLES_INSERT_ORDER) {
+        const { data: rows, error } = await supabase.from(table).select('*').eq('user_id', userId);
+        if (!error) {
+            data[table] = rows || [];
+        }
+    }
+    return data;
+};
+
+export const importUserData = async (userId, data) => {
+    // 1. Delete existing data
+    for (const table of TABLES_DELETE_ORDER) {
+        const { data: ids } = await supabase.from(table).select('id').eq('user_id', userId);
+        if (ids && ids.length > 0) {
+            const chunkSize = 100;
+            for (let i = 0; i < ids.length; i += chunkSize) {
+                const chunk = ids.slice(i, i + chunkSize).map(r => r.id);
+                await supabase.from(table).delete().in('id', chunk);
+            }
+        }
+    }
+    
+    // 2. Insert new data
+    for (const table of TABLES_INSERT_ORDER) {
+        if (data[table] && data[table].length > 0) {
+            const chunkSize = 500;
+            for (let i = 0; i < data[table].length; i += chunkSize) {
+                const chunk = data[table].slice(i, i + chunkSize);
+                await supabase.from(table).insert(chunk);
+            }
+        }
+    }
+    
+    // Dispatch events to refresh UI
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'all' }));
+        setTimeout(() => window.location.reload(), 1000);
+    }
+};
+
+// ============================================================
+// VERSION HISTORY
+// ============================================================
+export const fetchVersions = async (userId) => {
+    const { data, error } = await supabase
+        .from('version_history')
+        .select('id, name, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+};
+
+export const saveVersion = async (userId, name) => {
+    const data = await exportUserData(userId);
+    const { error } = await supabase
+        .from('version_history')
+        .insert([{ user_id: userId, name: name || 'Bản lưu thủ công', data }]);
+    if (error) throw error;
+};
+
+export const cleanupOldAutoVersions = async (userId) => {
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    
+    const { error } = await supabase
+        .from('version_history')
+        .delete()
+        .eq('user_id', userId)
+        .eq('name', 'Tự động lưu')
+        .lt('created_at', threeDaysAgo.toISOString());
+        
+    if (error) {
+        console.error("Error cleaning up old auto versions:", error);
+    }
+};
+
+export const restoreVersion = async (userId, versionId) => {
+    const { data: versionData, error } = await supabase
+        .from('version_history')
+        .select('data')
+        .eq('id', versionId)
+        .eq('user_id', userId)
+        .single();
+    if (error) throw error;
+    
+    await importUserData(userId, versionData.data);
+};
 
