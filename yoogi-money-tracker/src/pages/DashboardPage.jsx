@@ -8,7 +8,8 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
 import { categorizeTransaction } from '../utils/aiCategorizer';
-import { addTransaction, incrementMemoryUsage, updateWalletOrder, addWallet } from '../utils/supabaseHelpers';
+import { addTransaction, incrementMemoryUsage, updateWalletOrder, addWallet, updateWallet, updateTransaction, processCorrections, deleteTransaction } from '../utils/supabaseHelpers';
+import { supabase } from '../config/supabase';
 import TransactionModal from '../components/modals/TransactionModal';
 import WalletModal from '../components/modals/WalletModal';
 import UpgradeProModal from '../components/modals/UpgradeProModal';
@@ -191,7 +192,7 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
         if (!user) return;
         try {
             if (walletModalMode === 'edit' && editingWallet) {
-                const { updateWallet } = await import('../utils/supabaseHelpers');
+                
                 await updateWallet(user.uid, editingWallet.id, {
                     name: formData.name,
                     icon: formData.icon,
@@ -308,7 +309,7 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
         if (!user) return;
         try {
             if (editingTransaction) {
-                const { updateTransaction, processCorrections } = await import('../utils/supabaseHelpers');
+                
                 await processCorrections(user.uid, editingTransaction, formData);
                 await updateTransaction(user.uid, editingTransaction.id, formData);
             } else {
@@ -325,7 +326,7 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
     const handleDeleteTransaction = async (transactionId) => {
         if (!user) return;
         try {
-            const { deleteTransaction } = await import('../utils/supabaseHelpers');
+            
             await deleteTransaction(user.uid, transactionId);
             setIsModalOpen(false);
             setIsTransferModalOpen(false);
@@ -339,7 +340,7 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
         if (!user || !deleteModal.id) return;
         setIsDeleting(true);
         try {
-            const { deleteTransaction } = await import('../utils/supabaseHelpers');
+            
             await deleteTransaction(user.uid, deleteModal.id);
             setDeleteModal({ isOpen: false, id: null });
         } catch (error) {
@@ -448,7 +449,7 @@ QUY TẮC TRÌNH BÀY (BẮT BUỘC):
 ✅ Giữa các phần cách nhau bằng 1 dòng trống.
 ✅ Tối đa 400 chữ.`;
 
-            const { supabase } = await import('../config/supabase');
+            
             const { data, error } = await supabase.functions.invoke('gemini-ai', {
                 body: {
                     action: 'analyze_finances',

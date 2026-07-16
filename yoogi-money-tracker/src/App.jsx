@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Loader2, LogIn, Sparkles, CreditCard, Plus, PenSquare, Bot, ArrowRightLeft, Repeat, Clock } from 'lucide-react';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
-import { supabase } from './config/supabase';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { Loader2, LogIn, Sparkles, Plus, PenSquare, ArrowRightLeft, Repeat } from 'lucide-react';
+import { addTransaction } from './utils/supabaseHelpers';
+import { useAuth } from './hooks/useAuth';
+import { useAppData } from './hooks/useAppData';
+import { useRecurringTransactions } from './hooks/useRecurringTransactions';
 
 // Layout
 import Layout from './components/Layout';
 
-// Pages
-import DashboardPage from './pages/DashboardPage';
-import TransactionsPage from './pages/TransactionsPage';
-import InstallmentsPage from './pages/InstallmentsPage';
-import DebtsPage from './pages/DebtsPage';
-import SettingsPage from './pages/SettingsPage';
+// Pages (Lazy Loaded)
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const TransactionsPage = lazy(() => import('./pages/TransactionsPage'));
+const InstallmentsPage = lazy(() => import('./pages/InstallmentsPage'));
+const DebtsPage = lazy(() => import('./pages/DebtsPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 // Modals
 import AIChatModal from './components/chat/AIChatModal';
@@ -24,41 +26,15 @@ import AddRecurringTransactionModal from './components/modals/AddRecurringTransa
 import GlobalErrorBanner from './components/GlobalErrorBanner';
 import VersionHistorySidebar from './components/VersionHistorySidebar';
 
-// Helpers
-import {
-    seedDefaultCategories,
-    ensureRequiredCategories,
-    subscribeCategories,
-    subscribeTransactions,
-    subscribeAIMemory,
-    subscribeWallets,
-    subscribePayers,
-    subscribeDebtors,
-    subscribeDebts,
-    subscribeRecurringTransactions,
-    addTransaction,
-    updateRecurringTransaction,
-    subscribeLenders,
-    subscribeUserSettings,
-    subscribeInstallments,
-    subscribeAbbreviations,
-    saveVersion,
-    cleanupOldAutoVersions
-} from './utils/supabaseHelpers';
-
-
-
 export default function App() {
-    // --- Auth ---
-    const [user, setUser] = useState(null);
-    const [isAuthLoading, setIsAuthLoading] = useState(true);
+    const { user, isAuthLoading, handleGoogleLogin, handleLogout } = useAuth();
+    const { 
+        installments, transactions, categories, aiMemories, abbreviations,
+        wallets, payers, debtors, debts, recurringTransactions, lenders,
+        userSettings, isDataLoading 
+    } = useAppData(user);
 
-    // --- Data ---
-    const [installments, setInstallments] = useState([]);
-    const [transactions, setTransactions] = useState([]);
-    const [categories, setCategories] = useState([]);
-    const [aiMemories, setAiMemories] = useState([]);
-    const [abbreviations, setAbbreviations] = useState([]);
+    useRecurringTransactions(user, recurringTransactions);
 
     // Global Modals State
     const [isGlobalFabOpen, setIsGlobalFabOpen] = useState(false);
@@ -68,14 +44,6 @@ export default function App() {
     const [isGlobalTransferOpen, setIsGlobalTransferOpen] = useState(false);
     const [isGlobalRecurringOpen, setIsGlobalRecurringOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-    const [wallets, setWallets] = useState([]);
-    const [payers, setPayers] = useState([]);
-    const [debtors, setDebtors] = useState([]);
-    const [debts, setDebts] = useState([]);
-    const [recurringTransactions, setRecurringTransactions] = useState([]);
-    const [lenders, setLenders] = useState([]);
-    const [userSettings, setUserSettings] = useState({ monthStartDay: 1 });
-    const [isDataLoading, setIsDataLoading] = useState(true);
 
     const [activePage, setActivePage] = useState('dashboard');
 
@@ -98,282 +66,6 @@ export default function App() {
     }, [theme]);
 
     const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
-
-    // --- Auth Effect ---
-    useEffect(() => {
-        // Initialize GoogleAuth plugin for Capacitor
-        if (window.Capacitor || navigator.userAgent.includes('Capacitor')) {
-            GoogleAuth.initialize({
-                clientId: '634476807825-pa9k25klhpspqupgdgs2b9q3utjdk663.apps.googleusercontent.com',
-                scopes: ['profile', 'email'],
-                grantOfflineAccess: true,
-            });
-        }
-
-        const processUser = (u) => {
-            if (!u) return null;
-            const photoURL = u.user_metadata?.avatar_url || u.user_metadata?.picture || u.photoURL || null;
-            const displayName = u.user_metadata?.full_name || u.user_metadata?.name || u.displayName || null;
-            return {
-                ...u,
-                uid: u.id,
-                photoURL,
-                displayName
-            };
-        };
-
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(processUser(session?.user));
-            setIsAuthLoading(false);
-        });
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(processUser(session?.user));
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
-
-    // --- Data Subscriptions ---
-    useEffect(() => {
-        if (!user) {
-            setInstallments([]);
-            setTransactions([]);
-            setCategories([]);
-            setAiMemories([]);
-            setAbbreviations([]);
-            setWallets([]);
-            setPayers([]);
-            setDebtors([]);
-            setLenders([]);
-            setUserSettings({ monthStartDay: 1 });
-            setIsDataLoading(false);
-            return;
-        }
-
-        setIsDataLoading(true);
-
-        // Seed default categories if needed
-        seedDefaultCategories(user.uid).then((seeded) => {
-            if (!seeded) {
-                return ensureRequiredCategories(user.uid);
-            }
-        }).then(() => {
-            console.log('Categories check & migration complete');
-        }).catch(err => {
-            console.error('Error with categories:', err);
-        });
-
-        // --- Loading State Tracking ---
-        let loadFlags = { txns: false, wallets: false, settings: false };
-        const checkDataLoaded = (key) => {
-            if (!loadFlags[key]) {
-                loadFlags[key] = true;
-                if (loadFlags.txns && loadFlags.wallets && loadFlags.settings) {
-                    setIsDataLoading(false);
-                }
-            }
-        };
-
-        // Subscribe to installments
-        const unsubInst = subscribeInstallments(user.uid, setInstallments);
-        const unsubCats = subscribeCategories(user.uid, setCategories);
-
-        // Subscribe to transactions
-        const unsubTxns = subscribeTransactions(user.uid, (data) => {
-            setTransactions(data);
-            checkDataLoaded('txns');
-        });
-
-        // Subscribe to AI Memory
-        const unsubMem = subscribeAIMemory(user.uid, setAiMemories);
-
-        // Subscribe to Wallets
-        const unsubWallets = subscribeWallets(user.uid, (data) => {
-            setWallets(data);
-            checkDataLoaded('wallets');
-        });
-
-        // Subscribe to Payers
-        const unsubPayers = subscribePayers(user.uid, setPayers);
-
-        // Subscribe to Debtors
-        const unsubDebtors = subscribeDebtors(user.uid, setDebtors);
-
-        // Subscribe to Debts
-        const unsubDebts = subscribeDebts(user.uid, setDebts);
-
-        // Subscribe to Recurring Transactions
-        const unsubRecurring = subscribeRecurringTransactions(user.uid, setRecurringTransactions);
-
-        // Subscribe to Lenders
-        const unsubLenders = subscribeLenders(user.uid, setLenders);
-
-        // Subscribe to User Settings
-        const unsubSettings = subscribeUserSettings(user.uid, (data) => {
-            setUserSettings(data);
-            checkDataLoaded('settings');
-        });
-
-        // Subscribe to Abbreviations
-        const unsubAbbreviations = subscribeAbbreviations(user.uid, setAbbreviations);
-
-        return () => {
-            unsubInst();
-            unsubCats();
-            unsubTxns();
-            unsubMem();
-            unsubWallets();
-            unsubPayers();
-            unsubDebtors();
-            unsubDebts();
-            unsubRecurring();
-            unsubLenders();
-            unsubSettings();
-            unsubAbbreviations();
-        };
-    }, [user?.uid]);
-
-    // --- Auto Backup & Cleanup ---
-    useEffect(() => {
-        if (!user) return;
-
-        // Clean up old auto versions on app load
-        cleanupOldAutoVersions(user.uid);
-
-        let timeoutId;
-        let actionMessages = [];
-        const handleMutate = (e) => {
-            // Ignore mutation events that are just UI refreshes for 'all' during restore
-            if (e.detail === 'all') return;
-            
-            const action = typeof e.detail === 'string' ? null : e.detail?.action;
-            if (action) {
-                actionMessages.push(action);
-            }
-
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(async () => {
-                try {
-                    let saveName = 'Tự động lưu';
-                    if (actionMessages.length > 0) {
-                        const uniqueActions = [...new Set(actionMessages)];
-                        saveName = 'Tự động lưu: ' + uniqueActions.join(', ');
-                        actionMessages = [];
-                    }
-                    
-                    await saveVersion(user.uid, saveName);
-                    console.log('Auto-saved new version:', saveName);
-                } catch (error) {
-                    console.error('Failed to auto-save version:', error);
-                }
-            }, 5000);
-        };
-
-        window.addEventListener('supabase_mutate', handleMutate);
-
-        return () => {
-            window.removeEventListener('supabase_mutate', handleMutate);
-            clearTimeout(timeoutId);
-        };
-    }, [user?.uid]);
-
-    // --- Recurring Transactions Check Effect ---
-    useEffect(() => {
-        if (!user || recurringTransactions.length === 0) return;
-
-        const intervalId = setInterval(async () => {
-            const now = new Date();
-            for (const rt of recurringTransactions) {
-                const nextDate = new Date(rt.nextDate);
-                if (now >= nextDate) {
-                    // It's time to execute this recurring transaction
-                    try {
-                        const transactionData = {
-                            type: rt.type,
-                            amount: rt.amount,
-                            description: rt.description,
-                            categoryId: rt.categoryId,
-                            subcategoryId: rt.subcategoryId || '',
-                            date: now.toISOString(),
-                            time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
-                            walletId: rt.walletId,
-                            isRecurring: true,
-                            recurringId: rt.id
-                        };
-                        await addTransaction(user.uid, transactionData);
-
-                        // Calculate next date
-                        const newNextDate = new Date(nextDate);
-                        const value = parseInt(rt.intervalValue) || 1;
-                        if (rt.intervalUnit === 'Phút') {
-                            newNextDate.setMinutes(newNextDate.getMinutes() + value);
-                        } else if (rt.intervalUnit === 'Ngày') {
-                            newNextDate.setDate(newNextDate.getDate() + value);
-                        } else if (rt.intervalUnit === 'Tuần') {
-                            newNextDate.setDate(newNextDate.getDate() + value * 7);
-                        } else if (rt.intervalUnit === 'Tháng') {
-                            newNextDate.setMonth(newNextDate.getMonth() + value);
-                        } else if (rt.intervalUnit === 'Năm') {
-                            newNextDate.setFullYear(newNextDate.getFullYear() + value);
-                        }
-
-                        // If the newNextDate is still in the past (e.g. app was offline), catch it up to future
-                        while (newNextDate <= now) {
-                            if (rt.intervalUnit === 'Phút') newNextDate.setMinutes(newNextDate.getMinutes() + value);
-                            else if (rt.intervalUnit === 'Ngày') newNextDate.setDate(newNextDate.getDate() + value);
-                            else if (rt.intervalUnit === 'Tuần') newNextDate.setDate(newNextDate.getDate() + value * 7);
-                            else if (rt.intervalUnit === 'Tháng') newNextDate.setMonth(newNextDate.getMonth() + value);
-                            else if (rt.intervalUnit === 'Năm') newNextDate.setFullYear(newNextDate.getFullYear() + value);
-                        }
-
-                        await updateRecurringTransaction(user.uid, rt.id, {
-                            nextDate: newNextDate.toISOString()
-                        });
-                        console.log("Executed recurring transaction:", rt.description);
-                    } catch (error) {
-                        console.error("Error executing recurring transaction:", error);
-                    }
-                }
-            }
-        }, 30000); // Check every 30 seconds
-
-        return () => clearInterval(intervalId);
-    }, [user, recurringTransactions]);
-
-    const isMobileOrWebView = () => {
-        return /Android|webOS|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent)
-            || window.innerWidth <= 768
-            || 'ontouchstart' in window;
-    };
-
-    const handleGoogleLogin = async () => {
-        try {
-            if (isMobileOrWebView()) {
-                const googleUser = await GoogleAuth.signIn();
-                if (googleUser && googleUser.authentication) {
-                    await supabase.auth.signInWithIdToken({
-                        provider: 'google',
-                        token: googleUser.authentication.idToken,
-                    });
-                } else {
-                    throw new Error("Không lấy được token xác thực từ Google.");
-                }
-            } else {
-                const { error } = await supabase.auth.signInWithOAuth({
-                    provider: 'google'
-                });
-                if (error) throw error;
-            }
-        } catch (error) {
-            console.error("Login Error:", error);
-            alert("Đăng nhập thất bại: " + error.message);
-        }
-    };
-
-    const handleLogout = async () => {
-        try { await supabase.auth.signOut(); } catch (error) { console.error("Logout Error:", error); }
-    };
 
     const handleGlobalSaveTransaction = async (formData) => {
         if (!user) return;
@@ -438,8 +130,6 @@ export default function App() {
                         <LogIn className="w-5 h-5" />
                         Đăng nhập với Google
                     </button>
-
-
                 </div>
             </div>
         );
@@ -456,8 +146,10 @@ export default function App() {
             );
         }
 
+        let PageComponent = null;
+
         if (activePage === 'dashboard') {
-            return (
+            PageComponent = (
                 <DashboardPage 
                     user={user} 
                     userSettings={userSettings}
@@ -471,7 +163,7 @@ export default function App() {
                 />
             );
         } else if (activePage === 'transactions') {
-            return (
+            PageComponent = (
                 <TransactionsPage
                     user={user}
                     userSettings={userSettings}
@@ -483,7 +175,7 @@ export default function App() {
                 />
             );
         } else if (activePage === 'installments') {
-            return (
+            PageComponent = (
                 <InstallmentsPage
                     user={user}
                     items={installments}
@@ -496,7 +188,7 @@ export default function App() {
                 />
             );
         } else if (activePage === 'debts') {
-            return (
+            PageComponent = (
                 <DebtsPage
                     user={user}
                     debts={debts}
@@ -508,7 +200,7 @@ export default function App() {
             );
         } else if (activePage?.startsWith('settings')) {
             const initialTab = activePage.split(':')[1] || 'wallets';
-            return (
+            PageComponent = (
                 <SettingsPage
                     user={user}
                     userSettings={userSettings}
@@ -521,7 +213,17 @@ export default function App() {
                 />
             );
         }
-        return null;
+
+        return (
+            <Suspense fallback={
+                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                    <Loader2 className="w-10 h-10 animate-spin mb-3 text-emerald-500" />
+                    <p className="text-sm">Đang tải nội dung...</p>
+                </div>
+            }>
+                {PageComponent}
+            </Suspense>
+        );
     };
 
     return (

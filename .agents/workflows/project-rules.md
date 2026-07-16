@@ -9,9 +9,11 @@ description: Bộ quy tắc chuẩn, liệt kê kiến trúc core và các đi�
 
 ## 1. Tổng quan dự án (Overview)
 - **Tên dự án:** Yoogi Money Tracker
-- **Ngôn ngữ & Framework:** React (Vite), Tailwind CSS.
-- **Backend & Database:** Supabase (PostgreSQL), xác thực qua Supabase Auth. Dữ liệu được bảo vệ bằng Row Level Security (RLS).
+- **Ngôn ngữ & Framework:** React (Vite), Tailwind CSS, Vite PWA.
+- **Nền tảng (Platform):** Web App (PWA) & Mobile App (Android thông qua Capacitor). App Android trỏ thẳng về Web URL (Vercel) để đồng bộ tự động.
+- **Backend & Database:** Supabase (PostgreSQL), xác thực qua Supabase Auth và Capacitor Google Auth plugin. Dữ liệu được bảo vệ bằng Row Level Security (RLS).
 - **Mục tiêu:** Quản lý tài chính cá nhân toàn diện với sự hỗ trợ của AI (tự động phân loại, ghi nhớ thông minh), hỗ trợ quản lý ví, nợ, trả góp và giao dịch định kỳ.
+- **Database Scripts:** Hỗ trợ lệnh npm run backup-db và restore-db thông qua Node.js để thao tác dữ liệu thủ công.
 
 ## 2. Kiến trúc Dữ liệu & Logic Cốt lõi (BẮT BUỘC GIỮ NGUYÊN)
 
@@ -85,11 +87,13 @@ description: Bộ quy tắc chuẩn, liệt kê kiến trúc core và các đi�
 - **Micro-interactions:** Bắt buộc dùng `transition-all`, `hover:`, `active:scale-95` cho các nút bấm để tạo cảm giác mượt mà (Glassmorphism, bóng đổ shadow-lg).
 
 ### 3.4. Auto-Deploy & Workflow (QUY TẮC BẮT BUỘC)
-- **Kiến trúc Hosting:** Frontend được host trên **Vercel**, tự động deploy mỗi khi code được push lên nhánh master trên GitHub. Backend và Database nằm trên **Supabase**.
+- **Kiến trúc Hosting & Native App:** Frontend được host trên **Vercel**, tự động deploy mỗi khi code được push lên nhánh master trên GitHub. Backend và Database nằm trên **Supabase**. Bản Android APK được build qua **Capacitor** nhưng cấu hình trỏ thẳng URL về Vercel (`capacitor.config.json`) nên Android App sẽ tự động nhận cập nhật mới nhất từ Vercel mà không cần build lại APK (trừ khi cập nhật native plugin).
+- **Xác thực (Auth):** Sử dụng plugin `@codetrix-studio/capacitor-google-auth` cho môi trường Capacitor Native. Cần đặc biệt lưu ý luồng đăng nhập phải hỗ trợ tốt cả Web và Android.
 - **Cấu hình Git bắt buộc:** Để Vercel không chặn (Block) tiến trình deploy tự động (do tính năng Deployment Protection), tài khoản Git thực hiện commit **BẮT BUỘC** phải khớp với email của dự án:
   - Tên: `aki25101998`
   - Email: `aki251098@gmail.com` (Tuyệt đối KHÔNG dùng email ẩn danh dạng `noreply.github.com`).
 - **Quy tắc Deploy:** Mọi thay đổi về code sau khi hoàn thành (hoặc sau mỗi tác vụ User yêu cầu) BẮT BUỘC AI phải tự động thực hiện quy trình đẩy code lên GitHub (`git add .`, `git commit`, `git push`) để Vercel tự động build mà KHÔNG CẦN User phải nhắc nhở.
+- **Quy tắc Kiểm thử (Testing):** Mọi logic quan trọng (như thay đổi cách tính số dư, nợ) phải được verify qua Vitest (`npm run test`) trước khi được phép deploy.
 - **Xử lý sự cố Vercel:** Nếu đẩy code lên GitHub thành công nhưng Vercel báo lỗi thư mục quá lớn (`Too many files`) khi chạy thủ công, hãy đảm bảo đã cấu hình file `.vercelignore` chặn `node_modules`, `android-sdk`, `jdk-*`, `.git`, v.v. Nếu Vercel báo `Blocked`, cần kiểm tra lại ngay thông tin email trong Git Config.
 
 
@@ -105,6 +109,7 @@ description: Bộ quy tắc chuẩn, liệt kê kiến trúc core và các đi�
 9. **KHÔNG** để giao dịch tham chiếu đến một `category_id` không tồn tại. Khi migrate hoặc xóa danh mục, bắt buộc phải re-map giao dịch sang danh mục khác. Nếu không, giao dịch sẽ bị hiển thị là "Chưa phân loại" trên UI và mất ngữ cảnh.
 10. **KHÔNG** code tràn lan trong một file. Giữ file dưới 1000 dòng.
 11. **KHÔNG** gọi sự kiện (ví dụ: `onClick`) trên một Component dùng chung (ví dụ: `<Card>`) mà chưa kiểm tra xem Component đó có được định nghĩa để rải (spread) `...props` xuống thẻ gốc HTML hay không. Việc này sẽ khiến các sự kiện bị "nuốt" và không được thực thi.
+12. **KHÔNG** sửa đổi các file cấu hình quan trọng nếu không có yêu cầu cực kỳ đặc biệt (Files Blacklist): `capacitor.config.json`, `package-lock.json`, `.env`. Chỉ thêm package qua `npm install` thay vì sửa `package.json` bằng tay.
 
 ---
 *Tài liệu này được tạo ra để AI lấy làm gốc rễ tham chiếu. Trong mọi yêu cầu refactor, fix bug hay add feature, quy tắc tại đây là tối cao.*

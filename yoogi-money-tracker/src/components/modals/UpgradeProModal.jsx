@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Check, ArrowRight, Loader2 } from 'lucide-react';
 import { updateUserSettings } from '../../utils/supabaseHelpers';
+import { supabase } from '../../config/supabase';
 
 const PRO_PRICE = 99000;
 const BANK_ID = "970403"; // Sacombank
@@ -17,10 +18,7 @@ const [step, setStep] = useState(1); // 1: Info, 2: QR Code, 3: Success (Mock)
             const code = Math.floor(100000 + Math.random() * 900000).toString();
             setOrderCode(code);
             
-            // Save to Supabase so webhook can find this user
-            import('../../config/supabase').then(({ supabase }) => {
-                supabase.from('users').update({ pendingOrderCode: `YGT${code}` }).eq('id', user.uid).then(() => {});
-            }).catch(console.error);
+            supabase.from('users').update({ pendingOrderCode: `YGT${code}` }).eq('id', user.uid).then(() => {}).catch(console.error);
         }
     }, [isOpen, step, user]);
 

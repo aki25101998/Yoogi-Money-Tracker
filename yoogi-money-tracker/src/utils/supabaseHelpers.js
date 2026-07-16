@@ -290,6 +290,12 @@ export const subscribeTransactions = (userId, callback) => createSubscription('t
     })));
 }, 'date', false);
 
+// ==========================================
+// @AI-WARNING: CRITICAL CORE LOGIC
+// DO NOT MODIFY THIS FUNCTION WITHOUT EXPLICIT PERMISSION FROM USER.
+// HÀM NÀY XỬ LÝ LƯU GIAO DỊCH LÊN DATABASE VÀ KIỂM SOÁT THÊM/SỬA KỲ HẠN, CÔNG NỢ.
+// ĐẢM BẢO LUÔN CÓ dispatchEvent('supabase_mutate') SAU KHI THÀNH CÔNG.
+// ==========================================
 export const addTransaction = async (userId, data) => {
     const toSave = { ...data };
     if (toSave.description !== undefined) {
