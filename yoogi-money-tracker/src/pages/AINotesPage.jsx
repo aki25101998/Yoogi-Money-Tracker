@@ -9,25 +9,21 @@ import {
     addAbbreviation, updateAbbreviation, deleteAbbreviation
 } from '../utils/supabaseHelpers';
 import ConfirmModal from '../components/modals/ConfirmModal';
+import { useAINotes } from '../hooks/useAINotes';
 
 const AINotesPage = ({ user, aiMemories, abbreviations = [], categories, hideHeader = false }) => {
     // Tabs
     const [activeTab, setActiveTab] = useState('memories'); // 'memories' | 'abbreviations'
 
-    // Memory Modal
-    const [editModal, setEditModal] = useState({ isOpen: false, mode: 'add', data: null });
-    const [formKeyword, setFormKeyword] = useState('');
-    const [formCategoryId, setFormCategoryId] = useState('');
-    const [formSubcategoryId, setFormSubcategoryId] = useState('');
-
-    // Abbreviation Modal
-    const [abbrModal, setAbbrModal] = useState({ isOpen: false, mode: 'add', data: null });
-    const [formShortForm, setFormShortForm] = useState('');
-    const [formLongForm, setFormLongForm] = useState('');
-
-    // Delete
-    const [confirmState, setConfirmState] = useState({ isOpen: false, type: 'memory', data: null });
-    const [isDeleting, setIsDeleting] = useState(false);
+    const {
+        editModal, formKeyword, setFormKeyword, formCategoryId, setFormCategoryId, formSubcategoryId, setFormSubcategoryId,
+        abbrModal, formShortForm, setFormShortForm, formLongForm, setFormLongForm,
+        confirmState, isDeleting,
+        openAdd, openEdit, closeModal,
+        openAddAbbr, openEditAbbr, closeAbbrModal,
+        openConfirmDelete, closeConfirmDelete,
+        handleSave, handleSaveAbbr, executeDelete
+    } = useAINotes(user);
 
     // Filter
     const [filterSource, setFilterSource] = useState('all'); // 'all' | 'auto' | 'user'
@@ -41,124 +37,6 @@ const AINotesPage = ({ user, aiMemories, abbreviations = [], categories, hideHea
         }
         return true;
     });
-
-    // --- Open/Close Modal ---
-    const openAdd = () => {
-        setEditModal({ isOpen: true, mode: 'add', data: null });
-        setFormKeyword('');
-        setFormCategoryId('');
-        setFormSubcategoryId('');
-    };
-
-    const openEdit = (mem) => {
-        setEditModal({ isOpen: true, mode: 'edit', data: mem });
-        setFormKeyword(mem.keyword);
-        setFormCategoryId(mem.categoryId);
-        setFormSubcategoryId(mem.subcategoryId);
-    };
-
-    const closeModal = () => {
-        setEditModal({ isOpen: false, mode: 'add', data: null });
-    };
-
-    // --- Abbreviation Open/Close Modal ---
-    const openAddAbbr = () => {
-        setAbbrModal({ isOpen: true, mode: 'add', data: null });
-        setFormShortForm('');
-        setFormLongForm('');
-    };
-
-    const openEditAbbr = (abbr) => {
-        setAbbrModal({ isOpen: true, mode: 'edit', data: abbr });
-        setFormShortForm(abbr.shortForm);
-        setFormLongForm(abbr.longForm);
-    };
-
-    const closeAbbrModal = () => {
-        setAbbrModal({ isOpen: false, mode: 'add', data: null });
-    };
-
-    // --- Save Memory ---
-    const handleSave = async (e) => {
-        e.preventDefault();
-        if (!user || !formKeyword.trim() || !formCategoryId) return;
-
-        try {
-            if (editModal.mode === 'add') {
-                await addAIMemory(user.uid, {
-                    keyword: formKeyword.trim().toLowerCase(),
-                    categoryId: formCategoryId,
-                    subcategoryId: formSubcategoryId,
-                    source: 'user',
-                });
-            } else {
-                await updateAIMemory(user.uid, editModal.data.id, {
-                    keyword: formKeyword.trim().toLowerCase(),
-                    categoryId: formCategoryId,
-                    subcategoryId: formSubcategoryId,
-                });
-            }
-        } catch (err) {
-            alert('Lỗi: ' + err.message);
-        }
-        closeModal();
-    };
-
-    // --- Save Abbreviation ---
-    const handleSaveAbbr = async (e) => {
-        e.preventDefault();
-        if (!user || !formShortForm.trim() || !formLongForm.trim()) return;
-
-        try {
-            if (abbrModal.mode === 'add') {
-                await addAbbreviation(user.uid, {
-                    shortForm: formShortForm.trim().toLowerCase(),
-                    longForm: formLongForm.trim()
-                });
-            } else {
-                await updateAbbreviation(user.uid, abbrModal.data.id, {
-                    shortForm: formShortForm.trim().toLowerCase(),
-                    longForm: formLongForm.trim()
-                });
-            }
-        } catch (err) {
-            alert('Lỗi: ' + err.message);
-        }
-        closeAbbrModal();
-    };
-
-    // --- Delete ---
-    const handleDelete = async () => {
-        if (!user || !confirmState.data) return;
-        setIsDeleting(true);
-        try {
-            if (confirmState.type === 'memory') {
-                await deleteAIMemory(user.uid, confirmState.data);
-            } else {
-                await deleteAbbreviation(user.uid, confirmState.data);
-            }
-        } catch (err) {
-            alert('Lỗi xóa: ' + err.message);
-        }
-        setIsDeleting(false);
-        setConfirmState({ isOpen: false, type: 'memory', data: null });
-    };
-
-    const getCategoryLabel = (categoryId) => {
-        const cat = categories.find(c => c.id === categoryId);
-        return cat ? `${cat.icon} ${cat.name}` : '❓ Unknown';
-    };
-
-    const getSubcategoryLabel = (categoryId, subcategoryId) => {
-        const cat = categories.find(c => c.id === categoryId);
-        const sub = cat?.subcategories?.find(s => s.id === subcategoryId);
-        return sub ? sub.name : '';
-    };
-
-    const getSubcategories = (categoryId) => {
-        const cat = categories.find(c => c.id === categoryId);
-        return cat?.subcategories || [];
-    };
 
     return (
         <div className="space-y-6">
@@ -489,7 +367,7 @@ const AINotesPage = ({ user, aiMemories, abbreviations = [], categories, hideHea
             <ConfirmModal
                 isOpen={confirmState.isOpen}
                 onClose={() => setConfirmState({ isOpen: false, type: 'memory', data: null })}
-                onConfirm={handleDelete}
+                onConfirm={executeDelete}
                 title={confirmState.type === 'memory' ? "Xóa ngữ cảnh AI?" : "Xóa từ viết tắt?"}
                 description={confirmState.type === 'memory' ? "AI sẽ không còn dùng rule này để phân loại nữa." : "Từ này sẽ không còn được tự động thay thế nữa."}
                 confirmText="Xóa"

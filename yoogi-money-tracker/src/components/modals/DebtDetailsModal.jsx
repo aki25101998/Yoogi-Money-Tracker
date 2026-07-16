@@ -4,6 +4,7 @@ import { X, Calendar, Trash2, Pencil, Check, ChevronDown, RefreshCw } from 'luci
 import { formatCurrency } from '../../utils/formatters';
 import { updateDebt, updateTransaction, getTransactionByDebtId, deleteTransaction } from '../../utils/supabaseHelpers';
 import AmountInput from '../ui/AmountInput';
+import DebtHistoryList from './debt-details/DebtHistoryList';
 
 const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wallets, transactions }) => {
 const [activeTab, setActiveTab] = useState('active'); // active, paid, history
