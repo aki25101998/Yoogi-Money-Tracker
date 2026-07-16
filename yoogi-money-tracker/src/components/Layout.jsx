@@ -10,8 +10,11 @@ import {
     User,
     ChevronLeft,
     ChevronRight,
-    Users
+    Users,
+    Clock
 } from 'lucide-react';
+
+import VersionHistorySidebar from './VersionHistorySidebar';
 
 const NAV_ITEMS = [
     { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
@@ -23,6 +26,7 @@ const NAV_ITEMS = [
 
 const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onToggleTheme }) => {
     const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+    const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
@@ -67,6 +71,16 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
 
                 {/* Bottom Section */}
                 <div className={`border-t border-slate-100 dark:border-slate-700 p-3 space-y-2 ${sidebarCollapsed ? 'items-center' : ''}`}>
+                    {/* Version History */}
+                    <button
+                        onClick={() => setIsHistoryOpen(true)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${sidebarCollapsed ? 'justify-center' : ''}`}
+                        title={sidebarCollapsed ? "Nhật ký phiên bản" : undefined}
+                    >
+                        <Clock className="w-4 h-4 flex-shrink-0" />
+                        {!sidebarCollapsed && <span>Lịch sử phiên bản</span>}
+                    </button>
+
                     {/* Theme Toggle */}
                     <button
                         onClick={onToggleTheme}
@@ -117,7 +131,10 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
                         <h1 className="text-sm font-bold text-slate-800 dark:text-white">Yoogi</h1>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={onToggleTheme} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                        <button onClick={() => setIsHistoryOpen(true)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" title="Nhật ký phiên bản">
+                            <Clock className="w-4 h-4" />
+                        </button>
+                        <button onClick={onToggleTheme} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" title="Đổi giao diện">
                             {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                         </button>
                         {user && (
@@ -172,6 +189,13 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
                     {children}
                 </div>
             </main>
+
+            {/* Global Sidebar for Version History */}
+            <VersionHistorySidebar 
+                isOpen={isHistoryOpen} 
+                onClose={() => setIsHistoryOpen(false)} 
+                user={user} 
+            />
         </div>
     );
 };
