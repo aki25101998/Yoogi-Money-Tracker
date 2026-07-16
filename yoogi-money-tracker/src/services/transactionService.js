@@ -1,5 +1,7 @@
 import { supabase } from '../config/supabase';
 import { mapToCamelCase, mapToSnakeCase, createSubscription } from './coreService';
+import { deleteDebt } from './debtService';
+import { updateInstallmentPartialPayment } from './installmentService';
 
 // TRANSACTIONS
 // ============================================================
