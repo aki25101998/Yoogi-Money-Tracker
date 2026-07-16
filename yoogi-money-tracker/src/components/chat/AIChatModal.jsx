@@ -4,6 +4,7 @@ import { categorizeTransaction } from '../../utils/aiCategorizer';
 import { addTransaction, incrementMemoryUsage, learnFromCorrection, processCorrections, updateTransaction, deleteTransaction, addDebt, updateDebt, addDebtor, subscribeAIChatHistory, updateAIChatHistory, clearAIChatHistory } from '../../utils/supabaseHelpers';
 import { formatCurrency } from '../../utils/formatters';
 import { supabase } from '../../config/supabase';
+import TransferFundsModal from '../modals/TransferFundsModal';
 import TransactionModal from '../modals/TransactionModal';
 import LoanEditModal from '../modals/LoanEditModal';
 import ChatMessageItem from './ChatMessageItem';
