@@ -1,6 +1,6 @@
 export const DEFAULT_CATEGORIES = [
     {
-        "name": "1. Nhu cầu thiết yếu",
+        "name": "Nhu cầu thiết yếu",
         "icon": "🏠",
         "type": "expense",
         "order": 1,
@@ -33,7 +33,7 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "2. Chi tiêu cá nhân",
+        "name": "Chi tiêu cá nhân",
         "icon": "🍹",
         "type": "expense",
         "order": 2,
@@ -61,7 +61,7 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "3. Phát triển & Sức khỏe",
+        "name": "Phát triển & Sức khỏe",
         "icon": "🏋️",
         "type": "expense",
         "order": 3,
@@ -84,7 +84,7 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "4. Đầu tư & Tích lũy",
+        "name": "Đầu tư & Tích lũy",
         "icon": "🌱",
         "type": "expense",
         "order": 4,
@@ -112,7 +112,7 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "5. Giao tế & Nghĩa vụ",
+        "name": "Giao tế & Nghĩa vụ",
         "icon": "🤝",
         "type": "expense",
         "order": 5,
@@ -147,7 +147,7 @@ export const DEFAULT_CATEGORIES = [
         "subcategories": []
     },
     {
-        "name": "1. Thu nhập Chủ động",
+        "name": "Thu nhập Chủ động",
         "icon": "💼",
         "type": "income",
         "order": 1,
@@ -170,7 +170,7 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "2. Thu nhập Thụ động",
+        "name": "Thu nhập Thụ động",
         "icon": "💰",
         "type": "income",
         "order": 2,
@@ -193,7 +193,7 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "3. Thu nhập Khác",
+        "name": "Thu nhập Khác",
         "icon": "🎁",
         "type": "income",
         "order": 3,
