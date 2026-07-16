@@ -543,15 +543,6 @@ export default function App() {
                         <div className="fixed inset-0 z-30 flex" onClick={() => setIsGlobalFabOpen(false)}>
                             <div className="absolute bottom-36 right-6 md:bottom-24 md:right-8 flex flex-col gap-3 items-end">
                                 <button 
-                                    onClick={() => { setIsGlobalFabOpen(false); setIsHistoryOpen(true); }}
-                                    className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors"
-                                >
-                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Lịch sử phiên bản</span>
-                                    <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                                        <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                                    </div>
-                                </button>
-                                <button 
                                     onClick={() => { setIsGlobalFabOpen(false); setIsGlobalRecurringOpen(true); }}
                                     className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors"
                                 >
