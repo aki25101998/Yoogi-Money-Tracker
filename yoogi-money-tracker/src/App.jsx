@@ -660,7 +660,7 @@ export default function App() {
                     user={user} 
                 />
             )}
-        </Router>    
+            
             <GlobalErrorBanner />
         </Layout>
     );
