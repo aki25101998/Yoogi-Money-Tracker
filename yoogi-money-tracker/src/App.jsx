@@ -240,15 +240,28 @@ export default function App() {
         cleanupOldAutoVersions(user.uid);
 
         let timeoutId;
+        let actionMessages = [];
         const handleMutate = (e) => {
             // Ignore mutation events that are just UI refreshes for 'all' during restore
             if (e.detail === 'all') return;
             
+            const action = typeof e.detail === 'string' ? null : e.detail?.action;
+            if (action) {
+                actionMessages.push(action);
+            }
+
             clearTimeout(timeoutId);
             timeoutId = setTimeout(async () => {
                 try {
-                    await saveVersion(user.uid, 'Tự động lưu');
-                    console.log('Auto-saved new version');
+                    let saveName = 'Tự động lưu';
+                    if (actionMessages.length > 0) {
+                        const uniqueActions = [...new Set(actionMessages)];
+                        saveName = 'Tự động lưu: ' + uniqueActions.join(', ');
+                        actionMessages = [];
+                    }
+                    
+                    await saveVersion(user.uid, saveName);
+                    console.log('Auto-saved new version:', saveName);
                 } catch (error) {
                     console.error('Failed to auto-save version:', error);
                 }

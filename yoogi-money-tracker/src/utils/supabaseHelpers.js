@@ -115,7 +115,8 @@ const createSubscription = (table, userId, callback, orderCol = 'created_at', as
         .subscribe();
 
     const handleLocalChange = (e) => {
-        if (e.detail === table) fetchAll();
+        const targetTable = typeof e.detail === 'string' ? e.detail : e.detail?.table;
+        if (targetTable === table || targetTable === 'all') fetchAll();
     };
     window.addEventListener('supabase_mutate', handleLocalChange);
 
@@ -298,7 +299,9 @@ export const addTransaction = async (userId, data) => {
     delete toSave.time;
     const { data: result, error } = await supabase.from('transactions').insert([mapToSnakeCase({ ...toSave, user_id: userId })]).select().single();
     if (error) throw error;
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'transactions' }));
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { 
+        detail: { table: 'transactions', action: `Thêm giao dịch ${toSave.note || ''}`.trim() }
+    }));
     return mapToCamelCase(result);
 };
 export const updateTransaction = async (userId, id, updates) => {
@@ -309,7 +312,9 @@ export const updateTransaction = async (userId, id, updates) => {
     }
     delete toSave.time;
     const result = await supabase.from('transactions').update(mapToSnakeCase(toSave)).eq('id', id).eq('user_id', userId);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'transactions' }));
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { 
+        detail: { table: 'transactions', action: `Cập nhật giao dịch ${toSave.note || ''}`.trim() }
+    }));
     return result;
 };
 export const deleteTransaction = async (userId, id, txn = null) => {
@@ -355,7 +360,9 @@ export const deleteTransaction = async (userId, id, txn = null) => {
     }
 
     const result = await supabase.from('transactions').delete().eq('id', id).eq('user_id', userId);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'transactions' }));
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { 
+        detail: { table: 'transactions', action: `Xóa giao dịch ${txn ? (txn.note || txn.description || '') : ''}`.trim() }
+    }));
     return result;
 };
 export const getTransactionByDebtId = async (userId, debtId) => {
