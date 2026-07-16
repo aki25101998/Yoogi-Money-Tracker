@@ -19,7 +19,6 @@ import { Bot, PenSquare } from 'lucide-react';
 
 const TransactionModal = lazy(() => import('../components/modals/TransactionModal'));
 const WalletModal = lazy(() => import('../components/modals/WalletModal'));
-const UpgradeProModal = lazy(() => import('../components/modals/UpgradeProModal'));
 const ReorderWalletsModal = lazy(() => import('../components/modals/ReorderWalletsModal'));
 const TransferFundsModal = lazy(() => import('../components/modals/TransferFundsModal'));
 const AIContextModal = lazy(() => import('../components/modals/AIContextModal'));
@@ -78,7 +77,6 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-    const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
     const [dateRange, setDateRange] = useState({ start: null, end: null, mode: 'month', label: '' });
 
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
@@ -286,13 +284,9 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                 {/* Thêm ví mới */}
                 <div 
                     onClick={() => {
-                        if (!userSettings?.isPro && wallets?.length >= 2) {
-                            setIsUpgradeModalOpen(true);
-                        } else {
-                            setWalletModalMode('add');
-                            setEditingWallet(null);
-                            setIsWalletModalOpen(true);
-                        }
+                        setWalletModalMode('add');
+                        setEditingWallet(null);
+                        setIsWalletModalOpen(true);
                     }}
                     className="min-w-[140px] flex-shrink-0 rounded-2xl p-4 border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all flex flex-col items-center justify-center text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
                 >
@@ -386,14 +380,6 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                         mode={walletModalMode}
                         initialData={walletModalMode === 'edit' ? editingWallet : null}
                         onSave={handleSaveWallet}
-                    />
-                )}
-
-                {isUpgradeModalOpen && (
-                    <UpgradeProModal
-                        isOpen={isUpgradeModalOpen}
-                        onClose={() => setIsUpgradeModalOpen(false)}
-                        user={user}
                     />
                 )}
 
