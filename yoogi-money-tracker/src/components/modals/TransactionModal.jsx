@@ -108,22 +108,24 @@ const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || 
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     {/* Type Toggle */}
-                    <div className="flex gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setForm({ ...form, type: 'expense', categoryId: '', subcategoryId: '' })}
-                            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${form.type === 'expense' ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border-2 border-rose-300 dark:border-rose-700' : 'bg-slate-50 dark:bg-slate-900 text-slate-400 border-2 border-transparent'}`}
-                        >
-                            <ArrowDownRight className="w-4 h-4 inline mr-1" /> Chi tiêu
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setForm({ ...form, type: 'income', categoryId: '', subcategoryId: '' })}
-                            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${form.type === 'income' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-300 dark:border-emerald-700' : 'bg-slate-50 dark:bg-slate-900 text-slate-400 border-2 border-transparent'}`}
-                        >
-                            <ArrowUpRight className="w-4 h-4 inline mr-1" /> Thu nhập
-                        </button>
-                    </div>
+                    {form.type === 'expense' || form.type === 'income' ? (
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setForm({ ...form, type: 'expense', categoryId: '', subcategoryId: '' })}
+                                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${form.type === 'expense' ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border-2 border-rose-300 dark:border-rose-700' : 'bg-slate-50 dark:bg-slate-900 text-slate-400 border-2 border-transparent'}`}
+                            >
+                                <ArrowDownRight className="w-4 h-4 inline mr-1" /> Chi tiêu
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setForm({ ...form, type: 'income', categoryId: '', subcategoryId: '' })}
+                                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${form.type === 'income' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-300 dark:border-emerald-700' : 'bg-slate-50 dark:bg-slate-900 text-slate-400 border-2 border-transparent'}`}
+                            >
+                                <ArrowUpRight className="w-4 h-4 inline mr-1" /> Thu nhập
+                            </button>
+                        </div>
+                    ) : null}
 
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Mô tả</label>
