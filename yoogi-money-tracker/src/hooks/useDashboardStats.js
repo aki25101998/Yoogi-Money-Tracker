@@ -59,6 +59,19 @@ export const useDashboardStats = ({
             if (dateRange.end && tDateOnly > dateRange.end) return false;
 
             return true;
+        }).sort((a, b) => {
+            // Sort by date descending
+            if (a.date !== b.date) {
+                return (b.date || '').localeCompare(a.date || '');
+            }
+            // Sort by time descending
+            const timeA = a.time || '';
+            const timeB = b.time || '';
+            if (timeA && timeB && timeA !== timeB) return timeB.localeCompare(timeA);
+            if (timeB && !timeA) return 1;
+            if (timeA && !timeB) return -1;
+            // Fallback: createdAt descending
+            return (b.createdAt || '').localeCompare(a.createdAt || '');
         });
     }, [transactions, dateRange, selectedWalletIds]);
 
@@ -95,7 +108,7 @@ export const useDashboardStats = ({
         if (!selectedCategoryForModal) return [];
         return filteredTransactions.filter(t => t.type === chartType && (
             selectedCategoryForModal.id ? t.categoryId === selectedCategoryForModal.id : !t.categoryId
-        )).sort((a, b) => new Date(b.date) - new Date(a.date));
+        ));
     }, [filteredTransactions, selectedCategoryForModal, chartType]);
 
     const recentTransactions = useMemo(() => filteredTransactions.slice(0, 5), [filteredTransactions]);
