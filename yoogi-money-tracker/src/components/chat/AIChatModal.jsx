@@ -165,6 +165,8 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
         if (!user || !editingTransaction) return;
 
         try {
+            let learnedAbbreviation = false;
+
             // --- Abbreviation Learning ---
             const newDescription = updatedData.description?.trim();
             const oldDescription = editingTransaction.description?.trim() || editingTransaction.note?.trim();
@@ -181,9 +183,11 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                             if (existingAbbr) {
                                 if (existingAbbr.longForm !== newDescription) {
                                     await updateAbbreviation(user.uid, existingAbbr.id, { longForm: newDescription });
+                                    learnedAbbreviation = true;
                                 }
                             } else {
                                 await addAbbreviation(user.uid, { shortForm, longForm: newDescription });
+                                learnedAbbreviation = true;
                             }
                         } catch (abbrErr) {
                             console.error("Lỗi khi lưu từ viết tắt:", abbrErr);
@@ -218,7 +222,11 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
             isLocalUpdateRef.current = true;
             setMessages(prev => prev.map(msg => {
                 if (msg.transaction && msg.transaction.id === editingTransaction.id) {
-                    return { ...msg, transaction: { ...msg.transaction, ...updatedData } };
+                    let newText = msg.text;
+                    if (learnedAbbreviation) {
+                        newText = '✅ Đã cập nhật mô tả và AI đã học từ viết tắt này!';
+                    }
+                    return { ...msg, text: newText, transaction: { ...msg.transaction, ...updatedData } };
                 }
                 return msg;
             }));
