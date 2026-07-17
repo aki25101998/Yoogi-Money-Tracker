@@ -511,7 +511,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                     {/* User Avatar (Mobile Only) */}
                     <div className="lg:hidden flex-shrink-0">
                         {user?.photoURL ? (
-                            <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full shadow-sm object-cover" />
+                            <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full shadow-sm object-cover" referrerPolicy="no-referrer" />
                         ) : (
                             <div className="w-7 h-7 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
                                 {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}

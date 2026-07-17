@@ -12,7 +12,7 @@ const ChatMessageItem = ({ msg, user, categories, wallets, activeWallet, openEdi
                     {msg.type === 'user' ? (
                         user?.photoURL ? (
                             <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center overflow-hidden">
-                                <img src={user.photoURL} alt="user" className="w-full h-full object-cover" />
+                                <img src={user.photoURL} alt="user" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             </div>
                         ) : (
                             <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">

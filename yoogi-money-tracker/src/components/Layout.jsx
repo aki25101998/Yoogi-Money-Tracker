@@ -94,7 +94,7 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
                     {user && (
                         <div className={`flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 ${sidebarCollapsed ? 'justify-center' : ''}`}>
                             {user.photoURL ? (
-                                <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full flex-shrink-0" />
+                                <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full flex-shrink-0" referrerPolicy="no-referrer" />
                             ) : (
                                 <div className="w-7 h-7 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-sm">
                                     {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
@@ -140,7 +140,7 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
                         {user && (
                             <>
                                 {user.photoURL ? (
-                                    <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full shadow-sm" />
+                                    <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full shadow-sm" referrerPolicy="no-referrer" />
                                 ) : (
                                     <div className="w-7 h-7 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
                                         {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
