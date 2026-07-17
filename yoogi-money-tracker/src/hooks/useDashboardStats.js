@@ -60,18 +60,25 @@ export const useDashboardStats = ({
 
             return true;
         }).sort((a, b) => {
-            // Sort by date descending
-            if (a.date !== b.date) {
-                return (b.date || '').localeCompare(a.date || '');
-            }
-            // Sort by time descending
-            const timeA = a.time || '';
-            const timeB = b.time || '';
-            if (timeA && timeB && timeA !== timeB) return timeB.localeCompare(timeA);
-            if (timeB && !timeA) return 1;
-            if (timeA && !timeB) return -1;
-            // Fallback: createdAt descending
-            return (b.createdAt || '').localeCompare(a.createdAt || '');
+            const getDateTime = (txn) => {
+                let dateStr = txn.date ? txn.date.split('T')[0] : '';
+                let timeStr = '';
+                if (txn.time) {
+                    timeStr = txn.time;
+                    if (timeStr.length === 5) timeStr += ':00';
+                } else if (txn.createdAt) {
+                    const d = new Date(txn.createdAt);
+                    timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+                    if (!dateStr) {
+                        dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    }
+                } else {
+                    timeStr = '00:00:00';
+                }
+                if (!dateStr) dateStr = '1970-01-01';
+                return `${dateStr}T${timeStr}`;
+            };
+            return getDateTime(b).localeCompare(getDateTime(a));
         });
     }, [transactions, dateRange, selectedWalletIds]);
 

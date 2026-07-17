@@ -50,7 +50,27 @@ const RecentTransactionsList = ({
                                             <div className="flex items-center">
                                                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md">
                                                     <Clock className="w-3 h-3" />
-                                                    {txn.time || new Date(txn.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                                    {(() => {
+                                                        const tTime = txn.time || new Date(txn.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                                                        const tDateStr = txn.date ? txn.date.split('T')[0] : (txn.createdAt ? new Date(txn.createdAt).toISOString().split('T')[0] : '');
+                                                        if (!tDateStr) return tTime;
+                                                        
+                                                        const today = new Date();
+                                                        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                                                        
+                                                        const yesterday = new Date(today);
+                                                        yesterday.setDate(yesterday.getDate() - 1);
+                                                        const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+                                                        
+                                                        if (tDateStr === todayStr) return `Hôm nay, ${tTime}`;
+                                                        if (tDateStr === yesterdayStr) return `Hôm qua, ${tTime}`;
+                                                        
+                                                        const parts = tDateStr.split('-');
+                                                        if (parts.length === 3) {
+                                                            return `${parts[2]}/${parts[1]}, ${tTime}`;
+                                                        }
+                                                        return tTime;
+                                                    })()}
                                                 </span>
                                             </div>
                                         )}
