@@ -166,26 +166,33 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
 
         try {
             // --- Abbreviation Learning ---
-            if (updatedData.description && editingTransaction.description && updatedData.description !== editingTransaction.description) {
+            const newDescription = updatedData.description?.trim();
+            const oldDescription = editingTransaction.description?.trim() || editingTransaction.note?.trim();
+
+            if (newDescription && oldDescription && newDescription !== oldDescription) {
                 if (editingTransaction.originalInput) {
                     let text = editingTransaction.originalInput.replace(/\b\d+([.,]\d+)?\s*(k|tr|triệu|ngàn|nghìn|đ|vnd)\b/gi, '');
                     text = text.replace(/\b\d+([.,]\d+)?\b/gi, '');
                     const shortForm = text.replace(/\s+/g, ' ').trim().toLowerCase();
                     
-                    if (shortForm && shortForm.length > 0) {
+                    if (shortForm && shortForm.length > 0 && shortForm !== newDescription.toLowerCase()) {
                         const existingAbbr = abbreviations?.find(a => a.shortForm?.toLowerCase() === shortForm);
-                        if (existingAbbr) {
-                            if (existingAbbr.longForm !== updatedData.description) {
-                                await updateAbbreviation(user.uid, existingAbbr.id, { longForm: updatedData.description }).catch(console.error);
+                        try {
+                            if (existingAbbr) {
+                                if (existingAbbr.longForm !== newDescription) {
+                                    await updateAbbreviation(user.uid, existingAbbr.id, { longForm: newDescription });
+                                }
+                            } else {
+                                await addAbbreviation(user.uid, { shortForm, longForm: newDescription });
                             }
-                        } else {
-                            await addAbbreviation(user.uid, { shortForm, longForm: updatedData.description }).catch(console.error);
+                        } catch (abbrErr) {
+                            console.error("Lỗi khi lưu từ viết tắt:", abbrErr);
                         }
                     }
                 }
             }
 
-            await updateTransaction(user.uid, updatedData.id, updatedData);
+            await updateTransaction(user.uid, editingTransaction.id, updatedData);
             
             // --- Sync Debt if amount changed ---
             const diff = (parseFloat(updatedData.amount) || 0) - (parseFloat(editingTransaction.amount) || 0);
