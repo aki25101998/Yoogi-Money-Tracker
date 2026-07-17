@@ -7,10 +7,25 @@ class ErrorBoundary extends React.Component {
     }
 
     static getDerivedStateFromError(error) {
+        if (error && error.message && /Failed to fetch dynamically imported module/i.test(error.message)) {
+            const lastReload = sessionStorage.getItem('chunkLoadErrorReload');
+            if (!lastReload || Date.now() - parseInt(lastReload, 10) > 5000) {
+                return { hasError: false }; // Không hiển thị màn hình đỏ, sẽ reload ngay ở componentDidCatch
+            }
+        }
         return { hasError: true };
     }
 
     componentDidCatch(error, errorInfo) {
+        if (error && error.message && /Failed to fetch dynamically imported module/i.test(error.message)) {
+            const lastReload = sessionStorage.getItem('chunkLoadErrorReload');
+            if (!lastReload || Date.now() - parseInt(lastReload, 10) > 5000) {
+                sessionStorage.setItem('chunkLoadErrorReload', Date.now().toString());
+                window.location.reload();
+                return;
+            }
+        }
+
         this.setState({ error, errorInfo });
         console.error("ErrorBoundary caught an error", error, errorInfo);
     }
