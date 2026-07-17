@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Bot, User, Loader2, Pencil, Trash2, CheckCircle2, ChevronRight, ChevronDown, Settings, CalendarClock, ArrowRightLeft } from 'lucide-react';
 import { categorizeTransaction } from '../../utils/aiCategorizer';
 import { addTransaction, incrementMemoryUsage, learnFromCorrection, processCorrections, updateTransaction, deleteTransaction, addDebt, updateDebt, addDebtor, subscribeAIChatHistory, updateAIChatHistory, clearAIChatHistory } from '../../utils/supabaseHelpers';
+import { addAbbreviation, updateAbbreviation } from '../../services/coreService';
 import { formatCurrency } from '../../utils/formatters';
 import { supabase } from '../../config/supabase';
 import TransferFundsModal from '../modals/TransferFundsModal';
@@ -164,6 +165,26 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
         if (!user || !editingTransaction) return;
 
         try {
+            // --- Abbreviation Learning ---
+            if (updatedData.description && editingTransaction.description && updatedData.description !== editingTransaction.description) {
+                if (editingTransaction.originalInput) {
+                    let text = editingTransaction.originalInput.replace(/\b\d+([.,]\d+)?\s*(k|tr|triệu|ngàn|nghìn|đ|vnd)\b/gi, '');
+                    text = text.replace(/\b\d+([.,]\d+)?\b/gi, '');
+                    const shortForm = text.replace(/\s+/g, ' ').trim().toLowerCase();
+                    
+                    if (shortForm && shortForm.length > 0) {
+                        const existingAbbr = abbreviations?.find(a => a.shortForm?.toLowerCase() === shortForm);
+                        if (existingAbbr) {
+                            if (existingAbbr.longForm !== updatedData.description) {
+                                await updateAbbreviation(user.uid, existingAbbr.id, { longForm: updatedData.description }).catch(console.error);
+                            }
+                        } else {
+                            await addAbbreviation(user.uid, { shortForm, longForm: updatedData.description }).catch(console.error);
+                        }
+                    }
+                }
+            }
+
             await updateTransaction(user.uid, updatedData.id, updatedData);
             
             // --- Sync Debt if amount changed ---
@@ -487,6 +508,17 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                     </div>
 
                     <div className="flex items-center gap-1.5">
+                    {/* User Avatar (Mobile Only) */}
+                    <div className="lg:hidden flex-shrink-0">
+                        {user?.photoURL ? (
+                            <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full shadow-sm object-cover" />
+                        ) : (
+                            <div className="w-7 h-7 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                                {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Clear Chat Button */}
                     <button
                         onClick={handleClearChat}
