@@ -94,8 +94,13 @@ export const deleteTransaction = async (userId, id, txn = null) => {
     return result;
 };
 export const getTransactionByDebtId = async (userId, debtId) => {
-    const { data } = await supabase.from('transactions').select('*').eq('user_id', userId).or(`debt_id.eq.${debtId},installment_id.eq.${debtId}`);
-    return data;
+    const { data } = await supabase.from('transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .or('debt_id.eq.' + debtId + ',installment_id.eq.' + debtId)
+        .eq('type', 'loan_given')
+        .limit(1);
+    return data && data.length > 0 ? mapToCamelCase(data[0]) : null;
 };
 export const deleteMultipleTransactions = async (userId, ids) => {
     // Revert side effects for loan and installment repayments
