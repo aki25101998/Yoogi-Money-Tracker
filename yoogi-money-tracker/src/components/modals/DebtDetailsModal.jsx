@@ -44,6 +44,7 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
             
             await updateDebt(user.uid, debt.id, {
                 totalAmount: amountNum,
+                repaidAmount: currentRepaid,
                 notes: editForm.notes,
                 status: newStatus
             });

@@ -142,7 +142,7 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
                         const newTotal = debt.totalAmount + diff;
                         const newRepaid = debt.repaidAmount || 0;
                         const newStatus = newRepaid >= newTotal ? 'paid' : 'active';
-                        await updateDebt(user.uid, debt.id, { totalAmount: newTotal, status: newStatus });
+                        await updateDebt(user.uid, debt.id, { totalAmount: newTotal, repaidAmount: newRepaid, status: newStatus });
                     }
                 } else if (editingTransaction.type === 'loan_repaid' && editingTransaction.debtId) {
                     const debt = debts?.find(d => d.id === editingTransaction.debtId);

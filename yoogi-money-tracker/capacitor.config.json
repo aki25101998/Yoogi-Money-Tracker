@@ -3,7 +3,6 @@
   "appName": "Yoogi Money Tracker",
   "webDir": "dist",
   "server": {
-    "url": "https://yoogi-money-tracker-git-master-aki25101998s-projects.vercel.app",
     "cleartext": false,
     "allowNavigation": [
       "*.google.com",
