@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase';
 import { mapToCamelCase, mapToSnakeCase, createSubscription } from './coreService';
-import { DEFAULT_CATEGORIES } from '../utils/defaultCategories';
+import { DEFAULT_CATEGORIES, DEFAULT_WALLETS } from '../utils/defaultCategories';
+
 
 // CATEGORIES
 // ============================================================
@@ -12,45 +13,53 @@ export const seedDefaultCategories = async (userId) => {
     if (isSeeding) return false;
     isSeeding = true;
     try {
-        const { data } = await supabase.from('categories').select('id').eq('user_id', userId);
+        const { data, error } = await supabase.from('categories').select('id').eq('user_id', userId);
+        if (error) {
+            console.error('Error fetching categories during seed:', error);
+            return false;
+        }
         if (data && data.length > 0) return false;
 
-    // Insert categories
-    const categoriesToInsert = DEFAULT_CATEGORIES.map(cat => ({
-        name: cat.name,
-        icon: cat.icon,
-        type: cat.type,
-        order: cat.order,
-        subcategories: cat.subcategories,
-        user_id: userId
-    }));
-    await supabase.from('categories').insert(mapToSnakeCase(categoriesToInsert));
-
-    // Insert wallets
-    const { data: wallets } = await supabase.from('wallets').select('id').eq('user_id', userId);
-    if (!wallets || wallets.length === 0) {
-        const walletsToInsert = DEFAULT_WALLETS.map(w => ({
-            ...w,
-            user_id: userId,
-            id: undefined
+        // Insert categories
+        const categoriesToInsert = DEFAULT_CATEGORIES.map(cat => ({
+            name: cat.name,
+            icon: cat.icon,
+            type: cat.type,
+            order: cat.order,
+            subcategories: cat.subcategories,
+            user_id: userId
         }));
-        await supabase.from('wallets').insert(mapToSnakeCase(walletsToInsert));
-    }
+        await supabase.from('categories').insert(mapToSnakeCase(categoriesToInsert));
 
-    // Insert payer
-    const { data: payers } = await supabase.from('payers').select('id').eq('user_id', userId);
-    if (!payers || payers.length === 0) {
-        await supabase.from('payers').insert([{ name: 'Tôi', user_id: userId }]);
-    }
+        // Insert wallets
+        const { data: wallets, error: wError } = await supabase.from('wallets').select('id').eq('user_id', userId);
+        if (!wError && (!wallets || wallets.length === 0)) {
+            const walletsToInsert = DEFAULT_WALLETS.map(w => ({
+                ...w,
+                user_id: userId,
+                id: undefined
+            }));
+            await supabase.from('wallets').insert(mapToSnakeCase(walletsToInsert));
+        }
 
-    // Insert settings
-    await supabase.from('settings').insert([{ month_start_day: 1, user_id: userId }]);
+        // Insert payer
+        const { data: payers, error: pError } = await supabase.from('payers').select('id').eq('user_id', userId);
+        if (!pError && (!payers || payers.length === 0)) {
+            await supabase.from('payers').insert([{ name: 'Tôi', user_id: userId }]);
+        }
 
-    return true;
+        // Insert settings
+        const { data: settings, error: sError } = await supabase.from('settings').select('id').eq('user_id', userId);
+        if (!sError && (!settings || settings.length === 0)) {
+            await supabase.from('settings').insert([{ month_start_day: 1, user_id: userId }]);
+        }
+
+        return true;
     } finally {
         isSeeding = false;
     }
 };
+
 
 export const ensureRequiredCategories = async (userId) => {
     if (isEnsuring) return;
