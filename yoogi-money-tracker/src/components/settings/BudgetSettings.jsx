@@ -328,7 +328,10 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
                                                         min="0"
                                                         max="100"
                                                         value={portfolio.percentage}
-                                                        onChange={(e) => updatePortfolio(portfolio.id, 'percentage', parseFloat(e.target.value) || 0)}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            updatePortfolio(portfolio.id, 'percentage', val === '' ? '' : Number(val));
+                                                        }}
                                                         className="w-full px-3 py-2 pr-8 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-white font-medium"
                                                     />
                                                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">%</span>
