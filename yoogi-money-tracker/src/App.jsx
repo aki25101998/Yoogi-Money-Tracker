@@ -31,7 +31,7 @@ export default function App() {
     const { 
         installments, transactions, categories, aiMemories, abbreviations,
         wallets, payers, debtors, debts, recurringTransactions, lenders,
-        userSettings, isDataLoading 
+        budgetRules, userSettings, isDataLoading 
     } = useAppData(user);
 
     useRecurringTransactions(user, recurringTransactions);
@@ -159,6 +159,7 @@ export default function App() {
                     wallets={wallets}
                     payers={debtors}
                     recurringTransactions={recurringTransactions}
+                    budgetRules={budgetRules}
                     onNavigate={setActivePage}
                 />
             );
@@ -209,6 +210,7 @@ export default function App() {
                     abbreviations={abbreviations}
                     wallets={wallets}
                     payers={payers}
+                    budgetRules={budgetRules}
                     initialTab={initialTab}
                 />
             );

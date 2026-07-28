@@ -11,6 +11,7 @@ import { categorizeTransaction } from '../utils/aiCategorizer';
 import AIFinancialAnalysis from '../components/dashboard/AIFinancialAnalysis';
 import DashboardChart from '../components/dashboard/DashboardChart';
 import NetChangeSummary from '../components/dashboard/NetChangeSummary';
+import BudgetProgressWidget from '../components/dashboard/BudgetProgressWidget';
 import RecentTransactionsList from '../components/dashboard/RecentTransactionsList';
 import { addTransaction, incrementMemoryUsage, updateWalletOrder, addWallet, updateWallet, updateTransaction, processCorrections, deleteTransaction } from '../utils/supabaseHelpers';
 import { supabase } from '../config/supabase';
@@ -39,7 +40,7 @@ import SortableWalletCard from '../components/dashboard/SortableWalletCard';
 
 const COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#2dd4bf', '#fb923c', '#94a3b8'];
 
-const DashboardPage = ({ user, userSettings, transactions, categories, aiMemories, wallets, recurringTransactions, payers, onNavigate }) => {
+const DashboardPage = ({ user, userSettings, transactions, categories, aiMemories, wallets, recurringTransactions, payers, budgetRules, onNavigate }) => {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -315,6 +316,14 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                 categories={categories} 
                 dateRange={dateRange} 
                 totalBalance={totalBalance} 
+            />
+
+            {/* Ngân quỹ tự động (Budgets) */}
+            <BudgetProgressWidget
+                transactions={filteredTransactions}
+                categories={categories}
+                budgetRules={budgetRules}
+                dateRange={dateRange}
             />
 
             {/* 4. Chart Toggle & Donut Chart */}

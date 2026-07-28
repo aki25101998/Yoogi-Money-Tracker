@@ -3,7 +3,7 @@ import {
     seedDefaultCategories, ensureRequiredCategories, subscribeCategories, subscribeTransactions,
     subscribeAIMemory, subscribeWallets, subscribePayers, subscribeDebtors, subscribeDebts,
     subscribeRecurringTransactions, subscribeLenders, subscribeUserSettings, subscribeInstallments,
-    subscribeAbbreviations, saveVersion, cleanupOldAutoVersions
+    subscribeAbbreviations, saveVersion, cleanupOldAutoVersions, subscribeBudgetRules
 } from '../utils/supabaseHelpers';
 
 export const useAppData = (user) => {
@@ -18,6 +18,7 @@ export const useAppData = (user) => {
     const [debts, setDebts] = useState([]);
     const [recurringTransactions, setRecurringTransactions] = useState([]);
     const [lenders, setLenders] = useState([]);
+    const [budgetRules, setBudgetRules] = useState([]);
     const [userSettings, setUserSettings] = useState({ monthStartDay: 1 });
     const [isDataLoading, setIsDataLoading] = useState(true);
 
@@ -32,6 +33,7 @@ export const useAppData = (user) => {
             setPayers([]);
             setDebtors([]);
             setLenders([]);
+            setBudgetRules([]);
             setUserSettings({ monthStartDay: 1 });
             setIsDataLoading(false);
             return;
@@ -80,6 +82,7 @@ export const useAppData = (user) => {
             checkDataLoaded('settings');
         });
         const unsubAbbreviations = subscribeAbbreviations(user.uid, setAbbreviations);
+        const unsubBudgetRules = subscribeBudgetRules(user.uid, setBudgetRules);
 
         return () => {
             unsubInst();
@@ -94,6 +97,7 @@ export const useAppData = (user) => {
             unsubLenders();
             unsubSettings();
             unsubAbbreviations();
+            unsubBudgetRules();
         };
     }, [user?.uid]);
 
@@ -135,7 +139,10 @@ export const useAppData = (user) => {
 
     return {
         installments, transactions, categories, aiMemories, abbreviations,
-        wallets, payers, debtors, debts, recurringTransactions, lenders,
+        wallets, payers, debtors, debts,
+        recurringTransactions,
+        lenders,
+        budgetRules,
         userSettings, isDataLoading
     };
 };
