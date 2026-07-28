@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, AlertCircle, Plus, Trash2, PieChart, Check } from 'lucide-react';
+import { Save, AlertCircle, Plus, Trash2, PieChart, Check, ChevronDown } from 'lucide-react';
 import { saveBudgetSettings, saveBudgetPortfolio, deleteBudgetPortfolio } from '../../services/budgetService';
 
 const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) => {
@@ -173,18 +173,18 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
                         const isAllSelected = allIds.every(id => incomeIds.includes(id));
 
                         return (
-                            <div key={parentCat.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
-                                <div 
-                                    onClick={() => toggleParentGroup(parentCat, true)}
-                                    className="bg-slate-100/50 dark:bg-slate-800/50 px-4 py-2.5 border-b border-slate-200 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-300 text-sm flex items-center gap-2 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
-                                >
-                                    <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${isAllSelected ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-300 dark:bg-slate-800 dark:border-slate-600'}`}>
-                                        {isAllSelected && <Check className="w-3 h-3" />}
+                            <details key={parentCat.id} open className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden">
+                                <summary className="list-none bg-slate-100/50 dark:bg-slate-800/50 px-4 py-2.5 font-bold text-slate-700 dark:text-slate-300 text-sm flex items-center justify-between cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors select-none">
+                                    <div className="flex items-center gap-2" onClick={(e) => { e.preventDefault(); toggleParentGroup(parentCat, true); }}>
+                                        <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${isAllSelected ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-300 dark:bg-slate-800 dark:border-slate-600'}`}>
+                                            {isAllSelected && <Check className="w-3 h-3" />}
+                                        </div>
+                                        <span>{parentCat.icon}</span>
+                                        <span>{parentCat.name}</span>
                                     </div>
-                                    <span>{parentCat.icon}</span>
-                                    {parentCat.name}
-                                </div>
-                                <div className="p-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                                    <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" />
+                                </summary>
+                                <div className="p-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 border-t border-slate-200 dark:border-slate-700">
                                     {/* Parent Category if it has no subcategories, otherwise we don't show the [Chính] block */}
                                     {(!parentCat.subcategories || parentCat.subcategories.length === 0) && (
                                         <button
@@ -313,18 +313,18 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
                                         const isAllSelected = allIds.every(id => portfolio.expenseCategoryIds.includes(id));
                                         
                                         return (
-                                            <div key={parentCat.id} className="bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
-                                                <div 
-                                                    onClick={() => toggleParentGroup(parentCat, false, portfolio.id)}
-                                                    className="flex items-center gap-2 mb-2 cursor-pointer hover:opacity-80 transition-opacity"
-                                                >
-                                                    <div className={`w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 ${isAllSelected ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-300 dark:bg-slate-800 dark:border-slate-600'}`}>
-                                                        {isAllSelected && <Check className="w-2.5 h-2.5" />}
+                                            <details key={parentCat.id} open className="group bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 [&_summary::-webkit-details-marker]:hidden">
+                                                <summary className="list-none flex items-center justify-between p-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors select-none rounded-xl group-open:rounded-b-none group-open:border-b border-slate-200 dark:border-slate-700">
+                                                    <div className="flex items-center gap-2" onClick={(e) => { e.preventDefault(); toggleParentGroup(parentCat, false, portfolio.id); }}>
+                                                        <div className={`w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 ${isAllSelected ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-300 dark:bg-slate-800 dark:border-slate-600'}`}>
+                                                            {isAllSelected && <Check className="w-2.5 h-2.5" />}
+                                                        </div>
+                                                        <span className="text-sm">{parentCat.icon}</span>
+                                                        <span className="font-bold text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider">{parentCat.name}</span>
                                                     </div>
-                                                    <span className="text-sm">{parentCat.icon}</span>
-                                                    <span className="font-bold text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider">{parentCat.name}</span>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
+                                                    <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" />
+                                                </summary>
+                                                <div className="p-3 flex flex-wrap gap-2">
                                                     {/* Parent if no subcategories */}
                                                     {(!parentCat.subcategories || parentCat.subcategories.length === 0) && (
                                                         <button
@@ -359,7 +359,7 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
                                                     );
                                                 })}
                                             </div>
-                                        </div>
+                                        </details>
                                     );
                                     })}
                                 </div>
