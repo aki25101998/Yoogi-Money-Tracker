@@ -135,7 +135,8 @@ const PortfolioTransactionsModal = ({ isOpen, onClose, portfolio, transactions, 
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
