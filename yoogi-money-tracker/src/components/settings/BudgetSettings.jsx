@@ -19,10 +19,15 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
         if (budgetSettings) {
             setIncomeIds(budgetSettings.incomeCategoryIds || []);
         }
+    }, [budgetSettings ? JSON.stringify(budgetSettings) : null]);
+
+    useEffect(() => {
         if (budgetPortfolios) {
+            // Only update local state if the actual data from server changed
+            // This prevents periodic re-fetches from wiping out unsaved local changes (like new portfolios)
             setPortfolios(budgetPortfolios);
         }
-    }, [budgetSettings, budgetPortfolios]);
+    }, [budgetPortfolios ? JSON.stringify(budgetPortfolios) : null]);
 
     // Income Handlers
     const toggleIncomeCategory = (categoryId) => {
