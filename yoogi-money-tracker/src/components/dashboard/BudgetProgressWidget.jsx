@@ -59,8 +59,19 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                     if (isExceeded) barColor = 'bg-rose-500';
                     else if (isNearLimit) barColor = 'bg-amber-500';
 
-                    // Get icons for the categories
-                    const cats = portfolio.expenseCategoryIds.map(id => categories.find(c => c.id === id)).filter(Boolean);
+                    // Get icons for the categories (including subcategories)
+                    const cats = portfolio.expenseCategoryIds.map(id => {
+                        let found = categories.find(c => c.id === id);
+                        if (!found) {
+                            for (const c of categories) {
+                                if (c.subcategories) {
+                                    found = c.subcategories.find(s => s.id === id);
+                                    if (found) break;
+                                }
+                            }
+                        }
+                        return found;
+                    }).filter(Boolean);
 
                     return (
                         <div key={portfolio.id} className="space-y-2">

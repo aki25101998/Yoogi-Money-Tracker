@@ -12,8 +12,21 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState(null);
 
-    const incomeCategories = categories.filter(c => c.type === 'income');
-    const expenseCategories = categories.filter(c => c.type === 'expense');
+    const flattenCategories = (cats, type) => {
+        let flat = [];
+        cats.filter(c => c.type === type).forEach(c => {
+            flat.push({ ...c, isSub: false });
+            if (c.subcategories && c.subcategories.length > 0) {
+                c.subcategories.forEach(sub => {
+                    flat.push({ ...sub, isSub: true, parentName: c.name });
+                });
+            }
+        });
+        return flat;
+    };
+
+    const flatIncomeCategories = flattenCategories(categories, 'income');
+    const flatExpenseCategories = flattenCategories(categories, 'expense');
 
     useEffect(() => {
         if (budgetSettings) {
@@ -136,7 +149,7 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
                     Chọn các danh mục thu nhập sẽ được dùng để tính toán phân bổ ngân quỹ (Ví dụ: Chỉ chọn "Tiền lương").
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {incomeCategories.map(cat => {
+                    {flatIncomeCategories.map(cat => {
                         const isSelected = incomeIds.includes(cat.id);
                         return (
                             <button
@@ -152,9 +165,16 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
                                     {isSelected && <Check className="w-3.5 h-3.5" />}
                                 </div>
                                 <span className="text-lg">{cat.icon}</span>
-                                <span className={`text-sm font-medium truncate ${isSelected ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400'}`}>
-                                    {cat.name}
-                                </span>
+                                <div className={`flex flex-col items-start overflow-hidden ${isSelected ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400'}`}>
+                                    <span className="text-sm font-medium truncate w-full text-left">
+                                        {cat.name}
+                                    </span>
+                                    {cat.isSub && (
+                                        <span className="text-[10px] font-normal opacity-70 truncate w-full text-left">
+                                            Thuộc: {cat.parentName}
+                                        </span>
+                                    )}
+                                </div>
                             </button>
                         );
                     })}
@@ -236,7 +256,7 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 mb-2">CÁC DANH MỤC CHI TIÊU THUỘC NHÓM NÀY</label>
                                 <div className="flex flex-wrap gap-2">
-                                    {expenseCategories.map(cat => {
+                                    {flatExpenseCategories.map(cat => {
                                         const isSelected = portfolio.expenseCategoryIds.includes(cat.id);
                                         return (
                                             <button
@@ -247,9 +267,13 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
                                                         ? 'bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-500 dark:text-emerald-300'
                                                         : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-500'
                                                 }`}
+                                                title={cat.isSub ? `Danh mục phụ của ${cat.parentName}` : 'Danh mục chính'}
                                             >
                                                 <span>{cat.icon}</span>
-                                                {cat.name}
+                                                <div className="flex flex-col items-start leading-tight">
+                                                    <span>{cat.name}</span>
+                                                    {cat.isSub && <span className="text-[10px] opacity-70 font-normal">({cat.parentName})</span>}
+                                                </div>
                                                 {isSelected && <Check className="w-3.5 h-3.5 ml-0.5" />}
                                             </button>
                                         );
