@@ -12,21 +12,8 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState(null);
 
-    const flattenCategories = (cats, type) => {
-        let flat = [];
-        cats.filter(c => c.type === type).forEach(c => {
-            flat.push({ ...c, isSub: false });
-            if (c.subcategories && c.subcategories.length > 0) {
-                c.subcategories.forEach(sub => {
-                    flat.push({ ...sub, isSub: true, parentName: c.name });
-                });
-            }
-        });
-        return flat;
-    };
-
-    const flatIncomeCategories = flattenCategories(categories, 'income');
-    const flatExpenseCategories = flattenCategories(categories, 'expense');
+    const incomeCategories = categories.filter(c => c.type === 'income');
+    const expenseCategories = categories.filter(c => c.type === 'expense');
 
     useEffect(() => {
         if (budgetSettings) {
@@ -148,36 +135,56 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                     Chọn các danh mục thu nhập sẽ được dùng để tính toán phân bổ ngân quỹ (Ví dụ: Chỉ chọn "Tiền lương").
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {flatIncomeCategories.map(cat => {
-                        const isSelected = incomeIds.includes(cat.id);
-                        return (
-                            <button
-                                key={cat.id}
-                                onClick={() => toggleIncomeCategory(cat.id)}
-                                className={`flex items-center gap-2 p-3 rounded-xl border text-left transition-all ${
-                                    isSelected 
-                                        ? 'bg-emerald-50 border-emerald-500 dark:bg-emerald-900/30 dark:border-emerald-500' 
-                                        : 'bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700 opacity-70 hover:opacity-100'
-                                }`}
-                            >
-                                <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${isSelected ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700'}`}>
-                                    {isSelected && <Check className="w-3.5 h-3.5" />}
-                                </div>
-                                <span className="text-lg">{cat.icon}</span>
-                                <div className={`flex flex-col items-start overflow-hidden ${isSelected ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400'}`}>
-                                    <span className="text-sm font-medium truncate w-full text-left">
-                                        {cat.name}
+                <div className="space-y-4">
+                    {incomeCategories.map(parentCat => (
+                        <div key={parentCat.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+                            <div className="bg-slate-100/50 dark:bg-slate-800/50 px-4 py-2.5 border-b border-slate-200 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-300 text-sm flex items-center gap-2">
+                                <span>{parentCat.icon}</span>
+                                {parentCat.name}
+                            </div>
+                            <div className="p-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                                {/* Parent Category */}
+                                <button
+                                    onClick={() => toggleIncomeCategory(parentCat.id)}
+                                    className={`flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all ${
+                                        incomeIds.includes(parentCat.id) 
+                                            ? 'bg-emerald-50 border-emerald-500 dark:bg-emerald-900/30 dark:border-emerald-500 shadow-sm' 
+                                            : 'bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-500'
+                                    }`}
+                                >
+                                    <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${incomeIds.includes(parentCat.id) ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                                        {incomeIds.includes(parentCat.id) && <Check className="w-3 h-3" />}
+                                    </div>
+                                    <span className={`text-sm font-medium truncate ${incomeIds.includes(parentCat.id) ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400'}`}>
+                                        [Chính] {parentCat.name}
                                     </span>
-                                    {cat.isSub && (
-                                        <span className="text-[10px] font-normal opacity-70 truncate w-full text-left">
-                                            Thuộc: {cat.parentName}
-                                        </span>
-                                    )}
-                                </div>
-                            </button>
-                        );
-                    })}
+                                </button>
+                                {/* Sub Categories */}
+                                {parentCat.subcategories?.map(subCat => {
+                                    const isSelected = incomeIds.includes(subCat.id);
+                                    return (
+                                        <button
+                                            key={subCat.id}
+                                            onClick={() => toggleIncomeCategory(subCat.id)}
+                                            className={`flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all ${
+                                                isSelected 
+                                                    ? 'bg-emerald-50 border-emerald-500 dark:bg-emerald-900/30 dark:border-emerald-500 shadow-sm' 
+                                                    : 'bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-500'
+                                            }`}
+                                        >
+                                            <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${isSelected ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                                                {isSelected && <Check className="w-3 h-3" />}
+                                            </div>
+                                            <span className="text-sm">{subCat.icon}</span>
+                                            <span className={`text-sm font-medium truncate ${isSelected ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                {subCat.name}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
                 </div>
                 {incomeIds.length === 0 && (
                     <p className="text-sm text-rose-500 mt-2 font-medium flex items-center gap-1">
@@ -255,29 +262,48 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 mb-2">CÁC DANH MỤC CHI TIÊU THUỘC NHÓM NÀY</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {flatExpenseCategories.map(cat => {
-                                        const isSelected = portfolio.expenseCategoryIds.includes(cat.id);
-                                        return (
-                                            <button
-                                                key={cat.id}
-                                                onClick={() => toggleExpenseCategory(portfolio.id, cat.id)}
-                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border ${
-                                                    isSelected
-                                                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-500 dark:text-emerald-300'
-                                                        : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-500'
-                                                }`}
-                                                title={cat.isSub ? `Danh mục phụ của ${cat.parentName}` : 'Danh mục chính'}
-                                            >
-                                                <span>{cat.icon}</span>
-                                                <div className="flex flex-col items-start leading-tight">
-                                                    <span>{cat.name}</span>
-                                                    {cat.isSub && <span className="text-[10px] opacity-70 font-normal">({cat.parentName})</span>}
-                                                </div>
-                                                {isSelected && <Check className="w-3.5 h-3.5 ml-0.5" />}
-                                            </button>
-                                        );
-                                    })}
+                                <div className="space-y-3">
+                                    {expenseCategories.map(parentCat => (
+                                        <div key={parentCat.id} className="bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-sm">{parentCat.icon}</span>
+                                                <span className="font-bold text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider">{parentCat.name}</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {/* Parent */}
+                                                <button
+                                                    onClick={() => toggleExpenseCategory(portfolio.id, parentCat.id)}
+                                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                                                        portfolio.expenseCategoryIds.includes(parentCat.id)
+                                                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-500 dark:text-emerald-300 shadow-sm'
+                                                            : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-500'
+                                                    }`}
+                                                >
+                                                    [Danh mục chính]
+                                                    {portfolio.expenseCategoryIds.includes(parentCat.id) && <Check className="w-3.5 h-3.5 ml-0.5" />}
+                                                </button>
+                                                {/* Subs */}
+                                                {parentCat.subcategories?.map(subCat => {
+                                                    const isSelected = portfolio.expenseCategoryIds.includes(subCat.id);
+                                                    return (
+                                                        <button
+                                                            key={subCat.id}
+                                                            onClick={() => toggleExpenseCategory(portfolio.id, subCat.id)}
+                                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                                                                isSelected
+                                                                    ? 'bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-500 dark:text-emerald-300 shadow-sm'
+                                                                    : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-500'
+                                                            }`}
+                                                        >
+                                                            <span>{subCat.icon}</span>
+                                                            <span>{subCat.name}</span>
+                                                            {isSelected && <Check className="w-3.5 h-3.5 ml-0.5" />}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
