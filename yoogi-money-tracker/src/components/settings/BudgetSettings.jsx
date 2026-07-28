@@ -227,7 +227,7 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
                                     );
                                 })}
                             </div>
-                        </div>
+                        </details>
                     );
                     })}
                 </div>
