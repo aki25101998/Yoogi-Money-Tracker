@@ -40,7 +40,7 @@ import SortableWalletCard from '../components/dashboard/SortableWalletCard';
 
 const COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#2dd4bf', '#fb923c', '#94a3b8'];
 
-const DashboardPage = ({ user, userSettings, transactions, categories, aiMemories, wallets, recurringTransactions, payers, budgetRules, onNavigate }) => {
+const DashboardPage = ({ user, userSettings, transactions, categories, aiMemories, wallets, recurringTransactions, payers, budgetSettings, budgetPortfolios, onNavigate }) => {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -322,7 +322,8 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
             <BudgetProgressWidget
                 transactions={filteredTransactions}
                 categories={categories}
-                budgetRules={budgetRules}
+                budgetSettings={budgetSettings}
+                budgetPortfolios={budgetPortfolios}
                 dateRange={dateRange}
             />
 

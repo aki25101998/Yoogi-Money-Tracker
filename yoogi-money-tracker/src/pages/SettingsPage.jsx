@@ -8,7 +8,7 @@ import DataSyncSettings from '../components/settings/DataSyncSettings';
 import GeneralSettings from '../components/settings/GeneralSettings';
 import BudgetSettings from '../components/settings/BudgetSettings';
 
-const SettingsPage = ({ user, userSettings, categories, aiMemories, abbreviations, wallets, payers, budgetRules, initialTab = 'general' }) => {
+const SettingsPage = ({ user, userSettings, categories, aiMemories, abbreviations, wallets, payers, budgetSettings, budgetPortfolios, initialTab = 'general' }) => {
     const [activeTab, setActiveTab] = useState(initialTab);
 
     useEffect(() => {
@@ -76,7 +76,7 @@ const SettingsPage = ({ user, userSettings, categories, aiMemories, abbreviation
             {/* Content */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
                 {activeTab === 'general' && <GeneralSettings user={user} userSettings={userSettings} />}
-                {activeTab === 'budgets' && <BudgetSettings user={user} budgetRules={budgetRules} categories={categories} />}
+                {activeTab === 'budgets' && <BudgetSettings user={user} budgetSettings={budgetSettings} budgetPortfolios={budgetPortfolios} categories={categories} />}
                 {activeTab === 'wallets' && <WalletsSettings user={user} wallets={wallets} userSettings={userSettings} />}
                 {activeTab === 'categories' && <CategoriesPage user={user} categories={categories} hideHeader={true} />}
                 {activeTab === 'ai' && <AINotesPage user={user} aiMemories={aiMemories} abbreviations={abbreviations} categories={categories} hideHeader={true} />}
