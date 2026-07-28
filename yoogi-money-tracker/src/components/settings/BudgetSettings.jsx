@@ -67,6 +67,14 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
         }));
     };
 
+    const toggleAllDetails = (selector, forceOpen) => {
+        const details = document.querySelectorAll(selector);
+        details.forEach(d => {
+            if (forceOpen) d.setAttribute('open', '');
+            else d.removeAttribute('open');
+        });
+    };
+
     const toggleParentGroup = (parentCat, isIncome, portfolioId = null) => {
         const allIds = [parentCat.id, ...(parentCat.subcategories?.map(s => s.id) || [])];
         
@@ -162,8 +170,15 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
             )}
 
             {/* Bước 1: Chọn Nguồn Thu Nhập */}
-            <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
-                <h4 className="font-bold text-slate-800 dark:text-white mb-2">1. Chọn Nguồn Thu Nhập Cơ Sở</h4>
+            <div className="step1-container bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-bold text-slate-800 dark:text-white">1. Chọn Nguồn Thu Nhập Cơ Sở</h4>
+                    <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                        <button onClick={() => toggleAllDetails('.step1-container details', true)} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Mở rộng</button>
+                        <span>|</span>
+                        <button onClick={() => toggleAllDetails('.step1-container details', false)} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Thu gọn</button>
+                    </div>
+                </div>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                     Chọn các danh mục thu nhập sẽ được dùng để tính toán phân bổ ngân quỹ (Ví dụ: Chỉ chọn "Tiền lương").
                 </p>
@@ -239,11 +254,18 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
             </div>
 
             {/* Bước 2: Tạo Nhóm Ngân Quỹ */}
-            <div className="space-y-4">
+            <div className="step2-container space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h4 className="font-bold text-slate-800 dark:text-white">2. Các Nhóm Ngân Quỹ</h4>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                        <div className="flex items-center gap-3">
+                            <h4 className="font-bold text-slate-800 dark:text-white">2. Các Nhóm Ngân Quỹ</h4>
+                            <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                                <button onClick={() => toggleAllDetails('.step2-container details', true)} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Mở rộng</button>
+                                <span>|</span>
+                                <button onClick={() => toggleAllDetails('.step2-container details', false)} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Thu gọn</button>
+                            </div>
+                        </div>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                             Nhóm nhiều danh mục chi tiêu vào chung một ngân quỹ.
                         </p>
                     </div>
