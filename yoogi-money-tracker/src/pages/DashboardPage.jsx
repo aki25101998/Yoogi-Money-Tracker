@@ -325,6 +325,12 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                 budgetSettings={budgetSettings}
                 budgetPortfolios={budgetPortfolios}
                 dateRange={dateRange}
+                onEditTransaction={(txn) => {
+                    setEditingTransaction(txn);
+                    if (txn.type === 'transfer') setIsTransferModalOpen(true);
+                    else setIsModalOpen(true);
+                }}
+                onDeleteTransaction={(txnId) => openDeleteModal({ stopPropagation: () => {} }, txnId)}
             />
 
             {/* 4. Chart Toggle & Donut Chart */}

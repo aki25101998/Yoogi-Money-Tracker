@@ -40,6 +40,7 @@ export const saveBudgetSettings = async (userId, settings) => {
             throw error;
         }
 
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'budget_settings' }));
         return mapToCamelCase(data);
     } catch (error) {
         console.error('Unexpected error in saveBudgetSettings:', error);
@@ -96,6 +97,7 @@ export const saveBudgetPortfolio = async (userId, portfolio) => {
             throw error;
         }
 
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'budget_portfolios' }));
         return mapToCamelCase(data);
     } catch (error) {
         console.error('Unexpected error in saveBudgetPortfolio:', error);
@@ -115,6 +117,7 @@ export const deleteBudgetPortfolio = async (userId, portfolioId) => {
             throw error;
         }
 
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'budget_portfolios' }));
         return true;
     } catch (error) {
         console.error('Unexpected error in deleteBudgetPortfolio:', error);

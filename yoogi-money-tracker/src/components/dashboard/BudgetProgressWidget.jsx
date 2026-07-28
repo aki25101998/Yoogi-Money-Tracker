@@ -1,8 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Target, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
+import PortfolioTransactionsModal from '../modals/PortfolioTransactionsModal';
 
-const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budgetPortfolios, dateRange }) => {
+const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budgetPortfolios, dateRange, onEditTransaction, onDeleteTransaction }) => {
+    const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+
     // 1. Calculate base income and map expenses
     const { totalIncome, categoryExpenses } = useMemo(() => {
         let income = 0;
@@ -74,7 +77,11 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                     }).filter(Boolean);
 
                     return (
-                        <div key={portfolio.id} className="space-y-2">
+                        <div 
+                            key={portfolio.id} 
+                            className="space-y-2 cursor-pointer p-2 -mx-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors"
+                            onClick={() => setSelectedPortfolio(portfolio)}
+                        >
                             <div className="flex justify-between items-center text-sm">
                                 <div className="flex flex-col">
                                     <span className="font-bold text-slate-700 dark:text-slate-200">{portfolio.name}</span>
@@ -111,6 +118,16 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                     );
                 })}
             </div>
+
+            <PortfolioTransactionsModal 
+                isOpen={!!selectedPortfolio}
+                onClose={() => setSelectedPortfolio(null)}
+                portfolio={selectedPortfolio}
+                transactions={transactions.filter(t => t.type === 'expense' && selectedPortfolio?.expenseCategoryIds?.includes(t.categoryId))}
+                categories={categories}
+                onEditTransaction={onEditTransaction}
+                onDeleteTransaction={onDeleteTransaction}
+            />
         </div>
     );
 };
