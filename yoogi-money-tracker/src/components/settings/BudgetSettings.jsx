@@ -289,43 +289,54 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
 
                 <div className="space-y-4">
                     {portfolios.map((portfolio, index) => (
-                        <div key={portfolio.id} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1 space-y-4">
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <label className="block text-xs font-bold text-slate-500 mb-1">TÊN NHÓM</label>
-                                            <input
-                                                type="text"
-                                                value={portfolio.name}
-                                                onChange={(e) => updatePortfolio(portfolio.id, 'name', e.target.value)}
-                                                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-white font-medium"
-                                                placeholder="VD: Ăn uống cơ bản"
-                                            />
-                                        </div>
-                                        <div className="w-32">
-                                            <label className="block text-xs font-bold text-slate-500 mb-1">PHẦN TRĂM (%)</label>
-                                            <div className="relative">
+                        <details key={portfolio.id} open className="group/portfolio portfolio-group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm [&_summary::-webkit-details-marker]:hidden">
+                            <summary className="list-none px-5 py-4 border-b border-slate-100 dark:border-slate-700/70 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors select-none group-open/portfolio:rounded-b-none rounded-2xl">
+                                <div className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2 text-sm">
+                                    <PieChart className="w-4 h-4 text-emerald-500" />
+                                    {portfolio.name || 'Nhóm mới'} <span className="text-slate-400 font-normal ml-1">({portfolio.percentage}%)</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={(e) => { e.preventDefault(); removePortfolio(portfolio.id); }}
+                                        className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-md transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                    <ChevronDown className="w-4 h-4 text-slate-400 group-open/portfolio:rotate-180 transition-transform" />
+                                </div>
+                            </summary>
+                            
+                            <div className="p-5 space-y-4">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1 space-y-4">
+                                        <div className="flex gap-4">
+                                            <div className="flex-1">
+                                                <label className="block text-xs font-bold text-slate-500 mb-1">TÊN NHÓM</label>
                                                 <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    value={portfolio.percentage}
-                                                    onChange={(e) => updatePortfolio(portfolio.id, 'percentage', parseFloat(e.target.value) || 0)}
-                                                    className="w-full px-3 py-2 pr-8 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-white font-medium"
+                                                    type="text"
+                                                    value={portfolio.name}
+                                                    onChange={(e) => updatePortfolio(portfolio.id, 'name', e.target.value)}
+                                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-white font-medium"
+                                                    placeholder="VD: Ăn uống cơ bản"
                                                 />
-                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">%</span>
+                                            </div>
+                                            <div className="w-32">
+                                                <label className="block text-xs font-bold text-slate-500 mb-1">PHẦN TRĂM (%)</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max="100"
+                                                        value={portfolio.percentage}
+                                                        onChange={(e) => updatePortfolio(portfolio.id, 'percentage', parseFloat(e.target.value) || 0)}
+                                                        className="w-full px-3 py-2 pr-8 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-white font-medium"
+                                                    />
+                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">%</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => removePortfolio(portfolio.id)}
-                                    className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors mt-5"
-                                >
-                                    <Trash2 className="w-5 h-5" />
-                                </button>
-                            </div>
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 mb-2">CÁC DANH MỤC CHI TIÊU THUỘC NHÓM NÀY</label>
@@ -387,6 +398,7 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
                                 </div>
                             </div>
                         </div>
+                    </details>
                     ))}
                     {portfolios.length === 0 && (
                         <div className="text-center py-8 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
