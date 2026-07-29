@@ -2,15 +2,27 @@ import React, { useState } from 'react';
 import { Sparkles, Loader2, RotateCcw, ChevronUp } from 'lucide-react';
 import { supabase } from '../../config/supabase';
 
+const UI_COLORS = [
+    { bg: "bg-blue-50 dark:bg-blue-900/20", border: "border-blue-100 dark:border-blue-800/30", textTitle: "text-blue-500", textValue: "text-blue-700 dark:text-blue-300" },
+    { bg: "bg-purple-50 dark:bg-purple-900/20", border: "border-purple-100 dark:border-purple-800/30", textTitle: "text-purple-500", textValue: "text-purple-700 dark:text-purple-300" },
+    { bg: "bg-emerald-50 dark:bg-emerald-900/20", border: "border-emerald-100 dark:border-emerald-800/30", textTitle: "text-emerald-500", textValue: "text-emerald-700 dark:text-emerald-300" },
+    { bg: "bg-amber-50 dark:bg-amber-900/20", border: "border-amber-100 dark:border-amber-800/30", textTitle: "text-amber-500", textValue: "text-amber-700 dark:text-amber-300" },
+    { bg: "bg-rose-50 dark:bg-rose-900/20", border: "border-rose-100 dark:border-rose-800/30", textTitle: "text-rose-500", textValue: "text-rose-700 dark:text-rose-300" }
+];
+
 const AIFinancialAnalysis = ({ 
     filteredTransactions, 
     categories, 
     dateRange, 
-    totalBalance 
+    totalBalance,
+    budgetSettings,
+    budgetPortfolios 
 }) => {
     const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
     const [showAiAnalysis, setShowAiAnalysis] = useState(false);
     const [aiAnalysisResult, setAiAnalysisResult] = useState(null);
+
+    const activePortfolios = (budgetPortfolios || []).filter(p => parseFloat(p.percentage) > 0 && p.expenseCategoryIds && p.expenseCategoryIds.length > 0);
 
     const handleAiAnalyzeFinances = async () => {
         if (filteredTransactions.length === 0) return;
@@ -18,27 +30,82 @@ const AIFinancialAnalysis = ({
         setShowAiAnalysis(true);
         setAiAnalysisResult(null);
         try {
-            // Build spending breakdown by category
-            const expenseTxns = filteredTransactions.filter(t => t.type === 'expense');
-            const incomeTxns = filteredTransactions.filter(t => t.type === 'income');
-            const totalExpense = expenseTxns.reduce((s, t) => s + (t.amount || 0), 0);
-            const totalIncome = incomeTxns.reduce((s, t) => s + (t.amount || 0), 0);
-
-            // Group expenses by category
-            const categoryBreakdown = {};
-            expenseTxns.forEach(t => {
-                const cat = categories.find(c => c.id === t.categoryId);
-                const catName = cat ? cat.name : 'Chưa phân loại';
-                categoryBreakdown[catName] = (categoryBreakdown[catName] || 0) + (t.amount || 0);
-            });
-
-            const categoryList = Object.entries(categoryBreakdown)
-                .map(([name, amount]) => ({ name, amount: Math.round(amount), percent: totalExpense > 0 ? ((amount / totalExpense) * 100).toFixed(1) : 0 }))
-                .sort((a, b) => b.amount - a.amount);
-
             const dateLabel = dateRange.label || 'kỳ hiện tại';
+            let prompt = "";
 
-            const prompt = `Bạn là Chuyên Gia Phân Tích Tài Chính Cá Nhân Cấp Cao, chuyên về Chiến Lược Quản Lý Tài Chính 50/30/20.
+            if (activePortfolios.length > 0) {
+                // Phân tích theo ngân quỹ người dùng thiết lập
+                const validIncomeIds = budgetSettings?.incomeCategoryIds || [];
+                let budgetTotalIncome = 0;
+                const categoryExpenses = {};
+
+                filteredTransactions.forEach(t => {
+                    if (t.type === 'income' && validIncomeIds.includes(t.categoryId)) {
+                        budgetTotalIncome += Number(t.amount) || 0;
+                    } else if (t.type === 'expense') {
+                        const amount = Number(t.amount) || 0;
+                        const idToTrack = t.subcategoryId || t.categoryId;
+                        if (idToTrack) {
+                            categoryExpenses[idToTrack] = (categoryExpenses[idToTrack] || 0) + amount;
+                        }
+                    }
+                });
+
+                let budgetAnalysisText = `DỮ LIỆU TÀI CHÍNH THEO NGÂN QUỸ NGƯỜI DÙNG THIẾT LẬP (${dateLabel}):\n`;
+                budgetAnalysisText += `- Tổng thu nhập cơ sở (dùng để tính ngân quỹ): ${budgetTotalIncome.toLocaleString('vi-VN')}đ\n`;
+                budgetAnalysisText += `- Tổng số dư hiện tại: ${totalBalance.toLocaleString('vi-VN')}đ\n`;
+                
+                activePortfolios.forEach(p => {
+                    const percentage = parseFloat(p.percentage) || 0;
+                    const budgetLimit = (budgetTotalIncome * percentage) / 100;
+                    const spentAmount = p.expenseCategoryIds.reduce((sum, catId) => sum + (categoryExpenses[catId] || 0), 0);
+                    const isExceeded = spentAmount > budgetLimit && budgetLimit > 0;
+                    budgetAnalysisText += `  • Nhóm [${p.name}] (${percentage}%): Đã chi ${spentAmount.toLocaleString('vi-VN')}đ / Ngân sách ${budgetLimit.toLocaleString('vi-VN')}đ ${isExceeded ? '⚠️ (VƯỢT NGÂN SÁCH)' : '✅'}\n`;
+                });
+
+                prompt = `Bạn là Chuyên Gia Phân Tích Tài Chính Cá Nhân Cấp Cao. Người dùng đã thiết lập các nhóm ngân quỹ tùy chỉnh.
+
+${budgetAnalysisText}
+
+Hãy tư vấn thật hiệu quả, đưa ra các thông tin chính xác nhất để tối ưu hóa dòng tiền dựa theo ngân quỹ đã thiết lập bằng 3 phần sau:
+
+1. ƯU ĐIỂM HIỆN TẠI ✅
+Chỉ ra những điểm tốt trong việc tuân thủ ngân quỹ (ít nhất 2 điểm).
+
+2. VẤN ĐỀ CẦN LƯU Ý ⚠️
+Chỉ ra các nhóm ngân quỹ có nguy cơ hoặc đã vượt mức, rủi ro tài chính (ít nhất 2 điểm).
+
+3. CHIẾN LƯỢC DÒNG TIỀN HIỆU QUẢ 💡
+Tư vấn cách điều chỉnh chi tiêu, sử dụng dòng tiền sao cho hiệu quả nhất tháng này (ít nhất 2-3 lời khuyên có số liệu cụ thể).
+
+QUY TẮC TRÌNH BÀY (BẮT BUỘC):
+⛔ CẤM TUYỆT ĐỐI dùng Markdown (không dấu **, không ###, không gạch đầu dòng -).
+✅ Mỗi phần bắt đầu bằng tiêu đề có emoji.
+✅ Các điểm phân tích dùng emoji số (1️⃣ 2️⃣ 3️⃣) ở đầu.
+✅ Văn phong: Chuyên nghiệp, súc tích, thân thiện.
+✅ Sử dụng số tiền VNĐ cụ thể khi phân tích.
+✅ Giữa các phần cách nhau bằng 1 dòng trống.
+✅ Tối đa 400 chữ.`;
+
+            } else {
+                // Fallback: Chiến lược 50/30/20
+                const expenseTxns = filteredTransactions.filter(t => t.type === 'expense');
+                const incomeTxns = filteredTransactions.filter(t => t.type === 'income');
+                const totalExpense = expenseTxns.reduce((s, t) => s + (t.amount || 0), 0);
+                const totalIncome = incomeTxns.reduce((s, t) => s + (t.amount || 0), 0);
+
+                const categoryBreakdown = {};
+                expenseTxns.forEach(t => {
+                    const cat = categories.find(c => c.id === t.categoryId);
+                    const catName = cat ? cat.name : 'Chưa phân loại';
+                    categoryBreakdown[catName] = (categoryBreakdown[catName] || 0) + (t.amount || 0);
+                });
+
+                const categoryList = Object.entries(categoryBreakdown)
+                    .map(([name, amount]) => ({ name, amount: Math.round(amount), percent: totalExpense > 0 ? ((amount / totalExpense) * 100).toFixed(1) : 0 }))
+                    .sort((a, b) => b.amount - a.amount);
+
+                prompt = `Bạn là Chuyên Gia Phân Tích Tài Chính Cá Nhân Cấp Cao, chuyên về Chiến Lược Quản Lý Tài Chính 50/30/20.
 
 QUY TẮC 50/30/20:
 - 50% thu nhập cho NHU CẦU THIẾT YẾU (nhà ở, ăn uống, đi lại, hóa đơn, bảo hiểm)
@@ -52,7 +119,7 @@ DỮ LIỆU TÀI CHÍNH CỦA NGƯỜI DÙNG (${dateLabel}):
 - Chi tiết chi tiêu theo danh mục:
 ${categoryList.map(c => `  • ${c.name}: ${c.amount.toLocaleString('vi-VN')}đ (${c.percent}%)`).join('\n')}
 
-Hãy phân tích TOÀN DIỆN theo 3 phần sau:
+Hãy tư vấn thật hiệu quả, đưa ra các thông tin chính xác nhất để tối ưu hóa dòng tiền dựa theo 3 phần sau:
 
 1. ƯU ĐIỂM HIỆN TẠI ✅
 Dựa trên dữ liệu, chỉ ra những điểm tích cực trong cách quản lý tài chính (ít nhất 2-3 điểm).
@@ -60,8 +127,8 @@ Dựa trên dữ liệu, chỉ ra những điểm tích cực trong cách quản
 2. KHUYẾT ĐIỂM HIỆN TẠI ⚠️
 Chỉ ra các vấn đề, rủi ro tài chính dựa theo quy tắc 50/30/20 (ít nhất 2-3 điểm).
 
-3. LỜI KHUYÊN TÀI CHÍNH 💡
-Đưa ra lời khuyên cụ thể, thực tế để cải thiện tình hình tài chính (ít nhất 2-3 lời khuyên, có con số cụ thể nếu có thể).
+3. CHIẾN LƯỢC DÒNG TIỀN HIỆU QUẢ 💡
+Tư vấn cách điều chỉnh chi tiêu, sử dụng dòng tiền sao cho hiệu quả nhất tháng này (ít nhất 2-3 lời khuyên, có con số cụ thể nếu có thể).
 
 QUY TẮC TRÌNH BÀY (BẮT BUỘC):
 ⛔ CẤM TUYỆT ĐỐI dùng Markdown (không dấu **, không ###, không gạch đầu dòng -).
@@ -71,6 +138,7 @@ QUY TẮC TRÌNH BÀY (BẮT BUỘC):
 ✅ Sử dụng số tiền VNĐ cụ thể khi phân tích.
 ✅ Giữa các phần cách nhau bằng 1 dòng trống.
 ✅ Tối đa 400 chữ.`;
+            }
 
             const { data, error } = await supabase.functions.invoke('gemini-ai', {
                 body: {
@@ -97,7 +165,9 @@ QUY TẮC TRÌNH BÀY (BẮT BUỘC):
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-800 dark:text-white text-sm">AI Phân Tích Tài Chính</h3>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Chiến lược 50/30/20</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                            {activePortfolios.length > 0 ? 'Dựa trên Ngân quỹ của bạn' : 'Chiến lược 50/30/20'}
+                        </p>
                     </div>
                 </div>
                 <div className="flex gap-2">
@@ -141,26 +211,43 @@ QUY TẮC TRÌNH BÀY (BẮT BUỘC):
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-bold text-slate-600 dark:text-slate-300">AI đang phân tích...</p>
-                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Đang đánh giá chi tiêu theo quy tắc 50/30/20</p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                                    {activePortfolios.length > 0 ? 'Đang đánh giá chi tiêu theo ngân quỹ của bạn' : 'Đang đánh giá chi tiêu theo quy tắc 50/30/20'}
+                                </p>
                             </div>
                         </div>
                     ) : aiAnalysisResult ? (
                         <div className="space-y-4">
                             {/* Quick Stats Bar */}
-                            <div className="grid grid-cols-3 gap-2">
-                                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 text-center border border-blue-100 dark:border-blue-800/30">
-                                    <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-0.5">Nhu cầu</p>
-                                    <p className="text-sm font-black text-blue-700 dark:text-blue-300">50%</p>
+                            {activePortfolios.length > 0 ? (
+                                <div className={`grid grid-cols-${Math.min(activePortfolios.length, 3)} gap-2`}>
+                                    {activePortfolios.map((p, index) => {
+                                        const c = UI_COLORS[index % UI_COLORS.length];
+                                        return (
+                                            <div key={p.id} className={`${c.bg} rounded-xl p-3 text-center border ${c.border}`}>
+                                                <p className={`text-[10px] font-bold ${c.textTitle} uppercase tracking-wider mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis`}>{p.name}</p>
+                                                <p className={`text-sm font-black ${c.textValue}`}>{parseFloat(p.percentage)}%</p>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-3 text-center border border-purple-100 dark:border-purple-800/30">
-                                    <p className="text-[10px] font-bold text-purple-500 uppercase tracking-wider mb-0.5">Mong muốn</p>
-                                    <p className="text-sm font-black text-purple-700 dark:text-purple-300">30%</p>
+                            ) : (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 text-center border border-blue-100 dark:border-blue-800/30">
+                                        <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-0.5">Nhu cầu</p>
+                                        <p className="text-sm font-black text-blue-700 dark:text-blue-300">50%</p>
+                                    </div>
+                                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-3 text-center border border-purple-100 dark:border-purple-800/30">
+                                        <p className="text-[10px] font-bold text-purple-500 uppercase tracking-wider mb-0.5">Mong muốn</p>
+                                        <p className="text-sm font-black text-purple-700 dark:text-purple-300">30%</p>
+                                    </div>
+                                    <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3 text-center border border-emerald-100 dark:border-emerald-800/30">
+                                        <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-0.5">Tiết kiệm</p>
+                                        <p className="text-sm font-black text-emerald-700 dark:text-emerald-300">20%</p>
+                                    </div>
                                 </div>
-                                <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3 text-center border border-emerald-100 dark:border-emerald-800/30">
-                                    <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-0.5">Tiết kiệm</p>
-                                    <p className="text-sm font-black text-emerald-700 dark:text-emerald-300">20%</p>
-                                </div>
-                            </div>
+                            )}
+
                             {/* AI Response */}
                             <div className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl p-4 border border-slate-100 dark:border-slate-700/50">
                                 {aiAnalysisResult}

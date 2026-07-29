@@ -316,6 +316,8 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                 categories={categories} 
                 dateRange={dateRange} 
                 totalBalance={totalBalance} 
+                budgetSettings={budgetSettings}
+                budgetPortfolios={budgetPortfolios}
             />
 
             {/* Ngân quỹ tự động (Budgets) */}
