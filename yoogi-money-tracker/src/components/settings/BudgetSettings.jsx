@@ -171,7 +171,7 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
 
             {/* Bước 1: Chọn Nguồn Thu Nhập */}
             <div className="step1-container bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3 mb-2">
                     <h4 className="font-bold text-slate-800 dark:text-white">1. Chọn Nguồn Thu Nhập Cơ Sở</h4>
                     <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
                         <button onClick={() => toggleAllDetails('.step1-container details', true)} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Mở rộng</button>
