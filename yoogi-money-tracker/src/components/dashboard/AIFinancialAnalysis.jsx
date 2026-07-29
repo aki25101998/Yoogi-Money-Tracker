@@ -63,26 +63,26 @@ const AIFinancialAnalysis = ({
                     budgetAnalysisText += `  • Nhóm [${p.name}] (${percentage}%): Đã chi ${spentAmount.toLocaleString('vi-VN')}đ / Ngân sách ${budgetLimit.toLocaleString('vi-VN')}đ ${isExceeded ? '⚠️ (VƯỢT NGÂN SÁCH)' : '✅'}\n`;
                 });
 
-                prompt = `Bạn là Chuyên Gia Phân Tích Tài Chính Cá Nhân Cấp Cao. Người dùng đã thiết lập các nhóm ngân quỹ tùy chỉnh.
+                prompt = `Bạn là trợ lý AI phân tích ngân sách cá nhân. Người dùng đã thiết lập các nhóm ngân quỹ tùy chỉnh.
 
 ${budgetAnalysisText}
 
-Hãy tư vấn thật hiệu quả, đưa ra các thông tin chính xác nhất để tối ưu hóa dòng tiền dựa theo ngân quỹ đã thiết lập bằng 3 phần sau:
+Hãy phân tích và gợi ý cách tối ưu hóa dòng tiền dựa theo ngân quỹ đã thiết lập bằng 3 phần sau:
 
 1. ƯU ĐIỂM HIỆN TẠI ✅
 Chỉ ra những điểm tốt trong việc tuân thủ ngân quỹ (ít nhất 2 điểm).
 
-2. VẤN ĐỀ CẦN LƯU Ý ⚠️
-Chỉ ra các nhóm ngân quỹ có nguy cơ hoặc đã vượt mức, rủi ro tài chính (ít nhất 2 điểm).
+2. ĐIỂM CẦN CẢI THIỆN ⚠️
+Chỉ ra các nhóm ngân quỹ có nguy cơ hoặc đã vượt mức (ít nhất 2 điểm).
 
-3. CHIẾN LƯỢC DÒNG TIỀN HIỆU QUẢ 💡
-Tư vấn cách điều chỉnh chi tiêu, sử dụng dòng tiền sao cho hiệu quả nhất tháng này (ít nhất 2-3 lời khuyên có số liệu cụ thể).
+3. GỢI Ý ĐIỀU CHỈNH 💡
+Gợi ý cách điều chỉnh chi tiêu cho hợp lý trong tháng này (ít nhất 2-3 gợi ý có số liệu cụ thể).
 
 QUY TẮC TRÌNH BÀY (BẮT BUỘC):
 ⛔ CẤM TUYỆT ĐỐI dùng Markdown (không dấu **, không ###, không gạch đầu dòng -).
 ✅ Mỗi phần bắt đầu bằng tiêu đề có emoji.
 ✅ Các điểm phân tích dùng emoji số (1️⃣ 2️⃣ 3️⃣) ở đầu.
-✅ Văn phong: Chuyên nghiệp, súc tích, thân thiện.
+✅ Văn phong: Gần gũi, súc tích, thân thiện.
 ✅ Sử dụng số tiền VNĐ cụ thể khi phân tích.
 ✅ Giữa các phần cách nhau bằng 1 dòng trống.
 ✅ Tối đa 400 chữ.`;
@@ -105,7 +105,7 @@ QUY TẮC TRÌNH BÀY (BẮT BUỘC):
                     .map(([name, amount]) => ({ name, amount: Math.round(amount), percent: totalExpense > 0 ? ((amount / totalExpense) * 100).toFixed(1) : 0 }))
                     .sort((a, b) => b.amount - a.amount);
 
-                prompt = `Bạn là Chuyên Gia Phân Tích Tài Chính Cá Nhân Cấp Cao, chuyên về Chiến Lược Quản Lý Tài Chính 50/30/20.
+                prompt = `Bạn là trợ lý AI phân tích ngân sách cá nhân, phân bổ theo quy tắc 50/30/20.
 
 QUY TẮC 50/30/20:
 - 50% thu nhập cho NHU CẦU THIẾT YẾU (nhà ở, ăn uống, đi lại, hóa đơn, bảo hiểm)
@@ -119,22 +119,22 @@ DỮ LIỆU TÀI CHÍNH CỦA NGƯỜI DÙNG (${dateLabel}):
 - Chi tiết chi tiêu theo danh mục:
 ${categoryList.map(c => `  • ${c.name}: ${c.amount.toLocaleString('vi-VN')}đ (${c.percent}%)`).join('\n')}
 
-Hãy tư vấn thật hiệu quả, đưa ra các thông tin chính xác nhất để tối ưu hóa dòng tiền dựa theo 3 phần sau:
+Hãy phân tích và gợi ý cách tối ưu hóa dòng tiền dựa theo 3 phần sau:
 
 1. ƯU ĐIỂM HIỆN TẠI ✅
-Dựa trên dữ liệu, chỉ ra những điểm tích cực trong cách quản lý tài chính (ít nhất 2-3 điểm).
+Dựa trên dữ liệu, chỉ ra những điểm tích cực trong cách phân bổ ngân sách (ít nhất 2-3 điểm).
 
-2. KHUYẾT ĐIỂM HIỆN TẠI ⚠️
-Chỉ ra các vấn đề, rủi ro tài chính dựa theo quy tắc 50/30/20 (ít nhất 2-3 điểm).
+2. ĐIỂM CẦN CẢI THIỆN ⚠️
+Chỉ ra các vấn đề cần lưu ý dựa theo tỷ lệ 50/30/20 (ít nhất 2-3 điểm).
 
-3. CHIẾN LƯỢC DÒNG TIỀN HIỆU QUẢ 💡
-Tư vấn cách điều chỉnh chi tiêu, sử dụng dòng tiền sao cho hiệu quả nhất tháng này (ít nhất 2-3 lời khuyên, có con số cụ thể nếu có thể).
+3. GỢI Ý ĐIỀU CHỈNH 💡
+Gợi ý cách điều chỉnh chi tiêu cho hợp lý trong tháng này (ít nhất 2-3 gợi ý, có con số cụ thể nếu có thể).
 
 QUY TẮC TRÌNH BÀY (BẮT BUỘC):
 ⛔ CẤM TUYỆT ĐỐI dùng Markdown (không dấu **, không ###, không gạch đầu dòng -).
 ✅ Mỗi phần bắt đầu bằng tiêu đề có emoji.
 ✅ Các điểm phân tích dùng emoji số (1️⃣ 2️⃣ 3️⃣) ở đầu.
-✅ Văn phong: Chuyên nghiệp, súc tích, thân thiện.
+✅ Văn phong: Gần gũi, súc tích, thân thiện.
 ✅ Sử dụng số tiền VNĐ cụ thể khi phân tích.
 ✅ Giữa các phần cách nhau bằng 1 dòng trống.
 ✅ Tối đa 400 chữ.`;
@@ -147,7 +147,14 @@ QUY TẮC TRÌNH BÀY (BẮT BUỘC):
                 }
             });
             if (error) throw error;
-            setAiAnalysisResult(data?.candidates?.[0]?.content?.parts?.[0]?.text || "Không thể phân tích lúc này.");
+            
+            const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (aiText) {
+                setAiAnalysisResult(aiText);
+            } else {
+                console.error("AI Error Data:", data);
+                setAiAnalysisResult("Lỗi phân tích: " + JSON.stringify(data));
+            }
         } catch (error) {
             console.error('AI Analysis error:', error);
             setAiAnalysisResult("Hệ thống đang bận, vui lòng thử lại sau.");
