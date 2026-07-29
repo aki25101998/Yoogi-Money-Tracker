@@ -142,8 +142,7 @@ QUY TẮC TRÌNH BÀY (BẮT BUỘC):
 
             const { data, error } = await supabase.functions.invoke('gemini-ai', {
                 body: {
-                    action: 'analyze_finances',
-                    payload: { contents: [{ parts: [{ text: prompt }] }] }
+                    contents: [{ parts: [{ text: prompt }] }]
                 }
             });
             if (error) throw error;
