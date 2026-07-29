@@ -9,10 +9,10 @@ import DebtHistoryList from './debt-details/DebtHistoryList';
 const DebtDetailsModal = ({ isOpen, onClose, groupedDebt, onDeleteDebt, user, wallets, transactions }) => {
 const [activeTab, setActiveTab] = useState('active'); // active, paid, history
     const [editingDebtId, setEditingDebtId] = useState(null);
-    const [editForm, setEditForm] = useState({ amount: '', walletId: '', notes: '' });
+    const [editForm, setEditForm] = useState({ amount: '', walletId: '', notes: '', date: '' });
     
     const [editingPaymentId, setEditingPaymentId] = useState(null);
-    const [paymentEditForm, setPaymentEditForm] = useState({ amount: '', walletId: '', notes: '' });
+    const [paymentEditForm, setPaymentEditForm] = useState({ amount: '', walletId: '', notes: '', date: '' });
     
     const [isSaving, setIsSaving] = useState(false);
 
@@ -20,7 +20,9 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
 
     const startEdit = async (debt) => {
         setEditingDebtId(debt.id);
-        setEditForm({ amount: debt.totalAmount, walletId: '', notes: debt.notes || '' });
+        const debtDate = debt.date || debt.createdAt || new Date().toISOString();
+        const formattedDate = new Date(debtDate).toISOString().split('T')[0];
+        setEditForm({ amount: debt.totalAmount, walletId: '', notes: debt.notes || '', date: formattedDate });
         
         if (user) {
             const txn = await getTransactionByDebtId(user.uid, debt.id);
@@ -46,7 +48,8 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
                 totalAmount: amountNum,
                 repaidAmount: currentRepaid,
                 notes: editForm.notes,
-                status: newStatus
+                status: newStatus,
+                date: new Date(editForm.date).toISOString()
             });
 
             const txn = await getTransactionByDebtId(user.uid, debt.id);
@@ -54,7 +57,8 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
                 await updateTransaction(user.uid, txn.id, {
                     amount: amountNum,
                     walletId: editForm.walletId,
-                    description: `${debt.personName} mượn: ${editForm.notes}`
+                    description: `${debt.personName} mượn: ${editForm.notes}`,
+                    date: new Date(editForm.date).toISOString()
                 });
             }
             
@@ -70,7 +74,9 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
         setEditingPaymentId(payment.id);
         const notesMatch = (payment.description || payment.note || '').match(/trả nợ:\s*(.*)/);
         const notes = notesMatch ? notesMatch[1] : '';
-        setPaymentEditForm({ amount: payment.amount, walletId: payment.walletId, notes });
+        const paymentDate = payment.date || new Date().toISOString();
+        const formattedDate = new Date(paymentDate).toISOString().split('T')[0];
+        setPaymentEditForm({ amount: payment.amount, walletId: payment.walletId, notes, date: formattedDate });
     };
 
     const cancelEditPayment = () => {
@@ -88,7 +94,8 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
             await updateTransaction(user.uid, payment.id, {
                 amount: newAmountNum,
                 walletId: paymentEditForm.walletId,
-                description: `${groupedDebt.personName} trả nợ: ${paymentEditForm.notes}`
+                description: `${groupedDebt.personName} trả nợ: ${paymentEditForm.notes}`,
+                date: new Date(paymentEditForm.date).toISOString()
             });
 
             if (diff !== 0) {
@@ -255,6 +262,15 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
                                                     />
                                                 </div>
                                                 <div>
+                                                    <label className="text-[10px] text-slate-400 font-medium block mb-1">Ngày mượn</label>
+                                                    <input
+                                                        type="date"
+                                                        value={editForm.date}
+                                                        onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                                                        className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
                                                     <label className="text-[10px] text-slate-400 font-medium block mb-1">Trích từ ví</label>
                                                     <div className="relative">
                                                         <select
@@ -370,6 +386,15 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
                                                 <AmountInput
                                                     value={paymentEditForm.amount}
                                                     onChange={(value) => setPaymentEditForm({ ...paymentEditForm, amount: value })}
+                                                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-slate-400 font-medium block mb-1">Ngày trả</label>
+                                                <input
+                                                    type="date"
+                                                    value={paymentEditForm.date}
+                                                    onChange={(e) => setPaymentEditForm({ ...paymentEditForm, date: e.target.value })}
                                                     className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                                                 />
                                             </div>
