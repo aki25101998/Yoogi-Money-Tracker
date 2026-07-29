@@ -8,47 +8,69 @@ const PortfolioTransactionsModal = ({ isOpen, onClose, portfolio, transactions, 
 
     const totalAmount = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
-    // Group transactions by category instead of subcategory
-    const categoryList = Object.entries(
-        transactions.reduce((acc, txn) => {
-            let name = 'Khác';
-            let icon = '📁';
-            // Find which category this transaction belongs to
-            let foundCat = null;
-            let parentIcon = '📁';
-            if (txn.subcategoryId) {
-                for (const c of categories) {
-                    if (c.subcategories && c.subcategories.some(s => s.id === txn.subcategoryId)) {
-                        foundCat = c.subcategories.find(s => s.id === txn.subcategoryId);
-                        parentIcon = c.icon;
-                        break;
-                    }
+    // Group transactions by parent category and then by subcategory
+    const groupedData = transactions.reduce((acc, txn) => {
+        let parentCat = null;
+        let subCat = null;
+
+        if (txn.subcategoryId) {
+            for (const c of categories) {
+                if (c.subcategories && c.subcategories.some(s => s.id === txn.subcategoryId)) {
+                    subCat = c.subcategories.find(s => s.id === txn.subcategoryId);
+                    parentCat = c;
+                    break;
                 }
             }
-            if (!foundCat) {
-                foundCat = categories.find(c => c.id === txn.categoryId);
-                if (foundCat) parentIcon = foundCat.icon;
-            }
-            
-            if (foundCat) {
-                name = foundCat.name;
-                icon = parentIcon;
-            }
+        }
+        
+        if (!parentCat) {
+            parentCat = categories.find(c => c.id === txn.categoryId);
+        }
 
-            const key = `${icon} ${name}`;
-            acc[key] = (acc[key] || 0) + (txn.amount || 0);
-            return acc;
-        }, {})
-    )
-    .map(([key, amount]) => {
-        const spaceIdx = key.indexOf(' ');
-        return {
-            icon: key.substring(0, spaceIdx),
-            name: key.substring(spaceIdx + 1),
-            amount
-        };
-    })
-    .sort((a, b) => b.amount - a.amount);
+        const parentId = parentCat ? parentCat.id : 'other';
+        const parentName = parentCat ? parentCat.name : 'Khác';
+        const parentIcon = parentCat ? parentCat.icon : '📁';
+
+        if (!acc[parentId]) {
+            acc[parentId] = {
+                id: parentId,
+                name: parentName,
+                icon: parentIcon,
+                amount: 0,
+                subItems: []
+            };
+        }
+
+        acc[parentId].amount += (txn.amount || 0);
+
+        if (subCat) {
+            let existingSub = acc[parentId].subItems.find(s => s.id === subCat.id);
+            if (!existingSub) {
+                existingSub = { id: subCat.id, name: subCat.name, amount: 0, isSub: true };
+                acc[parentId].subItems.push(existingSub);
+            }
+            existingSub.amount += (txn.amount || 0);
+        } else {
+            let existingMain = acc[parentId].subItems.find(s => !s.isSub);
+            if (!existingMain) {
+                existingMain = { id: 'main', name: 'Chung', amount: 0, isSub: false };
+                acc[parentId].subItems.push(existingMain);
+            }
+            existingMain.amount += (txn.amount || 0);
+        }
+
+        return acc;
+    }, {});
+
+    const categoryList = Object.values(groupedData)
+        .map(parent => {
+            if (parent.subItems.length === 1 && !parent.subItems[0].isSub) {
+                parent.subItems = [];
+            }
+            parent.subItems.sort((a, b) => b.amount - a.amount);
+            return parent;
+        })
+        .sort((a, b) => b.amount - a.amount);
 
     return createPortal(
         <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -79,19 +101,39 @@ const PortfolioTransactionsModal = ({ isOpen, onClose, portfolio, transactions, 
                     {categoryList.length > 0 && (
                         <div className="mx-2 mt-2 mb-4 px-4 py-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
                             <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Chi tiết danh mục</h3>
-                            <div className="space-y-3">
+                            <div className="space-y-4">
                                 {categoryList.map((cat, index) => {
                                     const percentage = totalAmount > 0 ? ((cat.amount / totalAmount) * 100).toFixed(1) : 0;
                                     return (
-                                        <div key={index} className="flex items-center justify-between text-sm">
-                                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400"></div>
-                                                <span className="text-slate-600 dark:text-slate-400 truncate font-medium">{cat.icon} {cat.name}</span>
+                                        <div key={index} className="flex flex-col gap-2">
+                                            <div className="flex items-center justify-between text-sm">
+                                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                    <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400"></div>
+                                                    <span className="text-slate-700 dark:text-slate-200 truncate font-bold">{cat.icon} {cat.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300">{formatCurrency(cat.amount)}</span>
+                                                    <span className="text-xs font-bold text-slate-400 w-10 text-right">{percentage}%</span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <span className="font-bold text-slate-700 dark:text-slate-300">{formatCurrency(cat.amount)}</span>
-                                                <span className="text-xs font-bold text-slate-400 w-10 text-right">{percentage}%</span>
-                                            </div>
+                                            {cat.subItems.length > 0 && (
+                                                <div className="pl-4 space-y-2 mt-1 border-l-2 border-slate-200 dark:border-slate-700 ml-1">
+                                                    {cat.subItems.map((sub, subIdx) => {
+                                                        const subPercentage = totalAmount > 0 ? ((sub.amount / totalAmount) * 100).toFixed(1) : 0;
+                                                        return (
+                                                            <div key={subIdx} className="flex items-center justify-between text-sm">
+                                                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                    <span className="text-slate-500 dark:text-slate-400 truncate text-sm">{sub.name}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="font-medium text-slate-500 dark:text-slate-400 text-sm">{formatCurrency(sub.amount)}</span>
+                                                                    <span className="text-xs font-medium text-slate-400 w-10 text-right">{subPercentage}%</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}
