@@ -39,12 +39,12 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
 
     return (
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm mb-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col gap-1 mb-4">
                 <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
                     <Target className="w-5 h-5 text-emerald-500" />
                     Ngân quỹ tháng này
                 </h3>
-                <div className="text-sm text-slate-500">
+                <div className="text-sm text-slate-500 pl-7">
                     Thu nhập cơ sở: <span className="font-bold text-emerald-600">{formatCurrency(totalIncome)}</span>
                 </div>
             </div>
