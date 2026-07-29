@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Loader2, RotateCcw, ChevronUp } from 'lucide-react';
+import { Sparkles, Loader2, RotateCcw, ChevronUp, CheckCircle, AlertTriangle, Lightbulb } from 'lucide-react';
 import { supabase } from '../../config/supabase';
 
 const UI_COLORS = [
@@ -9,6 +9,41 @@ const UI_COLORS = [
     { bg: "bg-amber-50 dark:bg-amber-900/20", border: "border-amber-100 dark:border-amber-800/30", textTitle: "text-amber-500", textValue: "text-amber-700 dark:text-amber-300" },
     { bg: "bg-rose-50 dark:bg-rose-900/20", border: "border-rose-100 dark:border-rose-800/30", textTitle: "text-rose-500", textValue: "text-rose-700 dark:text-rose-300" }
 ];
+
+const ResultSection = ({ icon: Icon, title, items, type }) => {
+    if (!items || items.length === 0) return null;
+    
+    const typeStyles = {
+        pros: { bg: "bg-emerald-50/50 dark:bg-emerald-900/10", border: "border-emerald-100 dark:border-emerald-800/30", text: "text-emerald-700 dark:text-emerald-400", iconBg: "bg-emerald-100 dark:bg-emerald-900/50", iconColor: "text-emerald-600 dark:text-emerald-400" },
+        cons: { bg: "bg-rose-50/50 dark:bg-rose-900/10", border: "border-rose-100 dark:border-rose-800/30", text: "text-rose-700 dark:text-rose-400", iconBg: "bg-rose-100 dark:bg-rose-900/50", iconColor: "text-rose-600 dark:text-rose-400" },
+        advices: { bg: "bg-amber-50/50 dark:bg-amber-900/10", border: "border-amber-100 dark:border-amber-800/30", text: "text-amber-700 dark:text-amber-400", iconBg: "bg-amber-100 dark:bg-amber-900/50", iconColor: "text-amber-600 dark:text-amber-400" }
+    };
+    const style = typeStyles[type] || typeStyles.pros;
+
+    return (
+        <div className={`rounded-2xl p-4 border ${style.bg} ${style.border}`}>
+            <div className="flex items-center gap-2 mb-3">
+                <div className={`p-1.5 rounded-lg ${style.iconBg}`}>
+                    <Icon className={`w-4 h-4 ${style.iconColor}`} />
+                </div>
+                <h4 className={`font-bold text-sm uppercase tracking-wider ${style.text}`}>{title}</h4>
+            </div>
+            <div className="space-y-3">
+                {items.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-3 bg-white/60 dark:bg-slate-900/40 p-3 rounded-xl border border-white/40 dark:border-slate-700/30 shadow-sm">
+                        <div className={`mt-0.5 w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full text-[10px] font-bold ${style.iconBg} ${style.iconColor}`}>
+                            {idx + 1}
+                        </div>
+                        <div>
+                            <p className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1">{item.title}</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{item.detail}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
 
 const AIFinancialAnalysis = ({ 
     filteredTransactions, 
@@ -67,25 +102,20 @@ const AIFinancialAnalysis = ({
 
 ${budgetAnalysisText}
 
-Hãy phân tích và gợi ý cách tối ưu hóa dòng tiền dựa theo ngân quỹ đã thiết lập bằng 3 phần sau:
-
-1. ƯU ĐIỂM HIỆN TẠI ✅
-Chỉ ra những điểm tốt trong việc tuân thủ ngân quỹ (ít nhất 2 điểm).
-
-2. ĐIỂM CẦN CẢI THIỆN ⚠️
-Chỉ ra các nhóm ngân quỹ có nguy cơ hoặc đã vượt mức (ít nhất 2 điểm).
-
-3. GỢI Ý ĐIỀU CHỈNH 💡
-Gợi ý cách điều chỉnh chi tiêu cho hợp lý trong tháng này (ít nhất 2-3 gợi ý có số liệu cụ thể).
-
-QUY TẮC TRÌNH BÀY (BẮT BUỘC):
-⛔ CẤM TUYỆT ĐỐI dùng Markdown (không dấu **, không ###, không gạch đầu dòng -).
-✅ Mỗi phần bắt đầu bằng tiêu đề có emoji.
-✅ Các điểm phân tích dùng emoji số (1️⃣ 2️⃣ 3️⃣) ở đầu.
-✅ Văn phong: Gần gũi, súc tích, thân thiện.
-✅ Sử dụng số tiền VNĐ cụ thể khi phân tích.
-✅ Giữa các phần cách nhau bằng 1 dòng trống.
-✅ Tối đa 400 chữ.`;
+Hãy phân tích và gợi ý cách tối ưu hóa dòng tiền dựa theo ngân quỹ đã thiết lập.
+BẮT BUỘC trả về ĐÚNG định dạng JSON thuần túy (KHÔNG dùng markdown, KHÔNG backtick) theo cấu trúc sau:
+{
+  "pros": [
+    { "title": "Tóm tắt ưu điểm 1", "detail": "Chi tiết ưu điểm..." }
+  ],
+  "cons": [
+    { "title": "Tóm tắt điểm cần cải thiện 1", "detail": "Chi tiết điểm cần cải thiện, nhấn mạnh các rủi ro..." }
+  ],
+  "advices": [
+    { "title": "Hành động gợi ý 1", "detail": "Chi tiết cách thực hiện, có số liệu cụ thể..." }
+  ]
+}
+Lưu ý: Mỗi mảng (pros, cons, advices) cần có ít nhất 2 mục. Văn phong gần gũi, súc tích, thân thiện.`;
 
             } else {
                 // Fallback: Chiến lược 50/30/20
@@ -119,25 +149,20 @@ DỮ LIỆU TÀI CHÍNH CỦA NGƯỜI DÙNG (${dateLabel}):
 - Chi tiết chi tiêu theo danh mục:
 ${categoryList.map(c => `  • ${c.name}: ${c.amount.toLocaleString('vi-VN')}đ (${c.percent}%)`).join('\n')}
 
-Hãy phân tích và gợi ý cách tối ưu hóa dòng tiền dựa theo 3 phần sau:
-
-1. ƯU ĐIỂM HIỆN TẠI ✅
-Dựa trên dữ liệu, chỉ ra những điểm tích cực trong cách phân bổ ngân sách (ít nhất 2-3 điểm).
-
-2. ĐIỂM CẦN CẢI THIỆN ⚠️
-Chỉ ra các vấn đề cần lưu ý dựa theo tỷ lệ 50/30/20 (ít nhất 2-3 điểm).
-
-3. GỢI Ý ĐIỀU CHỈNH 💡
-Gợi ý cách điều chỉnh chi tiêu cho hợp lý trong tháng này (ít nhất 2-3 gợi ý, có con số cụ thể nếu có thể).
-
-QUY TẮC TRÌNH BÀY (BẮT BUỘC):
-⛔ CẤM TUYỆT ĐỐI dùng Markdown (không dấu **, không ###, không gạch đầu dòng -).
-✅ Mỗi phần bắt đầu bằng tiêu đề có emoji.
-✅ Các điểm phân tích dùng emoji số (1️⃣ 2️⃣ 3️⃣) ở đầu.
-✅ Văn phong: Gần gũi, súc tích, thân thiện.
-✅ Sử dụng số tiền VNĐ cụ thể khi phân tích.
-✅ Giữa các phần cách nhau bằng 1 dòng trống.
-✅ Tối đa 400 chữ.`;
+Hãy phân tích và gợi ý cách tối ưu hóa dòng tiền dựa theo tỷ lệ 50/30/20.
+BẮT BUỘC trả về ĐÚNG định dạng JSON thuần túy (KHÔNG dùng markdown, KHÔNG backtick) theo cấu trúc sau:
+{
+  "pros": [
+    { "title": "Tóm tắt ưu điểm 1", "detail": "Chi tiết ưu điểm..." }
+  ],
+  "cons": [
+    { "title": "Tóm tắt điểm cần cải thiện 1", "detail": "Chi tiết điểm cần cải thiện..." }
+  ],
+  "advices": [
+    { "title": "Hành động gợi ý 1", "detail": "Chi tiết cách thực hiện..." }
+  ]
+}
+Lưu ý: Mỗi mảng (pros, cons, advices) cần có ít nhất 2 mục. Văn phong gần gũi, súc tích, thân thiện.`;
             }
 
             const { data, error } = await supabase.functions.invoke('gemini-ai', {
@@ -149,7 +174,19 @@ QUY TẮC TRÌNH BÀY (BẮT BUỘC):
             
             const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
             if (aiText) {
-                setAiAnalysisResult(aiText);
+                try {
+                    let jsonString = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const firstBrace = jsonString.indexOf('{');
+                    const lastBrace = jsonString.lastIndexOf('}');
+                    if (firstBrace !== -1 && lastBrace !== -1) {
+                        jsonString = jsonString.substring(firstBrace, lastBrace + 1);
+                    }
+                    const parsedData = JSON.parse(jsonString);
+                    setAiAnalysisResult(parsedData);
+                } catch (e) {
+                    console.error("AI JSON Parse Error:", e, aiText);
+                    setAiAnalysisResult("AI trả về sai định dạng. Vui lòng thử lại.");
+                }
             } else {
                 console.error("AI Error Data:", data);
                 setAiAnalysisResult("Lỗi phân tích: " + JSON.stringify(data));
@@ -254,10 +291,18 @@ QUY TẮC TRÌNH BÀY (BẮT BUỘC):
                                 </div>
                             )}
 
-                            {/* AI Response */}
-                            <div className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl p-4 border border-slate-100 dark:border-slate-700/50">
-                                {aiAnalysisResult}
-                            </div>
+                            {/* AI Response Rendered via custom JSON parsing */}
+                            {typeof aiAnalysisResult === 'string' ? (
+                                <div className="text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 p-4 rounded-xl border border-rose-200 dark:border-rose-800/30">
+                                    {aiAnalysisResult}
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <ResultSection icon={CheckCircle} title="Ưu điểm hiện tại" items={aiAnalysisResult.pros} type="pros" />
+                                    <ResultSection icon={AlertTriangle} title="Điểm cần cải thiện" items={aiAnalysisResult.cons} type="cons" />
+                                    <ResultSection icon={Lightbulb} title="Gợi ý điều chỉnh" items={aiAnalysisResult.advices} type="advices" />
+                                </div>
+                            )}
                         </div>
                     ) : null}
                 </div>
