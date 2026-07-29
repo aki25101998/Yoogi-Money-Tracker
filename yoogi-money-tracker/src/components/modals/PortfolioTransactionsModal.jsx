@@ -14,20 +14,25 @@ const PortfolioTransactionsModal = ({ isOpen, onClose, portfolio, transactions, 
             let name = 'Khác';
             let icon = '📁';
             // Find which category this transaction belongs to
-            let foundCat = categories.find(c => c.id === txn.categoryId);
-            if (!foundCat) {
-                // It might be a subcategory, find the parent
+            let foundCat = null;
+            let parentIcon = '📁';
+            if (txn.subcategoryId) {
                 for (const c of categories) {
-                    if (c.subcategories && c.subcategories.some(s => s.id === txn.categoryId)) {
-                        foundCat = c.subcategories.find(s => s.id === txn.categoryId);
+                    if (c.subcategories && c.subcategories.some(s => s.id === txn.subcategoryId)) {
+                        foundCat = c.subcategories.find(s => s.id === txn.subcategoryId);
+                        parentIcon = c.icon;
                         break;
                     }
                 }
             }
+            if (!foundCat) {
+                foundCat = categories.find(c => c.id === txn.categoryId);
+                if (foundCat) parentIcon = foundCat.icon;
+            }
             
             if (foundCat) {
                 name = foundCat.name;
-                icon = foundCat.icon;
+                icon = parentIcon;
             }
 
             const key = `${icon} ${name}`;

@@ -18,7 +18,10 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                 income += Number(t.amount) || 0;
             } else if (t.type === 'expense') {
                 const amount = Number(t.amount) || 0;
-                expenses[t.categoryId] = (expenses[t.categoryId] || 0) + amount;
+                const idToTrack = t.subcategoryId || t.categoryId;
+                if (idToTrack) {
+                    expenses[idToTrack] = (expenses[idToTrack] || 0) + amount;
+                }
             }
         });
 
@@ -62,19 +65,16 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                     if (isExceeded) barColor = 'bg-rose-500';
                     else if (isNearLimit) barColor = 'bg-amber-500';
 
-                    // Get icons for the categories (including subcategories)
-                    const cats = portfolio.expenseCategoryIds.map(id => {
+                    // Get unique parent icons for the selected categories
+                    const parentIcons = portfolio.expenseCategoryIds.map(id => {
                         let found = categories.find(c => c.id === id);
-                        if (!found) {
-                            for (const c of categories) {
-                                if (c.subcategories) {
-                                    found = c.subcategories.find(s => s.id === id);
-                                    if (found) break;
-                                }
-                            }
+                        if (found) return found.icon;
+                        for (const c of categories) {
+                            if (c.subcategories && c.subcategories.some(s => s.id === id)) return c.icon;
                         }
-                        return found;
+                        return null;
                     }).filter(Boolean);
+                    const uniqueIcons = [...new Set(parentIcons)];
 
                     return (
                         <div 
@@ -86,10 +86,10 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                                 <div className="flex flex-col">
                                     <span className="font-bold text-slate-700 dark:text-slate-200">{portfolio.name}</span>
                                     <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                        {cats.slice(0, 3).map((c, i) => (
-                                            <span key={i} title={c.name}>{c.icon}</span>
+                                        {uniqueIcons.slice(0, 5).map((icon, i) => (
+                                            <span key={i}>{icon}</span>
                                         ))}
-                                        {cats.length > 3 && <span>+{cats.length - 3}</span>}
+                                        {uniqueIcons.length > 5 && <span>+{uniqueIcons.length - 5}</span>}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 text-right">
@@ -123,7 +123,7 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                 isOpen={!!selectedPortfolio}
                 onClose={() => setSelectedPortfolio(null)}
                 portfolio={selectedPortfolio}
-                transactions={transactions.filter(t => t.type === 'expense' && selectedPortfolio?.expenseCategoryIds?.includes(t.categoryId))}
+                transactions={transactions.filter(t => t.type === 'expense' && selectedPortfolio?.expenseCategoryIds?.includes(t.subcategoryId || t.categoryId))}
                 categories={categories}
                 onEditTransaction={onEditTransaction}
                 onDeleteTransaction={onDeleteTransaction}
