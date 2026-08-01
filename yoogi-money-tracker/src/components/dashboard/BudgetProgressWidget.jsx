@@ -12,8 +12,12 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
         const expenses = {};
 
         const validIncomeIds = budgetSettings?.incomeCategoryIds || [];
+        const validWalletIds = budgetSettings?.walletIds || [];
+        const applyWalletFilter = validWalletIds.length > 0;
 
         transactions.forEach(t => {
+            if (applyWalletFilter && !validWalletIds.includes(t.walletId)) return;
+
             if (t.type === 'income' && validIncomeIds.includes(t.categoryId)) {
                 income += Number(t.amount) || 0;
             } else if (t.type === 'expense') {

@@ -71,10 +71,14 @@ const AIFinancialAnalysis = ({
             if (activePortfolios.length > 0) {
                 // Phân tích theo ngân quỹ người dùng thiết lập
                 const validIncomeIds = budgetSettings?.incomeCategoryIds || [];
+                const validWalletIds = budgetSettings?.walletIds || [];
+                const applyWalletFilter = validWalletIds.length > 0;
                 let budgetTotalIncome = 0;
                 const categoryExpenses = {};
 
                 filteredTransactions.forEach(t => {
+                    if (applyWalletFilter && !validWalletIds.includes(t.walletId)) return;
+
                     if (t.type === 'income' && validIncomeIds.includes(t.categoryId)) {
                         budgetTotalIncome += Number(t.amount) || 0;
                     } else if (t.type === 'expense') {

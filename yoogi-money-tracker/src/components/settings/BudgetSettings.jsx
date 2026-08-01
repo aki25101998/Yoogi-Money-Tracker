@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Save, AlertCircle, Plus, Trash2, PieChart, Check, ChevronDown } from 'lucide-react';
 import { saveBudgetSettings, saveBudgetPortfolio, deleteBudgetPortfolio } from '../../services/budgetService';
 
-const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) => {
-    // State for Budget Settings (Income Sources)
+const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories, wallets }) => {
+    // State for Budget Settings (Income Sources and Wallets)
     const [incomeIds, setIncomeIds] = useState([]);
+    const [walletIds, setWalletIds] = useState([]);
     
     // State for Portfolios
     const [portfolios, setPortfolios] = useState([]);
@@ -18,6 +19,7 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
     useEffect(() => {
         if (budgetSettings) {
             setIncomeIds(budgetSettings.incomeCategoryIds || []);
+            setWalletIds(budgetSettings.walletIds || []);
         }
     }, [budgetSettings ? JSON.stringify(budgetSettings) : null]);
 
@@ -35,6 +37,14 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
             prev.includes(categoryId) 
                 ? prev.filter(id => id !== categoryId)
                 : [...prev, categoryId]
+        );
+    };
+
+    const toggleWallet = (walletId) => {
+        setWalletIds(prev => 
+            prev.includes(walletId) 
+                ? prev.filter(id => id !== walletId)
+                : [...prev, walletId]
         );
     };
 
@@ -122,7 +132,10 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
         setError(null);
         try {
             // Save settings
-            await saveBudgetSettings(user.uid, { incomeCategoryIds: incomeIds });
+            await saveBudgetSettings(user.uid, { 
+                incomeCategoryIds: incomeIds,
+                walletIds: walletIds
+            });
             
             // Save portfolios
             for (const p of portfolios) {
@@ -169,10 +182,41 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
                 </div>
             )}
 
-            {/* Bước 1: Chọn Nguồn Thu Nhập */}
+            {/* Bước 1: Chọn Ví Áp Dụng */}
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
+                <h4 className="font-bold text-slate-800 dark:text-white mb-2">1. Chọn Ví Áp Dụng Ngân Quỹ</h4>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                    Chọn các ví bạn muốn dùng để theo dõi thu/chi cho ngân quỹ. Nếu không chọn ví nào, hệ thống sẽ tự động áp dụng cho tất cả các ví.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {wallets?.map(wallet => {
+                        const isSelected = walletIds.includes(wallet.id);
+                        return (
+                            <button
+                                key={wallet.id}
+                                onClick={() => toggleWallet(wallet.id)}
+                                className={`flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all ${
+                                    isSelected 
+                                        ? 'bg-blue-50 border-blue-500 dark:bg-blue-900/30 dark:border-blue-500 shadow-sm' 
+                                        : 'bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-500'
+                                }`}
+                            >
+                                <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                                    {isSelected && <Check className="w-3 h-3" />}
+                                </div>
+                                <span className={`text-sm font-medium truncate ${isSelected ? 'text-blue-800 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}>
+                                    {wallet.name}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Bước 2: Chọn Nguồn Thu Nhập */}
             <div className="step1-container bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-3 mb-2">
-                    <h4 className="font-bold text-slate-800 dark:text-white">1. Chọn Nguồn Thu Nhập Cơ Sở</h4>
+                    <h4 className="font-bold text-slate-800 dark:text-white">2. Chọn Nguồn Thu Nhập Cơ Sở</h4>
                     <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
                         <button onClick={() => toggleAllDetails('.step1-container details', true)} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Mở rộng</button>
                         <span>|</span>
@@ -253,12 +297,12 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories }) 
                 )}
             </div>
 
-            {/* Bước 2: Tạo Nhóm Ngân Quỹ */}
+            {/* Bước 3: Tạo Nhóm Ngân Quỹ */}
             <div className="step2-container space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
                         <div className="flex items-center gap-3">
-                            <h4 className="font-bold text-slate-800 dark:text-white">2. Các Nhóm Ngân Quỹ</h4>
+                            <h4 className="font-bold text-slate-800 dark:text-white">3. Các Nhóm Ngân Quỹ</h4>
                             <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
                                 <button onClick={() => toggleAllDetails('.step2-container details', true)} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Mở rộng</button>
                                 <span>|</span>
