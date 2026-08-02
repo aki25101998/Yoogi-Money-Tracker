@@ -72,7 +72,7 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
 
     const startEditPayment = (payment) => {
         setEditingPaymentId(payment.id);
-        const notesMatch = (payment.description || payment.note || '').match(/trả nợ:\s*(.*)/);
+        const notesMatch = (payment.description || payment.note || '').match(/trả nợ:?\s*(.*)/);
         const notes = notesMatch ? notesMatch[1] : '';
         const paymentDate = payment.date || new Date().toISOString();
         const formattedDate = new Date(paymentDate).toISOString().split('T')[0];
@@ -94,7 +94,7 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
             await updateTransaction(user.uid, payment.id, {
                 amount: newAmountNum,
                 walletId: paymentEditForm.walletId,
-                description: `${groupedDebt.personName} trả nợ: ${paymentEditForm.notes}`,
+                description: paymentEditForm.notes ? `${groupedDebt.personName} trả nợ ${paymentEditForm.notes}` : `${groupedDebt.personName} trả nợ`,
                 date: new Date(paymentEditForm.date).toISOString()
             });
 

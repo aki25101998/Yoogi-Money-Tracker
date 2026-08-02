@@ -61,7 +61,7 @@ const [form, setForm] = useState({
             const transactionData = {
                 type: 'loan_repaid',
                 amount: amountNum,
-                description: `${debt.personName} trả nợ: ${form.notes}`,
+                description: form.notes ? `${debt.personName} trả nợ ${form.notes}` : `${debt.personName} trả nợ`,
                 categoryId: matchedCategoryId,
                 subcategoryId: '',
                 date: new Date(form.date).toISOString(),
