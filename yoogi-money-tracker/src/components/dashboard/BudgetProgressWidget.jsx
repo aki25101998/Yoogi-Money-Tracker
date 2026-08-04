@@ -5,6 +5,15 @@ import PortfolioTransactionsModal from '../modals/PortfolioTransactionsModal';
 
 const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budgetPortfolios, dateRange, onEditTransaction, onDeleteTransaction }) => {
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+    const [isCrossBudgetEnabled, setIsCrossBudgetEnabled] = useState(() => {
+        return localStorage.getItem('yoogi_cross_budget_enabled') === 'true';
+    });
+
+    const handleToggleCrossBudget = () => {
+        const newValue = !isCrossBudgetEnabled;
+        setIsCrossBudgetEnabled(newValue);
+        localStorage.setItem('yoogi_cross_budget_enabled', newValue);
+    };
 
     // 1. Calculate base income and map expenses
     const { totalIncome, categoryExpenses } = useMemo(() => {
@@ -37,6 +46,54 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
         return (budgetPortfolios || []).filter(p => parseFloat(p.percentage) > 0 && p.expenseCategoryIds && p.expenseCategoryIds.length > 0);
     }, [budgetPortfolios]);
 
+    // 3. Calculate portfolio stats with optional cross-budgeting
+    const portfolioStats = useMemo(() => {
+        if (!activePortfolios || activePortfolios.length === 0) return [];
+
+        let stats = activePortfolios.map(portfolio => {
+            const percentage = parseFloat(portfolio.percentage) || 0;
+            const originalBudget = (totalIncome * percentage) / 100;
+            const spentAmount = portfolio.expenseCategoryIds.reduce((sum, catId) => sum + (categoryExpenses[catId] || 0), 0);
+            
+            return {
+                ...portfolio,
+                originalBudget,
+                spentAmount,
+                currentBudget: originalBudget,
+                borrowedAmount: 0,
+                lentAmount: 0,
+            };
+        });
+
+        if (isCrossBudgetEnabled) {
+            let deficits = stats.filter(p => p.spentAmount > p.originalBudget);
+            let surpluses = stats.filter(p => p.originalBudget > p.spentAmount);
+
+            for (let def of deficits) {
+                let needed = def.spentAmount - def.originalBudget;
+                
+                for (let sur of surpluses) {
+                    if (needed <= 0) break;
+                    
+                    let available = sur.currentBudget - sur.spentAmount;
+                    if (available <= 0) continue;
+
+                    let transfer = Math.min(needed, available);
+                    
+                    sur.currentBudget -= transfer;
+                    sur.lentAmount += transfer;
+                    
+                    def.currentBudget += transfer;
+                    def.borrowedAmount += transfer;
+                    
+                    needed -= transfer;
+                }
+            }
+        }
+
+        return stats;
+    }, [activePortfolios, totalIncome, categoryExpenses, isCrossBudgetEnabled]);
+
     if (!activePortfolios || activePortfolios.length === 0) {
         return null;
     }
@@ -44,25 +101,32 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
     return (
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm mb-6">
             <div className="flex flex-col gap-1 mb-4">
-                <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                    <Target className="w-5 h-5 text-emerald-500" />
-                    Ngân quỹ tháng này
-                </h3>
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <Target className="w-5 h-5 text-emerald-500" />
+                        Ngân quỹ tháng này
+                    </h3>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                        <input 
+                            type="checkbox" 
+                            checked={isCrossBudgetEnabled}
+                            onChange={handleToggleCrossBudget}
+                            className="w-4 h-4 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer"
+                        />
+                        Bù trừ chéo
+                    </label>
+                </div>
                 <div className="text-sm text-slate-500 pl-7">
                     Thu nhập cơ sở: <span className="font-bold text-emerald-600">{formatCurrency(totalIncome)}</span>
                 </div>
             </div>
 
             <div className="space-y-5">
-                {activePortfolios.map(portfolio => {
-                    const percentage = parseFloat(portfolio.percentage) || 0;
-                    const budgetAmount = (totalIncome * percentage) / 100;
+                {portfolioStats.map(stat => {
+                    const { originalBudget, currentBudget, spentAmount, borrowedAmount, lentAmount } = stat;
                     
-                    // Sum expenses for all categories in this portfolio
-                    const spentAmount = portfolio.expenseCategoryIds.reduce((sum, catId) => sum + (categoryExpenses[catId] || 0), 0);
-                    
-                    const percentSpent = budgetAmount > 0 ? Math.min((spentAmount / budgetAmount) * 100, 100) : 0;
-                    const isExceeded = spentAmount > budgetAmount && budgetAmount > 0;
+                    const percentSpent = currentBudget > 0 ? Math.min((spentAmount / currentBudget) * 100, 100) : (spentAmount > 0 ? 100 : 0);
+                    const isExceeded = spentAmount > currentBudget && currentBudget > 0;
                     const isNearLimit = percentSpent >= 80 && !isExceeded;
 
                     let barColor = 'bg-emerald-500';
@@ -70,7 +134,7 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                     else if (isNearLimit) barColor = 'bg-amber-500';
 
                     // Get unique parent icons for the selected categories
-                    const parentIcons = portfolio.expenseCategoryIds.map(id => {
+                    const parentIcons = stat.expenseCategoryIds.map(id => {
                         let found = categories.find(c => c.id === id);
                         if (found) return found.icon;
                         for (const c of categories) {
@@ -82,13 +146,13 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
 
                     return (
                         <div 
-                            key={portfolio.id} 
+                            key={stat.id} 
                             className="space-y-2 cursor-pointer p-2 -mx-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors"
-                            onClick={() => setSelectedPortfolio(portfolio)}
+                            onClick={() => setSelectedPortfolio(stat)}
                         >
                             <div className="flex justify-between items-center text-sm">
                                 <div className="flex flex-col">
-                                    <span className="font-bold text-slate-700 dark:text-slate-200">{portfolio.name}</span>
+                                    <span className="font-bold text-slate-700 dark:text-slate-200">{stat.name}</span>
                                     <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                                         {uniqueIcons.slice(0, 5).map((icon, i) => (
                                             <span key={i}>{icon}</span>
@@ -96,12 +160,28 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                                         {uniqueIcons.length > 5 && <span>+{uniqueIcons.length - 5}</span>}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 text-right">
-                                    {isExceeded && <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />}
-                                    <span className={isExceeded ? 'text-rose-600 font-bold' : 'text-slate-600 dark:text-slate-300 font-bold'}>
-                                        {formatCurrency(spentAmount)}
-                                    </span>
-                                    <span className="text-slate-400 font-medium">/ {formatCurrency(budgetAmount)}</span>
+                                <div className="flex flex-col items-end gap-1">
+                                    <div className="flex items-center gap-2 text-right">
+                                        {isExceeded && <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />}
+                                        <span className={isExceeded ? 'text-rose-600 font-bold' : 'text-slate-600 dark:text-slate-300 font-bold'}>
+                                            {formatCurrency(spentAmount)}
+                                        </span>
+                                        <span className="text-slate-400 font-medium">/ {formatCurrency(currentBudget)}</span>
+                                    </div>
+                                    {isCrossBudgetEnabled && (borrowedAmount > 0 || lentAmount > 0) && (
+                                        <div className="flex gap-1">
+                                            {borrowedAmount > 0 && (
+                                                <span className="text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">
+                                                    Được bù +{formatCurrency(borrowedAmount)}
+                                                </span>
+                                            )}
+                                            {lentAmount > 0 && (
+                                                <span className="text-[10px] font-bold text-amber-500 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
+                                                    Cho mượn -{formatCurrency(lentAmount)}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             
@@ -115,7 +195,7 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                             
                             {isExceeded && (
                                 <p className="text-xs text-rose-500 font-medium text-right">
-                                    Đã vượt {formatCurrency(spentAmount - budgetAmount)}!
+                                    Đã vượt {formatCurrency(spentAmount - currentBudget)}!
                                 </p>
                             )}
                         </div>
