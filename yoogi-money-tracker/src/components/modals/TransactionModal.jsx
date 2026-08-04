@@ -16,6 +16,7 @@ const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || 
         type: 'expense',
         amount: '',
         description: '',
+        personName: '', // added to store extracted person name for debts
         categoryId: '',
         subcategoryId: '',
         date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
@@ -41,10 +42,29 @@ const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || 
                     }
                 }
 
+                let parsedDesc = initialData.description || initialData.note || '';
+                let pName = '';
+                let cleanNote = parsedDesc;
+
+                if (initialData.type === 'loan_given') {
+                    const match = parsedDesc.match(/^(.*?) mượn(?:[:\s]+(.*))?$/i);
+                    if (match) {
+                        pName = match[1]?.trim() || '';
+                        cleanNote = match[2]?.trim() || '';
+                    }
+                } else if (initialData.type === 'loan_repaid') {
+                    const match = parsedDesc.match(/^(.*?) trả nợ(?:[:\s]+(.*))?$/i);
+                    if (match) {
+                        pName = match[1]?.trim() || '';
+                        cleanNote = match[2]?.trim() || '';
+                    }
+                }
+
                 setForm({
                     type: initialData.type || 'expense',
                     amount: initialData.amount || '',
-                    description: initialData.description || initialData.note || '',
+                    description: cleanNote,
+                    personName: pName,
                     categoryId: initialData.categoryId || '',
                     subcategoryId: initialData.subcategoryId || '',
                     date: parsedDate,
@@ -56,6 +76,7 @@ const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || 
                     type: 'expense',
                     amount: '',
                     description: '',
+                    personName: '',
                     categoryId: '',
                     subcategoryId: '',
                     date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
@@ -84,8 +105,16 @@ const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || 
             console.error('Error combining date', err);
         }
 
+        let finalDescription = form.description;
+        if (form.type === 'loan_given') {
+            finalDescription = form.personName ? `${form.personName} mượn${form.description ? ': ' + form.description : ''}` : form.description;
+        } else if (form.type === 'loan_repaid') {
+            finalDescription = form.personName ? `${form.personName} trả nợ${form.description ? ': ' + form.description : ''}` : form.description;
+        }
+
         onSave({
             ...form,
+            description: finalDescription,
             date: combinedDate,
             amount: parseFloat(form.amount) || 0,
         });
@@ -102,7 +131,7 @@ const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || 
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
                 <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
                     <h3 className="font-bold text-lg text-slate-800 dark:text-white">
-                        {initialData && initialData.id ? 'Sửa giao dịch' : 'Thêm giao dịch'}
+                        {form.type === 'loan_given' ? 'Chỉnh sửa khoản nợ' : form.type === 'loan_repaid' ? 'Sửa lịch sử trả' : (initialData && initialData.id ? 'Sửa giao dịch' : 'Thêm giao dịch')}
                     </h3>
                     <button onClick={onClose}><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
                 </div>
@@ -127,13 +156,17 @@ const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || 
                         </div>
                     ) : null}
 
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Mô tả</label>
-                        <input type="text" required value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none" />
-                    </div>
+                    {form.type !== 'loan_given' && form.type !== 'loan_repaid' && (
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Mô tả</label>
+                            <input type="text" required value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none" />
+                        </div>
+                    )}
 
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Số tiền</label>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                            {form.type === 'loan_given' ? 'Số tiền mượn' : form.type === 'loan_repaid' ? 'Số tiền đã trả' : 'Số tiền'}
+                        </label>
                         <AmountInput
                             required
                             value={form.amount}
@@ -143,23 +176,30 @@ const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || 
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Ngày & Giờ</label>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                            {form.type === 'loan_given' ? 'Ngày mượn' : form.type === 'loan_repaid' ? 'Ngày trả' : 'Ngày & Giờ'}
+                        </label>
                         <div className="flex gap-2">
                             <input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none" />
-                            <div className="relative">
-                                <input 
-                                    type="time" 
-                                    value={form.time} 
-                                    onChange={e => setForm({ ...form, time: e.target.value })} 
-                                    className="w-[120px] px-3 py-2 pl-9 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none text-sm" 
-                                />
-                                <Clock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                            </div>
+                            
+                            {form.type !== 'loan_given' && form.type !== 'loan_repaid' && (
+                                <div className="relative">
+                                    <input 
+                                        type="time" 
+                                        value={form.time} 
+                                        onChange={e => setForm({ ...form, time: e.target.value })} 
+                                        className="w-[120px] px-3 py-2 pl-9 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none text-sm" 
+                                    />
+                                    <Clock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Ví tiền</label>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                            {form.type === 'loan_given' ? 'Trích từ ví' : form.type === 'loan_repaid' ? 'Vào ví' : 'Ví tiền'}
+                        </label>
                         <div className="relative">
                             <select
                                 required
@@ -177,6 +217,13 @@ const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || 
                             </div>
                         </div>
                     </div>
+
+                    {(form.type === 'loan_given' || form.type === 'loan_repaid') && (
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Ghi chú</label>
+                            <input type="text" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:outline-none" />
+                        </div>
+                    )}
 
                     {(form.type === 'expense' || form.type === 'income') && (
                         <>
