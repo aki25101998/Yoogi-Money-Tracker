@@ -149,7 +149,8 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
         summaryStats,
         pieChartData,
         categoryTransactions,
-        recentTransactions
+        recentTransactions,
+        budgetTransactions
     } = useDashboardStats({
         transactions,
         localWallets,
@@ -322,7 +323,7 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
 
             {/* Ngân quỹ tự động (Budgets) */}
             <BudgetProgressWidget
-                transactions={filteredTransactions}
+                transactions={budgetTransactions}
                 categories={categories}
                 budgetSettings={budgetSettings}
                 budgetPortfolios={budgetPortfolios}

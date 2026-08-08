@@ -120,6 +120,16 @@ export const useDashboardStats = ({
 
     const recentTransactions = useMemo(() => filteredTransactions.slice(0, 5), [filteredTransactions]);
 
+    const budgetTransactions = useMemo(() => {
+        return transactions.filter(t => {
+            if (!t.date) return false;
+            const tDateOnly = t.date ? t.date.split('T')[0] : '';
+            if (dateRange.start && tDateOnly < dateRange.start) return false;
+            if (dateRange.end && tDateOnly > dateRange.end) return false;
+            return true;
+        });
+    }, [transactions, dateRange]);
+
     return {
         walletBalances,
         totalBalance,
@@ -127,6 +137,7 @@ export const useDashboardStats = ({
         summaryStats,
         pieChartData,
         categoryTransactions,
-        recentTransactions
+        recentTransactions,
+        budgetTransactions
     };
 };
