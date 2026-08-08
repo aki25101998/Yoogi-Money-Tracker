@@ -65,6 +65,12 @@ description: Bộ quy tắc chuẩn, liệt kê kiến trúc core và các đi�
   - Khi tới hạn: Tự động push 1 `transaction` mới vào database -> Tính lại `next_date` tiếp theo -> Lưu lại cập nhật.
 - **Rule Bắt buộc:** Không được xóa bỏ logic quét 30s này. Phải luôn bao gồm xử lý "bù giờ" (catch-up) nếu app bị tắt trong thời gian dài (vòng lặp while cho `next_date <= now`).
 
+### 2.6. Thẻ tín dụng (Credit Cards) & Tính năng Trả Tối Thiểu (Minimum Payment)
+- **Logic hoạt động:** Đối với thẻ tín dụng hoặc các khoản nợ có tính năng thanh toán số dư tối thiểu, hệ thống phải xử lý tách bạch giữa [Số tiền trả tối thiểu] và [Dư nợ còn lại]. Bất kỳ giao dịch trả tối thiểu nào cũng phải được hạch toán chính xác vào dư nợ và cập nhật trạng thái hiển thị hợp lý.
+
+### 2.7. Tối ưu trải nghiệm nhập liệu (Quick Suggestions)
+- **Quy tắc:** Tại giao diện thêm/sửa giao dịch, mục mô tả (description) cần có các nút gợi ý văn bản nhanh (Ví dụ: "Nạp vào ATM", "Rút tiền mặt"...) dựa trên loại giao dịch và ngữ cảnh, giúp người dùng thao tác nhanh nhất trên màn hình điện thoại.
+
 ---
 
 ## 3. Quy tắc Lập trình (Coding Guidelines)
