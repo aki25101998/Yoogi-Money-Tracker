@@ -43,10 +43,16 @@ const [form, setForm] = useState({
                 ? (categories?.find(c => c.type === 'installment_repaid')?.id || 'tra_no_tra_gop') 
                 : (categories?.find(c => c.type === 'loan_repaid')?.id || 'loan_repaid');
 
+            const periodSuffix = monthStr ? ` (T${monthStr.split('-')[1]}/${monthStr.split('-')[0]})` : '';
+            let finalDescription = form.notes.trim() || `Trả tối thiểu ${item.name}`;
+            if (monthStr && !finalDescription.includes(periodSuffix.trim())) {
+                finalDescription += periodSuffix;
+            }
+
             const transactionData = {
                 type: isPaying ? 'installment_repaid' : 'loan_repaid',
                 amount: amountNum,
-                description: form.notes.trim() || `Trả tối thiểu ${item.name}`,
+                description: finalDescription,
                 categoryId: matchedCategoryId,
                 subcategoryId: isPaying ? 'tra_gop' : '',
                 date: new Date(form.date).toISOString(),
