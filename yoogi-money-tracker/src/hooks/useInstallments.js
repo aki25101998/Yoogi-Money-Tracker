@@ -101,7 +101,15 @@ export const useInstallments = ({
             
             const totalPayable = item.monthlyPayment * item.term;
             const paidCount = Math.min((item.paidMonths || []).length, item.term);
-            const repaid = item.monthlyPayment * paidCount;
+            let repaid = item.monthlyPayment * paidCount;
+            
+            if (item.partialPayments) {
+                for (const [mStr, amount] of Object.entries(item.partialPayments)) {
+                    if (!item.paidMonths?.includes(mStr)) {
+                        repaid += parseFloat(amount) || 0;
+                    }
+                }
+            }
             
             if (paidCount < item.term) {
                 groups[lenderName].totalAmount += totalPayable;
@@ -192,7 +200,31 @@ export const useInstallments = ({
                 effectiveMonths = Math.min(monthsPassed, item.term);
             }
             
-            const paidAmount = effectiveMonths * item.monthlyPayment;
+            if (item.partialPayments) {
+                for (const [month, amount] of Object.entries(item.partialPayments)) {
+                    if (!item.paidMonths?.includes(month)) {
+                        let match = false;
+                        if (!filterDate) match = true;
+                        else if (filterDate.length === 4) match = month.startsWith(filterDate);
+                        else if (filterDate.length === 7) match = month === filterDate;
+                        
+                        if (match) {
+                            periodPaidTotal += parseFloat(amount) || 0;
+                        }
+                    }
+                }
+            }
+            
+            let paidAmount = effectiveMonths * item.monthlyPayment;
+            
+            if (item.partialPayments) {
+                for (const [mStr, amount] of Object.entries(item.partialPayments)) {
+                    if (!item.paidMonths?.includes(mStr)) {
+                        paidAmount += parseFloat(amount) || 0;
+                    }
+                }
+            }
+            
             remainingTotal += (item.totalPayable - paidAmount);
 
             const start = new Date(item.startDate);
