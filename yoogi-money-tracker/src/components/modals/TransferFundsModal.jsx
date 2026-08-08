@@ -156,7 +156,7 @@ const getCurrentTime = () => {
                                             key={suggestion}
                                             type="button"
                                             onClick={() => setDescription(suggestion)}
-                                            className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                            className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 rounded-full hover:bg-slate-50 dark:hover:bg-slate-600 transition-all shadow-sm"
                                         >
                                             {suggestion}
                                         </button>
