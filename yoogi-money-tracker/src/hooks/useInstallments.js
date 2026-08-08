@@ -1,5 +1,5 @@
 import { useMemo, useEffect } from 'react';
-import { getYearMonth } from '../utils/calculations';
+import { calculateItemStats, getYearMonth } from '../utils/calculations';
 import { updateInstallment } from '../utils/supabaseHelpers';
 
 export const useInstallments = ({
@@ -8,7 +8,8 @@ export const useInstallments = ({
     user,
     filterOwner,
     filterDate,
-    selectedLenderName
+    selectedLenderName,
+    transactions
 }) => {
     const uniqueOwners = useMemo(() => {
         return ['all', ...(payers?.map(p => p.name) || [])];
@@ -99,21 +100,11 @@ export const useInstallments = ({
             
             groups[lenderName].items.push(item);
             
-            const totalPayable = item.monthlyPayment * item.term;
-            const paidCount = Math.min((item.paidMonths || []).length, item.term);
-            let repaid = item.monthlyPayment * paidCount;
+            const stats = calculateItemStats(item, new Date(), transactions);
             
-            if (item.partialPayments) {
-                for (const [mStr, amount] of Object.entries(item.partialPayments)) {
-                    if (!item.paidMonths?.includes(mStr)) {
-                        repaid += parseFloat(amount) || 0;
-                    }
-                }
-            }
-            
-            if (paidCount < item.term) {
-                groups[lenderName].totalAmount += totalPayable;
-                groups[lenderName].repaidAmount += repaid;
+            if (!stats.isFinished) {
+                groups[lenderName].totalAmount += item.totalPayable;
+                groups[lenderName].repaidAmount += stats.paidAmount;
                 groups[lenderName].status = 'active';
             }
         });
@@ -124,7 +115,7 @@ export const useInstallments = ({
             if (aActive !== bActive) return aActive ? -1 : 1;
             return b.totalAmount - a.totalAmount;
         });
-    }, [filteredItems]);
+    }, [filteredItems, transactions]);
 
     const { inProgressItems, completedItems } = useMemo(() => {
         const targetDate = activeReferenceDate;
@@ -177,12 +168,11 @@ export const useInstallments = ({
         let periodPaidTotal = 0;
         const targetDate = activeReferenceDate;
 
-        const today = new Date();
         filteredItems.forEach(item => {
-            let effectiveMonths = 0;
+            const stats = calculateItemStats(item, targetDate, transactions);
+            
+            // Add up periodPaidTotal manually for the specific filterDate if needed
             if (Array.isArray(item.paidMonths)) {
-                effectiveMonths = Math.min(item.paidMonths.length, item.term);
-                
                 item.paidMonths.forEach(month => {
                     let match = false;
                     if (!filterDate) match = true;
@@ -193,14 +183,24 @@ export const useInstallments = ({
                         periodPaidTotal += item.monthlyPayment;
                     }
                 });
-            } else {
-                const start = new Date(item.startDate);
-                let monthsPassed = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
-                if (today < start) monthsPassed = 0;
-                effectiveMonths = Math.min(monthsPassed, item.term);
             }
             
-            if (item.partialPayments) {
+            if (transactions && Array.isArray(transactions)) {
+                const related = transactions.filter(t => t.type === 'installment_repaid' && (t.installmentId === item.id || (!t.installmentId && t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`))));
+                for (const t of related) {
+                    const txMonthStr = t.date ? `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}` : null;
+                    if (txMonthStr && !item.paidMonths?.includes(txMonthStr)) {
+                        let match = false;
+                        if (!filterDate) match = true;
+                        else if (filterDate.length === 4) match = txMonthStr.startsWith(filterDate);
+                        else if (filterDate.length === 7) match = txMonthStr === filterDate;
+                        
+                        if (match) {
+                            periodPaidTotal += (t.amount || 0);
+                        }
+                    }
+                }
+            } else if (item.partialPayments) {
                 for (const [month, amount] of Object.entries(item.partialPayments)) {
                     if (!item.paidMonths?.includes(month)) {
                         let match = false;
@@ -215,17 +215,7 @@ export const useInstallments = ({
                 }
             }
             
-            let paidAmount = effectiveMonths * item.monthlyPayment;
-            
-            if (item.partialPayments) {
-                for (const [mStr, amount] of Object.entries(item.partialPayments)) {
-                    if (!item.paidMonths?.includes(mStr)) {
-                        paidAmount += parseFloat(amount) || 0;
-                    }
-                }
-            }
-            
-            remainingTotal += (item.totalPayable - paidAmount);
+            remainingTotal += stats.remainingAmount;
 
             const start = new Date(item.startDate);
             const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
@@ -242,7 +232,7 @@ export const useInstallments = ({
         });
 
         return { monthlyTotal, remainingTotal, projectedRemainingTotal, periodPaidTotal };
-    }, [filteredItems, inProgressItems, activeReferenceDate, filterDate]);
+    }, [filteredItems, inProgressItems, activeReferenceDate, filterDate, transactions]);
 
     const currentLenderDetails = useMemo(() => {
         if (!selectedLenderName) return null;

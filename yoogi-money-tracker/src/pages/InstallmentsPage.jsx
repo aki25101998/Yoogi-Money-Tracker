@@ -75,7 +75,8 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
         user,
         filterOwner,
         filterDate,
-        selectedLenderName
+        selectedLenderName,
+        transactions
     });
 
     // --- Handlers ---

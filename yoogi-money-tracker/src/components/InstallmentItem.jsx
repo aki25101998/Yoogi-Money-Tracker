@@ -42,10 +42,7 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
         );
     }) || [];
 
-    const partialPaidFromTxns = relatedTransactions.reduce((acc, t) => acc + (t.amount || 0), 0);
-    const partialPaid = item.partialPayments && item.partialPayments[currentMonthStr] !== undefined
-        ? parseFloat(item.partialPayments[currentMonthStr])
-        : partialPaidFromTxns;
+    const partialPaid = relatedTransactions.reduce((acc, t) => acc + (t.amount || 0), 0);
     const partialProgress = item.monthlyPayment > 0 ? Math.min(Math.round((partialPaid / item.monthlyPayment) * 100), 100) : 0;
     const monthlyRemaining = Math.max(item.monthlyPayment - partialPaid, 0);
 
