@@ -768,11 +768,6 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                         onClick={() => openDetailsModal(group)}
                                     >
                                         <div className="space-y-4">
-                                            <div className="flex justify-between items-baseline">
-                                                <span className="text-sm text-slate-500">Đã mượn</span>
-                                                <span className="font-bold text-slate-800 dark:text-white text-lg">{formatCurrency(group.totalAmount)}</span>
-                                            </div>
-
                                             <div>
                                                 <div className="flex justify-between text-xs mb-1.5">
                                                     <span className="font-medium text-emerald-600 dark:text-emerald-400">Đã trả: {formatCurrency(group.repaidAmount)}</span>
