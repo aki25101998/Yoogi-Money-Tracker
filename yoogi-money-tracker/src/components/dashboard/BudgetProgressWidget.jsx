@@ -172,12 +172,12 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                                         <div className="flex gap-1">
                                             {borrowedAmount > 0 && (
                                                 <span className="text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">
-                                                    Được bù +{formatCurrency(borrowedAmount)}
+                                                    Được bù +{formatCurrency(borrowedAmount)} (Lên {totalIncome > 0 ? Math.round((currentBudget / totalIncome) * 100 * 10) / 10 : 0}%)
                                                 </span>
                                             )}
                                             {lentAmount > 0 && (
                                                 <span className="text-[10px] font-bold text-amber-500 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
-                                                    Cho mượn -{formatCurrency(lentAmount)}
+                                                    Cho mượn -{formatCurrency(lentAmount)} (Còn {totalIncome > 0 ? Math.round((currentBudget / totalIncome) * 100 * 10) / 10 : 0}%)
                                                 </span>
                                             )}
                                         </div>
