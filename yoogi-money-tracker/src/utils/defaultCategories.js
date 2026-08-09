@@ -21,6 +21,11 @@ export const DEFAULT_CATEGORIES = [
                 "description": "Siêu thị, đi chợ."
             },
             {
+                "id": "suc_khoe",
+                "name": "Sức khỏe",
+                "description": "Khám bệnh, TPCN."
+            },
+            {
                 "id": "di_chuyen",
                 "name": "Di chuyển",
                 "description": "Xăng, bảo dưỡng xe."
@@ -29,6 +34,29 @@ export const DEFAULT_CATEGORIES = [
                 "id": "lat_vat_phat_sinh",
                 "name": "Lặt vặt & Phát sinh",
                 "description": "Gửi xe, trà đá (Hao hụt)."
+            }
+        ]
+    },
+    {
+        "name": "Thu nhập Chủ động",
+        "icon": "💼",
+        "type": "income",
+        "order": 1,
+        "subcategories": [
+            {
+                "id": "luong_chinh",
+                "name": "Lương chính",
+                "description": "Tiền lương."
+            },
+            {
+                "id": "thuong",
+                "name": "Thưởng",
+                "description": "KPI, tháng 13."
+            },
+            {
+                "id": "lam_them",
+                "name": "Làm thêm",
+                "description": "Freelance."
             }
         ]
     },
@@ -61,115 +89,6 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "Phát triển & Sức khỏe",
-        "icon": "🏋️",
-        "type": "expense",
-        "order": 3,
-        "subcategories": [
-            {
-                "id": "giao_duc",
-                "name": "Giáo dục",
-                "description": "Khóa học, chứng chỉ."
-            },
-            {
-                "id": "the_thao",
-                "name": "Thể thao",
-                "description": "Gym, võ thuật."
-            },
-            {
-                "id": "suc_khoe",
-                "name": "Sức khỏe",
-                "description": "Khám bệnh, TPCN."
-            }
-        ]
-    },
-    {
-        "name": "Đầu tư & Tích lũy",
-        "icon": "🌱",
-        "type": "expense",
-        "order": 4,
-        "subcategories": [
-            {
-                "id": "chung_khoan_quy",
-                "name": "Chứng khoán & Quỹ",
-                "description": "Cổ phiếu, ETF."
-            },
-            {
-                "id": "crypto",
-                "name": "Crypto",
-                "description": "Bitcoin, Altcoins."
-            },
-            {
-                "id": "trading",
-                "name": "Trading",
-                "description": "Vốn MT5, e-commerce."
-            },
-            {
-                "id": "tich_luy",
-                "name": "Tích lũy",
-                "description": "Tiết kiệm, Mua vàng."
-            }
-        ]
-    },
-    {
-        "name": "Giao tế & Nghĩa vụ",
-        "icon": "🤝",
-        "type": "expense",
-        "order": 5,
-        "subcategories": [
-            {
-                "id": "giao_te",
-                "name": "Giao tế",
-                "description": "Quà tặng, mừng cưới."
-            },
-            {
-                "id": "tu_thien",
-                "name": "Từ thiện",
-                "description": "Ủng hộ người nghèo."
-            },
-            {
-                "id": "tra_no",
-                "name": "Trả nợ",
-                "description": "Thanh toán Thẻ tín dụng, nợ cũ."
-            },
-            {
-                "id": "cho_muon",
-                "name": "Cho mượn",
-                "description": "Đưa tiền mặt cho bạn bè/người thân mượn."
-            }
-        ]
-    },
-    {
-        "name": "Chưa phân loại",
-        "icon": "❓",
-        "type": "expense",
-        "order": 99,
-        "subcategories": []
-    },
-    {
-        "name": "Thu nhập Chủ động",
-        "icon": "💼",
-        "type": "income",
-        "order": 1,
-        "subcategories": [
-            {
-                "id": "luong_chinh",
-                "name": "Lương chính",
-                "description": "Tiền lương."
-            },
-            {
-                "id": "thuong",
-                "name": "Thưởng",
-                "description": "KPI, tháng 13."
-            },
-            {
-                "id": "lam_them",
-                "name": "Làm thêm",
-                "description": "Freelance."
-            }
-        ]
-    },
-    {
         "name": "Thu nhập Thụ động",
         "icon": "💰",
         "type": "income",
@@ -189,6 +108,24 @@ export const DEFAULT_CATEGORIES = [
                 "id": "ban_tai_san",
                 "name": "Bán tài sản",
                 "description": "Bán vàng, chốt lời."
+            }
+        ]
+    },
+    {
+        "name": "Phát triển & Sức khỏe",
+        "icon": "🏋️",
+        "type": "expense",
+        "order": 3,
+        "subcategories": [
+            {
+                "id": "giao_duc",
+                "name": "Giáo dục",
+                "description": "Khóa học, chứng chỉ."
+            },
+            {
+                "id": "the_thao",
+                "name": "Thể thao",
+                "description": "Gym, võ thuật."
             }
         ]
     },
@@ -226,11 +163,65 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "Chưa phân loại",
-        "icon": "❓",
-        "type": "income",
-        "order": 99,
-        "subcategories": []
+        "name": "Đầu tư & Tích lũy",
+        "icon": "🌱",
+        "type": "expense",
+        "order": 4,
+        "subcategories": [
+            {
+                "id": "chung_khoan_quy",
+                "name": "Chứng khoán & Quỹ",
+                "description": "Cổ phiếu, ETF."
+            },
+            {
+                "id": "crypto",
+                "name": "Crypto",
+                "description": "Bitcoin, Altcoins."
+            },
+            {
+                "id": "trading",
+                "name": "Trading",
+                "description": "Vốn MT5, e-commerce."
+            },
+            {
+                "id": "tich_luy",
+                "name": "Tích lũy",
+                "description": "Tiết kiệm, Mua vàng."
+            },
+            {
+                "id": "cong_viec",
+                "name": "Công việc",
+                "description": "Trả lương, Đầu tư cho công việc"
+            }
+        ]
+    },
+    {
+        "name": "Giao tế & Nghĩa vụ",
+        "icon": "🤝",
+        "type": "expense",
+        "order": 5,
+        "subcategories": [
+            {
+                "id": "giao_te",
+                "name": "Giao tế",
+                "description": "Quà tặng, mừng cưới."
+            },
+            {
+                "id": "tu_thien",
+                "name": "Từ thiện",
+                "description": "Ủng hộ người nghèo."
+            },
+            {
+                "id": "tra_no",
+                "name": "Trả nợ",
+                "description": "Thanh toán Thẻ tín dụng, nợ cũ."
+            },
+            {
+                "id": "cho_muon",
+                "name": "Cho mượn",
+                "description": "Đưa tiền mặt cho bạn bè/người thân mượn."
+            }
+        ]
     },
     {
         "name": "Trả nợ & Trả góp",
@@ -251,6 +242,27 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
+        "name": "Chưa phân loại",
+        "icon": "❓",
+        "type": "expense",
+        "order": 99,
+        "subcategories": []
+    },
+    {
+        "name": "Chưa phân loại",
+        "icon": "❓",
+        "type": "income",
+        "order": 99,
+        "subcategories": []
+    },
+    {
+        "name": "Chuyển tiền",
+        "icon": "💸",
+        "type": "transfer",
+        "order": 100,
+        "subcategories": []
+    },
+    {
         "name": "Cho mượn (Hệ thống)",
         "icon": "📤",
         "type": "loan_given",
@@ -262,13 +274,6 @@ export const DEFAULT_CATEGORIES = [
         "icon": "📥",
         "type": "loan_repaid",
         "order": 102,
-        "subcategories": []
-    },
-    {
-        "name": "Chuyển tiền",
-        "icon": "💸",
-        "type": "transfer",
-        "order": 100,
         "subcategories": []
     }
 ];
