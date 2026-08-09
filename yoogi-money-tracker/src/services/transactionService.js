@@ -25,6 +25,9 @@ export const addTransaction = async (userId, data) => {
         delete toSave.description;
     }
     delete toSave.time;
+    if (toSave.categoryId === '') toSave.categoryId = null;
+    if (toSave.subcategoryId === '') toSave.subcategoryId = null;
+    if (toSave.walletId === '') toSave.walletId = null;
     const { data: result, error } = await supabase.from('transactions').insert([mapToSnakeCase({ ...toSave, user_id: userId })]).select().single();
     if (error) throw error;
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { 
@@ -39,7 +42,11 @@ export const updateTransaction = async (userId, id, updates) => {
         delete toSave.description;
     }
     delete toSave.time;
-    const result = await supabase.from('transactions').update(mapToSnakeCase(toSave)).eq('id', id).eq('user_id', userId);
+    if (toSave.categoryId === '') toSave.categoryId = null;
+    if (toSave.subcategoryId === '') toSave.subcategoryId = null;
+    if (toSave.walletId === '') toSave.walletId = null;
+    const { data: result, error } = await supabase.from('transactions').update(mapToSnakeCase(toSave)).eq('id', id).eq('user_id', userId).select().single();
+    if (error) throw error;
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { 
         detail: { table: 'transactions', action: `Cập nhật giao dịch ${toSave.note || ''}`.trim() }
     }));
