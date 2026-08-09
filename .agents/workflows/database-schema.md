@@ -45,3 +45,11 @@ Giao dịch là trái tim của hệ thống.
 ## 6. Giao dịch định kỳ (Recurring Transactions)
 **Bảng:** `recurring_transactions`
 - Có trường `next_date`. Khi `next_date <= now()`, hệ thống (`App.jsx` vòng lặp 30s) sẽ tự động trigger tạo transaction mới và update `next_date` lên chu kỳ tiếp theo.
+
+## 7. Quản lý Ngân quỹ (Budgets / Portfolios)
+**Bảng:** `budget_settings` và `budget_portfolios`
+- `budget_settings`: Lưu `income_category_ids` để xác định các nguồn thu nhập cơ sở (tổng thu nhập làm chuẩn để chia ngân sách).
+- `budget_portfolios`: Lưu `percentage` (tỷ lệ %) và `expense_category_ids` (các danh mục chi tiêu thuộc quỹ này).
+- **Logic Tính Toán (CRITICAL):**
+  - Ngân sách của mỗi quỹ (Original Budget) = `(Tổng Thu Nhập Cơ Sở * percentage) / 100`.
+  - Tính năng **Bù trừ chéo (Cross-budgeting)**: Nếu quỹ A vượt ngân sách và quỹ B còn dư, quỹ B sẽ "cho mượn" phần dư sang quỹ A để cân đối tự động trên UI. Thuật toán này chỉ tính toán Real-time trên Frontend, không lưu lại dòng tiền bù trừ vào DB.

@@ -68,7 +68,15 @@ description: Bộ quy tắc chuẩn, liệt kê kiến trúc core và các đi�
 ### 2.6. Thẻ tín dụng (Credit Cards) & Tính năng Trả Tối Thiểu (Minimum Payment)
 - **Logic hoạt động:** Đối với thẻ tín dụng hoặc các khoản nợ có tính năng thanh toán số dư tối thiểu, hệ thống phải xử lý tách bạch giữa [Số tiền trả tối thiểu] và [Dư nợ còn lại]. Bất kỳ giao dịch trả tối thiểu nào cũng phải được hạch toán chính xác vào dư nợ và cập nhật trạng thái hiển thị hợp lý.
 
-### 2.7. Tối ưu trải nghiệm nhập liệu (Quick Suggestions)
+### 2.7. Quản lý Ngân quỹ (Budgets) & Bù trừ chéo (Cross-budgeting)
+- **Cấu trúc:** Được quản lý bởi `budget_settings` (cấu hình nguồn thu nhập) và `budget_portfolios` (các quỹ chi tiêu và tỷ lệ %).
+- **Logic Ngân Sách:** Ngân sách thực tế của mỗi quỹ không cố định mà là tỷ lệ phần trăm (percentage) dựa trên tổng các nguồn thu nhập được chỉ định. (VD: 50% của 20 triệu = 10 triệu).
+- **Tính năng Bù trừ chéo:**
+  - Nằm ở Frontend, không ghi vào Database.
+  - Khi một quỹ xài lố (deficit), hệ thống tự động quét các quỹ còn dư (surplus) và vay mượn phần dư đó sang quỹ lố để giữ mức cảnh báo hợp lý.
+  - Cho phép người dùng bật/tắt tính năng này (`yoogi_cross_budget_enabled` lưu trong Local Storage).
+
+### 2.8. Tối ưu trải nghiệm nhập liệu (Quick Suggestions)
 - **Quy tắc:** Tại giao diện thêm/sửa giao dịch, mục mô tả (description) cần có các nút gợi ý văn bản nhanh (Ví dụ: "Nạp vào ATM", "Rút tiền mặt"...) dựa trên loại giao dịch và ngữ cảnh, giúp người dùng thao tác nhanh nhất trên màn hình điện thoại.
 
 ---
