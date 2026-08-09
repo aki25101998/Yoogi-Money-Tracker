@@ -152,7 +152,10 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                         >
                             <div className="flex justify-between items-center text-sm">
                                 <div className="flex flex-col">
-                                    <span className="font-bold text-slate-700 dark:text-slate-200">{stat.name}</span>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="font-bold text-slate-700 dark:text-slate-200">{stat.name}</span>
+                                        <span className="text-xs font-medium text-slate-400">({stat.percentage}%)</span>
+                                    </div>
                                     <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                                         {uniqueIcons.slice(0, 5).map((icon, i) => (
                                             <span key={i}>{icon}</span>
