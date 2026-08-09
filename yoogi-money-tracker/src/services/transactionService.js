@@ -25,6 +25,7 @@ export const addTransaction = async (userId, data) => {
         delete toSave.description;
     }
     delete toSave.time;
+    delete toSave.personName;
     if (toSave.categoryId === '') toSave.categoryId = null;
     if (toSave.subcategoryId === '') toSave.subcategoryId = null;
     if (toSave.walletId === '') toSave.walletId = null;
@@ -42,6 +43,7 @@ export const updateTransaction = async (userId, id, updates) => {
         delete toSave.description;
     }
     delete toSave.time;
+    delete toSave.personName;
     if (toSave.categoryId === '') toSave.categoryId = null;
     if (toSave.subcategoryId === '') toSave.subcategoryId = null;
     if (toSave.walletId === '') toSave.walletId = null;
