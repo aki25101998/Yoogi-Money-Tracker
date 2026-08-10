@@ -124,7 +124,26 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
     const getDisplayItems = () => {
         if (activeTab === 'active') return activeItems;
         if (activeTab === 'paid') return paidItems;
-        return historyItems;
+        
+        const groupedHistory = {};
+        historyItems.forEach(w => {
+            if (!groupedHistory[w.item.id]) {
+                groupedHistory[w.item.id] = {
+                    item: w.item,
+                    paidTerms: []
+                };
+            }
+            groupedHistory[w.item.id].paidTerms.push(w);
+        });
+        
+        return Object.values(groupedHistory).map(group => ({
+            item: group.item,
+            isGroupedHistory: true,
+            paidTerms: group.paidTerms,
+            index: 'group',
+            refDate: new Date(),
+            monthStr: 'group'
+        }));
     };
 
     const displayItems = getDisplayItems();
@@ -227,10 +246,11 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
                                         onDelete={onDeleteItem}
                                         referenceDate={wrapper.refDate}
                                         isPaid={activeTab === 'paid' || activeTab === 'history'}
-                                        onTogglePaid={(item) => onTogglePaid(item, wrapper.monthStr)}
+                                        onTogglePaid={(item, monthStr) => onTogglePaid(item, monthStr || wrapper.monthStr)}
                                         onMinimumPayment={(item) => onMinimumPayment(item, wrapper.monthStr)}
                                         isReadOnly={false}
-                                        kyIndex={wrapper.index}
+                                        kyIndex={wrapper.isGroupedHistory ? null : wrapper.index}
+                                        groupedHistoryTerms={wrapper.isGroupedHistory ? wrapper.paidTerms : null}
                                         transactions={transactions}
                                         onEditTransaction={onEditTransaction}
                                         isSelectable={isSelectionMode}

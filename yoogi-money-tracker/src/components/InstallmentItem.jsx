@@ -5,7 +5,7 @@ import Badge from './ui/Badge';
 import { formatCurrency } from '../utils/formatters';
 import { calculateItemStats, monthDiff } from '../utils/calculations';
 
-const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, onMinimumPayment, isReadOnly, kyIndex, transactions, onEditTransaction, isSelectable, isSelected, onToggleSelect, onPayItem }) => {
+const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, onMinimumPayment, isReadOnly, kyIndex, transactions, onEditTransaction, isSelectable, isSelected, onToggleSelect, onPayItem, groupedHistoryTerms }) => {
     const stats = calculateItemStats(item, referenceDate, transactions);
     const paidCount = Array.isArray(item.paidMonths) ? item.paidMonths.length : stats.effectiveMonths;
     const cannotTickMore = !isPaid && paidCount >= item.term;
@@ -66,7 +66,13 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                                 <User className="w-3 h-3" /> {item.owner || 'Tôi'}
                             </div>
                             <div className="flex items-center gap-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-indigo-200 dark:border-indigo-800">
-                                {kyIndex ? `Kỳ ${kyIndex}/${item.term} (T${referenceDate.getMonth() + 1}/${referenceDate.getFullYear()})` : `Kỳ T${referenceDate.getMonth() + 1}/${referenceDate.getFullYear()}`}
+                                {groupedHistoryTerms ? (
+                                    `Đã trả ${groupedHistoryTerms.length}/${item.term} kỳ`
+                                ) : kyIndex ? (
+                                    `Kỳ ${kyIndex}/${item.term} (T${referenceDate.getMonth() + 1}/${referenceDate.getFullYear()})`
+                                ) : (
+                                    `Kỳ T${referenceDate.getMonth() + 1}/${referenceDate.getFullYear()}`
+                                )}
                             </div>
                             {stats.isFinished ? (
                                 <Badge type="success">Hoàn tất</Badge>
@@ -91,69 +97,94 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700/50">
-                    <div className="flex-1">
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold">Trả mỗi tháng</p>
-                        <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(item.monthlyPayment)}</p>
-                        
-                        {!isPaid && partialPaid > 0 && (
-                            <div className="mt-2 pr-4">
-                                <div className="flex justify-between items-end mb-1">
-                                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Đã trả: {formatCurrency(partialPaid)}</span>
-                                    <span className="text-[10px] text-slate-400">{partialProgress}%</span>
+                {!groupedHistoryTerms ? (
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700/50">
+                        <div className="flex-1">
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold">Trả mỗi tháng</p>
+                            <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(item.monthlyPayment)}</p>
+                            
+                            {!isPaid && partialPaid > 0 && (
+                                <div className="mt-2 pr-4">
+                                    <div className="flex justify-between items-end mb-1">
+                                        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Đã trả: {formatCurrency(partialPaid)}</span>
+                                        <span className="text-[10px] text-slate-400">{partialProgress}%</span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-1">
+                                        <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${partialProgress}%` }}></div>
+                                    </div>
+                                    <span className="text-[10px] text-orange-500 font-medium block">Còn lại: {formatCurrency(monthlyRemaining)}</span>
                                 </div>
-                                <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-1">
-                                    <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${partialProgress}%` }}></div>
-                                </div>
-                                <span className="text-[10px] text-orange-500 font-medium block">Còn lại: {formatCurrency(monthlyRemaining)}</span>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
 
-                    {/* Payment Toggle Button */}
-                    <div className="flex-1 flex justify-end items-center gap-2">
-                        {!isPaid && !isDisabled && onMinimumPayment && (
+                        {/* Payment Toggle Button */}
+                        <div className="flex-1 flex justify-end items-center gap-2">
+                            {!isPaid && !isDisabled && onMinimumPayment && (
+                                <div className={`${isSelectable ? 'pointer-events-auto' : ''}`}>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onMinimumPayment(item); }}
+                                        className={`px-3 py-2 rounded-lg font-bold text-sm transition-all border ${partialPaid > 0 ? 'border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50 dark:hover:bg-indigo-900/40' : 'border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 hover:border-orange-300 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800/50 dark:hover:bg-orange-900/40'} active:scale-95`}
+                                    >
+                                        {partialPaid > 0 ? 'Trả thêm' : 'Trả tối thiểu'}
+                                    </button>
+                                </div>
+                            )}
                             <div className={`${isSelectable ? 'pointer-events-auto' : ''}`}>
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); onMinimumPayment(item); }}
-                                    className={`px-3 py-2 rounded-lg font-bold text-sm transition-all border ${partialPaid > 0 ? 'border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50 dark:hover:bg-indigo-900/40' : 'border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 hover:border-orange-300 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800/50 dark:hover:bg-orange-900/40'} active:scale-95`}
-                                >
-                                    {partialPaid > 0 ? 'Trả thêm' : 'Trả tối thiểu'}
-                                </button>
+                                    onClick={(e) => { e.stopPropagation(); isPaid ? (onTogglePaid && onTogglePaid(item)) : (onPayItem ? onPayItem(item) : (onTogglePaid && onTogglePaid(item))); }}
+                                    disabled={isDisabled}
+                                    title={cannotTickMore ? "Đã đạt số kỳ tối đa" : ""}
+                                className={`
+                                    flex items-center gap-2 px-3 py-2 rounded-lg font-bold text-sm transition-all
+                                    ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}
+                                    ${isPaid
+                                        ? 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
+                                        : partialPaid > 0
+                                        ? 'bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 hover:border-orange-300'
+                                        : 'bg-white text-slate-600 border border-slate-300 shadow-sm hover:border-indigo-300 hover:text-indigo-600 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:border-indigo-500'
+                                    }
+                                `}
+                            >
+                                {isPaid ? (
+                                    <>
+                                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </div>
+                                        <span>Đã trả</span>
+                                    </>
+                                ) : (
+                                    <span>Chưa trả</span>
+                                )}
+                            </button>
                             </div>
-                        )}
-                        <div className={`${isSelectable ? 'pointer-events-auto' : ''}`}>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); isPaid ? (onTogglePaid && onTogglePaid(item)) : (onPayItem ? onPayItem(item) : (onTogglePaid && onTogglePaid(item))); }}
-                                disabled={isDisabled}
-                                title={cannotTickMore ? "Đã đạt số kỳ tối đa" : ""}
-                            className={`
-                                flex items-center gap-2 px-3 py-2 rounded-lg font-bold text-sm transition-all
-                                ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}
-                                ${isPaid
-                                    ? 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
-                                    : partialPaid > 0
-                                    ? 'bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 hover:border-orange-300'
-                                    : 'bg-white text-slate-600 border border-slate-300 shadow-sm hover:border-indigo-300 hover:text-indigo-600 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:border-indigo-500'
-                                }
-                            `}
-                        >
-                            {isPaid ? (
-                                <>
-                                    <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
-                                        <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    </div>
-                                    <span>Đã trả</span>
-                                </>
-                            ) : (
-                                <span>Chưa trả</span>
-                            )}
-                        </button>
                         </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="mb-4 bg-white dark:bg-slate-800 rounded-lg p-2 border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                        <p className="text-[10px] uppercase font-bold text-slate-500 mb-1.5 px-1">Các kỳ đã hoàn thành ({groupedHistoryTerms.length})</p>
+                        <div className="space-y-1">
+                            {groupedHistoryTerms.map(w => (
+                                <div key={w.monthStr} className={`${isSelectable ? 'pointer-events-auto' : ''} w-full flex justify-between items-center text-xs px-2 py-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors`}>
+                                    <span className="text-slate-500 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        Kỳ {w.index}/{item.term} (T{w.monthStr.split('-')[1]}/{w.monthStr.split('-')[0]})
+                                    </span>
+                                    {!isReadOnly && (
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); onTogglePaid && onTogglePaid(item, w.monthStr); }}
+                                            className="text-slate-400 hover:text-rose-500 p-1 rounded transition-colors"
+                                            title="Hoàn tác đánh dấu đã trả"
+                                        >
+                                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Progress Bar - Only separate logic if needed, but 'stats' handles it now */}
                 <div className="relative pt-1">
