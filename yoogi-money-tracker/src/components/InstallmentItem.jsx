@@ -13,11 +13,9 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
 
     // Calculate missed payments
     const now = new Date();
-    const start = new Date(item.startDate);
-    const monthsPassedTotal = monthDiff(start, now);
-    const monthsShouldHavePaid = Math.min(monthsPassedTotal, item.term);
-    const missedCount = monthsShouldHavePaid - paidCount;
-    const showMissedWarning = missedCount > 0 && paidCount < item.term;
+    const realMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const cardMonthStr = `${referenceDate.getFullYear()}-${String(referenceDate.getMonth() + 1).padStart(2, '0')}`;
+    const showMissedWarning = !isPaid && !groupedHistoryTerms && cardMonthStr < realMonthStr;
 
     // Partial payment logic for this specific month
     const currentMonthStr = `${referenceDate.getFullYear()}-${String(referenceDate.getMonth() + 1).padStart(2, '0')}`;
@@ -231,7 +229,7 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                         <div>
                             <p className="text-xs font-bold text-amber-700 dark:text-amber-400">Cảnh báo trễ hạn</p>
                             <p className="text-[11px] text-amber-600 dark:text-amber-500 mt-0.5">
-                                Bạn đang thiếu tick đã trả cho <span className="font-bold">{missedCount} kỳ</span> trong quá khứ. Hãy kiểm tra lại lịch sử!
+                                Kỳ thanh toán này đã quá hạn! Vui lòng thanh toán sớm.
                             </p>
                         </div>
                     </div>
