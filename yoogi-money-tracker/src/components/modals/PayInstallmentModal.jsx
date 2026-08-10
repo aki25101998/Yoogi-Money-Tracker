@@ -20,7 +20,7 @@ const [form, setForm] = useState({
 
     if (!isOpen || !selectedItems || selectedItems.length === 0) return null;
 
-    const totalAmount = selectedItems.reduce((sum, wrapper) => sum + wrapper.item.monthlyPayment, 0);
+    const totalAmount = selectedItems.reduce((sum, wrapper) => sum + (wrapper.monthlyRemaining ?? wrapper.item.monthlyPayment), 0);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -80,7 +80,7 @@ const [form, setForm] = useState({
                         {selectedItems.map((wrapper, index) => (
                             <div key={`${wrapper.item.id}-${wrapper.index}-${index}`} className="flex justify-between items-center text-sm py-1 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
                                 <span className="text-slate-700 dark:text-slate-300 truncate pr-2">{wrapper.item.name} (T{wrapper.monthStr.split('-')[1]})</span>
-                                <span className="font-semibold text-slate-800 dark:text-slate-200 shrink-0">{formatCurrency(wrapper.item.monthlyPayment)}</span>
+                                <span className="font-semibold text-slate-800 dark:text-slate-200 shrink-0">{formatCurrency(wrapper.monthlyRemaining ?? wrapper.item.monthlyPayment)}</span>
                             </div>
                         ))}
                     </div>

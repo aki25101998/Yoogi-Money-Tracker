@@ -476,7 +476,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                 }
 
                 // 2. Tạo giao dịch tương ứng cho từng khoản
-                const amountNum = item.monthlyPayment;
+                const amountNum = wrapper.monthlyRemaining ?? item.monthlyPayment;
                 if (amountNum > 0) {
                     const ownerName = item.owner || 'Tôi';
                     const isPaying = ownerName === 'Tôi';

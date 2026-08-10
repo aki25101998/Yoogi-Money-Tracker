@@ -109,6 +109,9 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
         const partialPaid = relatedTransactions.reduce((acc, t) => acc + (t.amount || 0), 0);
         const monthlyRemaining = Math.max(item.monthlyPayment - partialPaid, 0);
         
+        wrapper.monthlyRemaining = monthlyRemaining;
+        wrapper.partialPaid = partialPaid;
+
         return sum + monthlyRemaining;
     }, 0);
 
@@ -258,7 +261,7 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
                                 <p className="text-xs text-slate-500 font-bold uppercase">Đã chọn {selectedItemIds.length} khoản</p>
                                 <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
                                     {formatCurrency(
-                                        activeItems.filter(w => selectedItemIds.includes(`${w.item.id}-${w.index}`)).reduce((sum, w) => sum + w.item.monthlyPayment, 0)
+                                        activeItems.filter(w => selectedItemIds.includes(`${w.item.id}-${w.index}`)).reduce((sum, w) => sum + (w.monthlyRemaining ?? w.item.monthlyPayment), 0)
                                     )}
                                 </p>
                             </div>
