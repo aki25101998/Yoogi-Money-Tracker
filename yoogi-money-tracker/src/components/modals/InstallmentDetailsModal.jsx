@@ -19,9 +19,10 @@ const InstallmentDetailsModal = ({
     onEditTransaction,
     onPayInstallments
 }) => {
-const [activeTab, setActiveTab] = useState('active'); // active, paid, history
+    const [activeTab, setActiveTab] = useState('active'); // active, paid, history
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedItemIds, setSelectedItemIds] = useState([]);
+    const [hideCompletedHistory, setHideCompletedHistory] = useState(false);
 
     if (!isOpen || !groupedLender) return null;
 
@@ -136,7 +137,7 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
             groupedHistory[w.item.id].paidTerms.push(w);
         });
         
-        return Object.values(groupedHistory).map(group => ({
+        let result = Object.values(groupedHistory).map(group => ({
             item: group.item,
             isGroupedHistory: true,
             paidTerms: group.paidTerms,
@@ -144,6 +145,15 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
             refDate: new Date(),
             monthStr: 'group'
         }));
+        
+        if (hideCompletedHistory) {
+            result = result.filter(group => {
+                const stats = calculateItemStats(group.item, referenceDate, transactions);
+                return !stats.isFinished;
+            });
+        }
+        
+        return result;
     };
 
     const displayItems = getDisplayItems();
@@ -225,6 +235,20 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
                             >
                                 {isSelectionMode ? 'Hủy chọn nhiều' : 'Chọn nhiều để thanh toán'}
                             </button>
+                        </div>
+                    )}
+
+                    {activeTab === 'history' && historyItems.length > 0 && (
+                        <div className="flex justify-end mt-2 px-1">
+                            <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+                                <input 
+                                    type="checkbox" 
+                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900/50 dark:border-slate-700 w-3.5 h-3.5"
+                                    checked={hideCompletedHistory}
+                                    onChange={(e) => setHideCompletedHistory(e.target.checked)}
+                                />
+                                <span className="font-medium">Ẩn khoản đã hoàn tất</span>
+                            </label>
                         </div>
                     )}
                 </div>
