@@ -95,10 +95,15 @@ description: Bộ quy tắc chuẩn, liệt kê kiến trúc core và các đi�
 - **Tránh Render lại không cần thiết:** Với các dữ liệu phức tạp (như tính tổng số dư ví, nhóm các giao dịch, thống kê biểu đồ), bắt buộc phải dùng `useMemo`.
 - **Prop Drilling:** Đối với các Modal Global (như `AIChatModal`, `TransactionModal`), nên được đặt ở tầng cao nhất có thể (VD: Layout hoặc App) và truyền props xuống.
 
-### 3.3. UI / UX Design
+### 3.3. UI / UX Design & Z-index Hierarchy
 - **Dark/Light Mode:** Bắt buộc hỗ trợ song song. Sử dụng class `dark:` của Tailwind.
 - **Màu sắc chủ đạo:** `emerald`, `teal`, `cyan` cho cảm giác tài chính an toàn. `rose` cho chi phí, `amber`/`orange` cho cảnh báo hoặc nợ. KHÔNG dùng màu gốc (red/green) quá chói.
 - **Micro-interactions:** Bắt buộc dùng `transition-all`, `hover:`, `active:scale-95` cho các nút bấm để tạo cảm giác mượt mà (Glassmorphism, bóng đổ shadow-lg).
+- **Z-Index Modals:** BẮT BUỘC tuân thủ phân cấp `z-index` sau để tránh các lỗi bị che khuất modal:
+  - `z-50`: Modals cơ bản (Ví dụ: `InstallmentDetailsModal`, `DebtDetailsModal`).
+  - `z-[60]`: Các Modal nền (Background Modals) có thể gọi các modal khác (Ví dụ: `PortfolioTransactionsModal`, `CategoryTransactionsModal`, `AddEditModal`).
+  - `z-[70]`: Các Modal nhập liệu hoặc chỉnh sửa quan trọng (Ví dụ: `TransactionModal`, `TransferFundsModal`, `PayInstallmentModal`) để đảm bảo luôn đè lên các Modal `z-[60]`.
+  - `z-[90]` - `z-[100]`: Các Modal cảnh báo, Xác nhận xóa (`ConfirmModal`), Quản lý Ví (`WalletModal`, `ReorderWalletsModal`).
 
 ### 3.4. Auto-Deploy & Workflow (QUY TẮC BẮT BUỘC)
 - **Kiến trúc Hosting & Native App:** Frontend được host trên **Vercel**, tự động deploy mỗi khi code được push lên nhánh master trên GitHub. Backend và Database nằm trên **Supabase**. Bản Android APK được build qua **Capacitor** nhưng cấu hình trỏ thẳng URL về Vercel (`capacitor.config.json`) nên Android App sẽ tự động nhận cập nhật mới nhất từ Vercel mà không cần build lại APK (trừ khi cập nhật native plugin).
