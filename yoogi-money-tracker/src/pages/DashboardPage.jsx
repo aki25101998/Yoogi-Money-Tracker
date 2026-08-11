@@ -426,7 +426,6 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                         transactions={categoryTransactions}
                         categories={categories}
                         onEditTransaction={(txn) => {
-                            setSelectedCategoryForModal(null);
                             setEditingTransaction(txn);
                             setIsModalOpen(true);
                         }}
