@@ -212,10 +212,7 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                 portfolio={selectedPortfolio}
                 transactions={transactions.filter(t => t.type === 'expense' && selectedPortfolio?.expenseCategoryIds?.includes(t.subcategoryId || t.categoryId))}
                 categories={categories}
-                onEditTransaction={(txn) => {
-                    setSelectedPortfolio(null);
-                    if (onEditTransaction) onEditTransaction(txn);
-                }}
+                onEditTransaction={onEditTransaction}
                 onDeleteTransaction={onDeleteTransaction}
             />
         </div>
