@@ -1,6 +1,6 @@
 export const DEFAULT_CATEGORIES = [
     {
-        "name": "Nhu cầu thiết yếu",
+        "name": "1. Nhu cầu thiết yếu",
         "icon": "🏠",
         "type": "expense",
         "order": 1,
@@ -21,11 +21,6 @@ export const DEFAULT_CATEGORIES = [
                 "description": "Siêu thị, đi chợ."
             },
             {
-                "id": "suc_khoe",
-                "name": "Sức khỏe",
-                "description": "Khám bệnh, TPCN."
-            },
-            {
                 "id": "di_chuyen",
                 "name": "Di chuyển",
                 "description": "Xăng, bảo dưỡng xe."
@@ -38,7 +33,7 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "Thu nhập Chủ động",
+        "name": "1. Thu nhập Chủ động",
         "icon": "💼",
         "type": "income",
         "order": 1,
@@ -61,8 +56,8 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "Chi tiêu cá nhân",
-        "icon": "🍹",
+        "name": "2. Mua sắm & Giải trí",
+        "icon": "🛍️",
         "type": "expense",
         "order": 2,
         "subcategories": [
@@ -89,7 +84,7 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "Thu nhập Thụ động",
+        "name": "2. Thu nhập Thụ động",
         "icon": "💰",
         "type": "income",
         "order": 2,
@@ -103,16 +98,11 @@ export const DEFAULT_CATEGORIES = [
                 "id": "co_tuc_lai_dau_tu",
                 "name": "Cổ tức / Lãi đầu tư",
                 "description": "Lãi ETF, Trade."
-            },
-            {
-                "id": "ban_tai_san",
-                "name": "Bán tài sản",
-                "description": "Bán vàng, chốt lời."
             }
         ]
     },
     {
-        "name": "Phát triển & Sức khỏe",
+        "name": "3. Phát triển & Sức khỏe",
         "icon": "🏋️",
         "type": "expense",
         "order": 3,
@@ -126,11 +116,16 @@ export const DEFAULT_CATEGORIES = [
                 "id": "the_thao",
                 "name": "Thể thao",
                 "description": "Gym, võ thuật."
+            },
+            {
+                "id": "suc_khoe",
+                "name": "Sức khỏe",
+                "description": "Khám bệnh, TPCN."
             }
         ]
     },
     {
-        "name": "Thu nhập Khác",
+        "name": "3. Thu nhập Khác",
         "icon": "🎁",
         "type": "income",
         "order": 3,
@@ -163,7 +158,7 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "Đầu tư & Tích lũy",
+        "name": "4. Đầu tư & Tích lũy",
         "icon": "🌱",
         "type": "expense",
         "order": 4,
@@ -187,16 +182,11 @@ export const DEFAULT_CATEGORIES = [
                 "id": "tich_luy",
                 "name": "Tích lũy",
                 "description": "Tiết kiệm, Mua vàng."
-            },
-            {
-                "id": "cong_viec",
-                "name": "Công việc",
-                "description": "Trả lương, Đầu tư cho công việc"
             }
         ]
     },
     {
-        "name": "Giao tế & Nghĩa vụ",
+        "name": "5. Giao tế & Nghĩa vụ",
         "icon": "🤝",
         "type": "expense",
         "order": 5,
