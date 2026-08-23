@@ -1,6 +1,6 @@
 export const DEFAULT_CATEGORIES = [
     {
-        "name": "1. Nhu cầu thiết yếu",
+        "name": "Nhu cầu thiết yếu",
         "icon": "🏠",
         "type": "expense",
         "order": 1,
@@ -21,6 +21,11 @@ export const DEFAULT_CATEGORIES = [
                 "description": "Siêu thị, đi chợ."
             },
             {
+                "id": "suc_khoe",
+                "name": "Sức khỏe",
+                "description": "Khám bệnh, TPCN."
+            },
+            {
                 "id": "di_chuyen",
                 "name": "Di chuyển",
                 "description": "Xăng, bảo dưỡng xe."
@@ -28,12 +33,12 @@ export const DEFAULT_CATEGORIES = [
             {
                 "id": "lat_vat_phat_sinh",
                 "name": "Lặt vặt & Phát sinh",
-                "description": "Gửi xe, trà đá (Hao hụt)."
+                "description": "Gửi xe, trà đá."
             }
         ]
     },
     {
-        "name": "1. Thu nhập Chủ động",
+        "name": "Thu nhập Chủ động",
         "icon": "💼",
         "type": "income",
         "order": 1,
@@ -56,8 +61,31 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "2. Mua sắm & Giải trí",
-        "icon": "🛍️",
+        "name": "Thu nhập Thụ động",
+        "icon": "💰",
+        "type": "income",
+        "order": 2,
+        "subcategories": [
+            {
+                "id": "lai_tiet_kiem",
+                "name": "Lãi tiết kiệm",
+                "description": "Lãi NH."
+            },
+            {
+                "id": "co_tuc_lai_dau_tu",
+                "name": "Cổ tức / Lãi đầu tư",
+                "description": "Lãi ETF, Trade."
+            },
+            {
+                "id": "ban_tai_san",
+                "name": "Bán tài sản",
+                "description": "Bán vàng, chốt lời."
+            }
+        ]
+    },
+    {
+        "name": "Chi tiêu cá nhân",
+        "icon": "🍹",
         "type": "expense",
         "order": 2,
         "subcategories": [
@@ -80,29 +108,16 @@ export const DEFAULT_CATEGORIES = [
                 "id": "du_lich",
                 "name": "Du lịch",
                 "description": "Trekking, đi chơi xa."
-            }
-        ]
-    },
-    {
-        "name": "2. Thu nhập Thụ động",
-        "icon": "💰",
-        "type": "income",
-        "order": 2,
-        "subcategories": [
-            {
-                "id": "lai_tiet_kiem",
-                "name": "Lãi tiết kiệm",
-                "description": "Lãi NH."
             },
             {
-                "id": "co_tuc_lai_dau_tu",
-                "name": "Cổ tức / Lãi đầu tư",
-                "description": "Lãi ETF, Trade."
+                "id": "hao_h_t_1787153567156",
+                "name": "Hao Hụt",
+                "description": "Chi phí phát sinh."
             }
         ]
     },
     {
-        "name": "3. Phát triển & Sức khỏe",
+        "name": "Phát triển & Sức khỏe",
         "icon": "🏋️",
         "type": "expense",
         "order": 3,
@@ -116,16 +131,11 @@ export const DEFAULT_CATEGORIES = [
                 "id": "the_thao",
                 "name": "Thể thao",
                 "description": "Gym, võ thuật."
-            },
-            {
-                "id": "suc_khoe",
-                "name": "Sức khỏe",
-                "description": "Khám bệnh, TPCN."
             }
         ]
     },
     {
-        "name": "3. Thu nhập Khác",
+        "name": "Thu nhập Khác",
         "icon": "🎁",
         "type": "income",
         "order": 3,
@@ -158,7 +168,7 @@ export const DEFAULT_CATEGORIES = [
         ]
     },
     {
-        "name": "4. Đầu tư & Tích lũy",
+        "name": "Đầu tư & Tích lũy",
         "icon": "🌱",
         "type": "expense",
         "order": 4,
@@ -182,11 +192,16 @@ export const DEFAULT_CATEGORIES = [
                 "id": "tich_luy",
                 "name": "Tích lũy",
                 "description": "Tiết kiệm, Mua vàng."
+            },
+            {
+                "id": "công_vi_c_1784655673462",
+                "name": "Công việc",
+                "description": "Trả lương, Đầu tư cho công việc."
             }
         ]
     },
     {
-        "name": "5. Giao tế & Nghĩa vụ",
+        "name": "Giao tế & Nghĩa vụ",
         "icon": "🤝",
         "type": "expense",
         "order": 5,
@@ -210,6 +225,11 @@ export const DEFAULT_CATEGORIES = [
                 "id": "cho_muon",
                 "name": "Cho mượn",
                 "description": "Đưa tiền mặt cho bạn bè/người thân mượn."
+            },
+            {
+                "id": "nghĩa_v__1787494290388",
+                "name": "Nghĩa vụ",
+                "description": "Nghĩa vụ phải thực hiện như giúp đỡ gia đình."
             }
         ]
     },
@@ -234,14 +254,14 @@ export const DEFAULT_CATEGORIES = [
     {
         "name": "Chưa phân loại",
         "icon": "❓",
-        "type": "expense",
+        "type": "income",
         "order": 99,
         "subcategories": []
     },
     {
         "name": "Chưa phân loại",
         "icon": "❓",
-        "type": "income",
+        "type": "expense",
         "order": 99,
         "subcategories": []
     },
