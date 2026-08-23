@@ -84,7 +84,7 @@ const SettingsPage = ({ user, userSettings, categories, aiMemories, abbreviation
                 {activeTab === 'budgets' && <BudgetSettings user={user} budgetSettings={budgetSettings} budgetPortfolios={budgetPortfolios} categories={categories} wallets={wallets} />}
                 {activeTab === 'wallets' && <WalletsSettings user={user} wallets={wallets} userSettings={userSettings} />}
                 {activeTab === 'categories' && <CategoriesPage user={user} categories={categories} hideHeader={true} />}
-                {activeTab === 'yoogi_template' && <AdminYoogiTemplate user={user} />}
+                {activeTab === 'yoogi_template' && <AdminYoogiTemplate user={user} categories={categories} />}
                 {activeTab === 'ai' && <AINotesPage user={user} aiMemories={aiMemories} abbreviations={abbreviations} categories={categories} hideHeader={true} />}
                 {activeTab === 'sync' && <DataSyncSettings user={user} />}
             </div>

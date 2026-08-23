@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Github, AlertTriangle, CheckCircle, RefreshCw, FolderTree } from 'lucide-react';
 import { supabase } from '../../config/supabase';
+import CategoriesPage from '../../pages/CategoriesPage';
 
-const AdminYoogiTemplate = ({ user }) => {
+const AdminYoogiTemplate = ({ user, categories }) => {
     const [githubToken, setGithubToken] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [status, setStatus] = useState(null); // { type: 'success' | 'error', message: '' }
@@ -150,7 +151,11 @@ const AdminYoogiTemplate = ({ user }) => {
                 </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-6 pb-2">
+                <CategoriesPage user={user} categories={categories} hideHeader={true} />
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                         GitHub Personal Access Token (PAT)
