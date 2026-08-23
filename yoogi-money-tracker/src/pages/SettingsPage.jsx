@@ -7,6 +7,7 @@ import AINotesPage from './AINotesPage'; // Reusing existing page as a component
 import DataSyncSettings from '../components/settings/DataSyncSettings';
 import GeneralSettings from '../components/settings/GeneralSettings';
 import BudgetSettings from '../components/settings/BudgetSettings';
+import AdminYoogiTemplate from '../components/settings/AdminYoogiTemplate';
 
 const SettingsPage = ({ user, userSettings, categories, aiMemories, abbreviations, wallets, payers, budgetSettings, budgetPortfolios, initialTab = 'general' }) => {
     const [activeTab, setActiveTab] = useState(initialTab);
@@ -25,6 +26,10 @@ const SettingsPage = ({ user, userSettings, categories, aiMemories, abbreviation
         { id: 'ai', label: 'Ví ngữ cảnh', icon: Brain },
         { id: 'sync', label: 'Dữ liệu', icon: Database },
     ];
+
+    if (user?.email === 'aki251098@gmail.com') {
+        tabs.push({ id: 'yoogi_template', label: 'Mẫu Yoogi', icon: FolderTree });
+    }
 
     return (
         <div className="space-y-6">
@@ -79,6 +84,7 @@ const SettingsPage = ({ user, userSettings, categories, aiMemories, abbreviation
                 {activeTab === 'budgets' && <BudgetSettings user={user} budgetSettings={budgetSettings} budgetPortfolios={budgetPortfolios} categories={categories} wallets={wallets} />}
                 {activeTab === 'wallets' && <WalletsSettings user={user} wallets={wallets} userSettings={userSettings} />}
                 {activeTab === 'categories' && <CategoriesPage user={user} categories={categories} hideHeader={true} />}
+                {activeTab === 'yoogi_template' && <AdminYoogiTemplate user={user} />}
                 {activeTab === 'ai' && <AINotesPage user={user} aiMemories={aiMemories} abbreviations={abbreviations} categories={categories} hideHeader={true} />}
                 {activeTab === 'sync' && <DataSyncSettings user={user} />}
             </div>
