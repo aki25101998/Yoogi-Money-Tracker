@@ -14,7 +14,7 @@ const BudgetSettings = ({ user, budgetSettings, budgetPortfolios, categories, wa
     const [error, setError] = useState(null);
 
     const incomeCategories = categories.filter(c => c.type === 'income');
-    const expenseCategories = categories.filter(c => c.type === 'expense');
+    const expenseCategories = categories.filter(c => c.type === 'expense' || c.type === 'installment_repaid');
 
     useEffect(() => {
         if (budgetSettings) {
