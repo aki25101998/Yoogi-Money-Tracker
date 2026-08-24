@@ -71,41 +71,40 @@ export const updateTransaction = async (userId, id, updates) => {
     return result;
 };
 export const deleteTransaction = async (userId, id, txn = null) => {
-    if (txn) {
-        if (txn.type === 'loan_repaid' && txn.debtId) {
-            const { data: debt } = await supabase.from('debts').select('amount, remaining_amount, status').eq('id', txn.debtId).single();
+    let txnToDelete = txn;
+    if (!txnToDelete) {
+        const { data } = await supabase.from('transactions').select('*').eq('id', id).eq('user_id', userId).single();
+        if (data) txnToDelete = mapToCamelCase(data);
+    }
+
+    if (txnToDelete) {
+        if (txnToDelete.type === 'loan_repaid' && txnToDelete.debtId) {
+            const { data: debt } = await supabase.from('debts').select('amount, remaining_amount, status').eq('id', txnToDelete.debtId).single();
             if (debt) {
                 const repaidAmount = debt.amount - (debt.remaining_amount || 0);
-                const newRepaidAmount = Math.max(0, repaidAmount - txn.amount);
+                const newRepaidAmount = Math.max(0, repaidAmount - txnToDelete.amount);
                 const newStatus = newRepaidAmount >= debt.amount ? 'paid' : 'active';
                 // Inline update Debt to avoid circular dependency or import issues if any, 
                 // but we can just use supabase directly here.
                 await supabase.from('debts').update({
                     remaining_amount: debt.amount - newRepaidAmount,
                     status: newStatus
-                }).eq('id', txn.debtId).eq('user_id', userId);
+                }).eq('id', txnToDelete.debtId).eq('user_id', userId);
                 if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debts' }));
             }
-        } else if (txn.type === 'loan_given' && (txn.debtId || txn.installmentId)) {
-            return await deleteDebt(userId, txn.debtId || txn.installmentId);
-        } else if (txn.type === 'installment_repaid' && txn.installmentId) {
-            const txMonthStr = getInstallmentPaymentMonth(txn);
+        } else if (txnToDelete.type === 'loan_given' && (txnToDelete.debtId || txnToDelete.installmentId)) {
+            return await deleteDebt(userId, txnToDelete.debtId || txnToDelete.installmentId);
+        } else if (txnToDelete.type === 'installment_repaid' && txnToDelete.installmentId) {
+            const txMonthStr = getInstallmentPaymentMonth(txnToDelete);
             if (txMonthStr) {
-                await updateInstallmentPartialPayment(userId, txn.installmentId, txMonthStr, -txn.amount);
-                
-                const { data: inst } = await supabase.from('installments').select('paid_months').eq('id', txn.installmentId).eq('user_id', userId).single();
-                if (inst && inst.paid_months && inst.paid_months.includes(txMonthStr)) {
-                    const newPaidMonths = inst.paid_months.filter(m => m !== txMonthStr);
-                    await supabase.from('installments').update({ paid_months: newPaidMonths }).eq('id', txn.installmentId).eq('user_id', userId);
-                    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'installments' }));
-                }
+                await updateInstallmentPartialPayment(userId, txnToDelete.installmentId, txMonthStr, -txnToDelete.amount);
             }
         }
     }
 
     const result = await supabase.from('transactions').delete().eq('id', id).eq('user_id', userId);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { 
-        detail: { table: 'transactions', action: `Xóa giao dịch ${txn ? (txn.note || txn.description || '') : ''}`.trim() }
+        detail: { table: 'transactions', action: `Xóa giao dịch ${txnToDelete ? (txnToDelete.note || txnToDelete.description || '') : ''}`.trim() }
     }));
     return result;
 };
@@ -140,13 +139,6 @@ export const deleteMultipleTransactions = async (userId, ids) => {
                 const txMonthStr = getInstallmentPaymentMonth(txn);
                 if (txMonthStr) {
                     await updateInstallmentPartialPayment(userId, txn.installmentId, txMonthStr, -txn.amount);
-                    
-                    const { data: inst } = await supabase.from('installments').select('paid_months').eq('id', txn.installmentId).eq('user_id', userId).single();
-                    if (inst && inst.paid_months && inst.paid_months.includes(txMonthStr)) {
-                        const newPaidMonths = inst.paid_months.filter(m => m !== txMonthStr);
-                        await supabase.from('installments').update({ paid_months: newPaidMonths }).eq('id', txn.installmentId).eq('user_id', userId);
-                        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'installments' }));
-                    }
                 }
             } else if (txn.type === 'loan_given' && (txn.debtId || txn.installmentId)) {
                 await deleteDebt(userId, txn.debtId || txn.installmentId);
