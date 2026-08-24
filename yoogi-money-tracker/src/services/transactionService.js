@@ -2,6 +2,7 @@ import { supabase } from '../config/supabase';
 import { mapToCamelCase, mapToSnakeCase, createSubscription } from './coreService';
 import { deleteDebt } from './debtService';
 import { updateInstallmentPartialPayment } from './installmentService';
+import { getInstallmentPaymentMonth } from '../utils/transactionUtils';
 
 // TRANSACTIONS
 // ============================================================
@@ -37,6 +38,9 @@ export const addTransaction = async (userId, data) => {
     return mapToCamelCase(result);
 };
 export const updateTransaction = async (userId, id, updates) => {
+    // Lấy transaction cũ để so sánh diff nếu là trả góp
+    const { data: oldTxn } = await supabase.from('transactions').select('*').eq('id', id).eq('user_id', userId).single();
+
     const toSave = { ...updates };
     if (toSave.description !== undefined) {
         toSave.note = toSave.description;
@@ -49,6 +53,18 @@ export const updateTransaction = async (userId, id, updates) => {
     if (toSave.walletId === '') toSave.walletId = null;
     const { data: result, error } = await supabase.from('transactions').update(mapToSnakeCase(toSave)).eq('id', id).eq('user_id', userId).select().single();
     if (error) throw error;
+    
+    // Cập nhật chênh lệch cho trả góp
+    if (oldTxn && oldTxn.type === 'installment_repaid' && updates.amount !== undefined) {
+        const diffAmount = updates.amount - oldTxn.amount;
+        if (diffAmount !== 0 && oldTxn.installment_id) {
+            const txMonthStr = getInstallmentPaymentMonth(mapToCamelCase(oldTxn));
+            if (txMonthStr) {
+                await updateInstallmentPartialPayment(userId, oldTxn.installment_id, txMonthStr, diffAmount);
+            }
+        }
+    }
+
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { 
         detail: { table: 'transactions', action: `Cập nhật giao dịch ${toSave.note || ''}`.trim() }
     }));
@@ -73,16 +89,7 @@ export const deleteTransaction = async (userId, id, txn = null) => {
         } else if (txn.type === 'loan_given' && (txn.debtId || txn.installmentId)) {
             return await deleteDebt(userId, txn.debtId || txn.installmentId);
         } else if (txn.type === 'installment_repaid' && txn.installmentId) {
-            let txMonthStr = null;
-            const match = txn.description?.match(/\(T(\d{2})\/(\d{4})\)$/);
-            if (match) {
-                txMonthStr = `${match[2]}-${match[1]}`;
-            } else if (txn.description?.match(/\(T(\d{2})\)$/)) {
-                const m = txn.description.match(/\(T(\d{2})\)$/)[1];
-                txMonthStr = txn.date ? `${new Date(txn.date).getFullYear()}-${m}` : null;
-            } else {
-                txMonthStr = txn.date ? `${new Date(txn.date).getFullYear()}-${String(new Date(txn.date).getMonth() + 1).padStart(2, '0')}` : null;
-            }
+            const txMonthStr = getInstallmentPaymentMonth(txn);
             if (txMonthStr) {
                 await updateInstallmentPartialPayment(userId, txn.installmentId, txMonthStr, -txn.amount);
                 
@@ -130,16 +137,7 @@ export const deleteMultipleTransactions = async (userId, ids) => {
                     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debts' }));
                 }
             } else if (txn.type === 'installment_repaid' && txn.installmentId) {
-                let txMonthStr = null;
-                const match = txn.description?.match(/\(T(\d{2})\/(\d{4})\)$/);
-                if (match) {
-                    txMonthStr = `${match[2]}-${match[1]}`;
-                } else if (txn.description?.match(/\(T(\d{2})\)$/)) {
-                    const m = txn.description.match(/\(T(\d{2})\)$/)[1];
-                    txMonthStr = txn.date ? `${new Date(txn.date).getFullYear()}-${m}` : null;
-                } else {
-                    txMonthStr = txn.date ? `${new Date(txn.date).getFullYear()}-${String(new Date(txn.date).getMonth() + 1).padStart(2, '0')}` : null;
-                }
+                const txMonthStr = getInstallmentPaymentMonth(txn);
                 if (txMonthStr) {
                     await updateInstallmentPartialPayment(userId, txn.installmentId, txMonthStr, -txn.amount);
                     

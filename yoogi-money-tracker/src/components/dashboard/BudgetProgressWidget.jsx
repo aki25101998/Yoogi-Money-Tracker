@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Target, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import PortfolioTransactionsModal from '../modals/PortfolioTransactionsModal';
+import { isExpenseTransaction, isIncomeTransaction } from '../../utils/transactionUtils';
 
 const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budgetPortfolios, dateRange, onEditTransaction, onDeleteTransaction }) => {
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
@@ -27,9 +28,9 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
         transactions.forEach(t => {
             if (applyWalletFilter && !validWalletIds.includes(t.walletId)) return;
 
-            if (t.type === 'income' && validIncomeIds.includes(t.categoryId)) {
+            if (isIncomeTransaction(t) && validIncomeIds.includes(t.categoryId)) {
                 income += Number(t.amount) || 0;
-            } else if (t.type === 'expense') {
+            } else if (isExpenseTransaction(t)) {
                 const amount = Number(t.amount) || 0;
                 const idToTrack = t.subcategoryId || t.categoryId;
                 if (idToTrack) {
@@ -210,7 +211,7 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                 isOpen={!!selectedPortfolio}
                 onClose={() => setSelectedPortfolio(null)}
                 portfolio={selectedPortfolio}
-                transactions={transactions.filter(t => t.type === 'expense' && selectedPortfolio?.expenseCategoryIds?.includes(t.subcategoryId || t.categoryId))}
+                transactions={transactions.filter(t => isExpenseTransaction(t) && selectedPortfolio?.expenseCategoryIds?.includes(t.subcategoryId || t.categoryId))}
                 categories={categories}
                 onEditTransaction={onEditTransaction}
                 onDeleteTransaction={onDeleteTransaction}

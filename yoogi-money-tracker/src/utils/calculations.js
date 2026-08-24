@@ -1,3 +1,5 @@
+import { getInstallmentPaymentMonth } from './transactionUtils';
+
 export const monthDiff = (d1, d2) => {
     let months;
     months = (d2.getFullYear() - d1.getFullYear()) * 12;
@@ -99,4 +101,34 @@ export const calculateItemStats = (item, referenceDate = new Date(), transaction
     const isFinished = effectiveMonths >= item.term;
 
     return { monthsPassed, effectiveMonths, paidAmount, remainingAmount, progress, isFinished };
+};
+
+export const getInstallmentSummaryForMonth = (transactions, year, month) => {
+    if (!transactions) return { total: 0, count: 0, byInstallment: [] };
+    
+    const targetMonthStr = `${year}-${String(month).padStart(2, '0')}`;
+    
+    const installmentTxns = transactions.filter(t => {
+        if (t.type !== 'installment_repaid') return false;
+        const txMonthStr = getInstallmentPaymentMonth(t);
+        return txMonthStr === targetMonthStr;
+    });
+
+    const total = installmentTxns.reduce((sum, t) => sum + (t.amount || 0), 0);
+    const count = installmentTxns.length;
+    
+    const byInstallmentMap = {};
+    installmentTxns.forEach(t => {
+        if (!t.installmentId) return;
+        if (!byInstallmentMap[t.installmentId]) {
+            byInstallmentMap[t.installmentId] = { installmentId: t.installmentId, amount: 0 };
+        }
+        byInstallmentMap[t.installmentId].amount += (t.amount || 0);
+    });
+    
+    return {
+        total,
+        count,
+        byInstallment: Object.values(byInstallmentMap)
+    };
 };

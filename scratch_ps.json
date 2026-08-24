@@ -1,0 +1,330 @@
+﻿[
+  {
+    "id": "38b23b41-18b5-47b8-8f31-048dd698904d",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "1. Thu nhß║¡p Chß╗º ─æß╗Öng",
+    "icon": "≡ƒÆ╝",
+    "type": "income",
+    "order": 1,
+    "subcategories": [
+      {
+        "id": "luong_chinh",
+        "name": "L╞░╞íng ch├¡nh",
+        "description": "Tiß╗ün l╞░╞íng."
+      },
+      {
+        "id": "thuong",
+        "name": "Th╞░ß╗ƒng",
+        "description": "KPI, th├íng 13."
+      },
+      {
+        "id": "lam_them",
+        "name": "L├ám th├¬m",
+        "description": "Freelance."
+      }
+    ],
+    "created_at": "2026-07-16T07:49:43.002803+00:00",
+    "updated_at": "2026-07-16T07:49:43.002803+00:00"
+  },
+  {
+    "id": "d4124a60-de64-4886-96c1-2af9efcf5e5e",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "1. Nhu cß║ºu thiß║┐t yß║┐u",
+    "icon": "≡ƒÅá",
+    "type": "expense",
+    "order": 1,
+    "subcategories": [
+      {
+        "id": "nha_cua",
+        "name": "Nh├á cß╗¡a",
+        "description": "Thu├¬ nh├á, ph├¡ quß║ún l├╜."
+      },
+      {
+        "id": "hoa_don",
+        "name": "H├│a ─æ╞ín",
+        "description": "─Éiß╗çn, n╞░ß╗¢c, internet."
+      },
+      {
+        "id": "an_uong_co_ban",
+        "name": "─én uß╗æng c╞í bß║ún",
+        "description": "Si├¬u thß╗ï, ─æi chß╗ú."
+      },
+      {
+        "id": "di_chuyen",
+        "name": "Di chuyß╗ân",
+        "description": "X─âng, bß║úo d╞░ß╗íng xe."
+      },
+      {
+        "id": "lat_vat_phat_sinh",
+        "name": "Lß║╖t vß║╖t & Ph├ít sinh",
+        "description": "Gß╗¡i xe, tr├á ─æ├í (Hao hß╗Ñt)."
+      }
+    ],
+    "created_at": "2026-07-16T07:49:43.002803+00:00",
+    "updated_at": "2026-07-16T07:49:43.002803+00:00"
+  },
+  {
+    "id": "e9fca519-4c4d-4931-b4ed-1fffbc65a342",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "2. Chi ti├¬u c├í nh├ón",
+    "icon": "≡ƒì╣",
+    "type": "expense",
+    "order": 2,
+    "subcategories": [
+      {
+        "id": "an_ngoai_cafe",
+        "name": "─én ngo├ái & C├á ph├¬",
+        "description": "Nh├á h├áng, ─æß╗ô ─ân nhanh."
+      },
+      {
+        "id": "so_thich_giai_tri",
+        "name": "Sß╗ƒ th├¡ch & Giß║úi tr├¡",
+        "description": "Xem phim, game."
+      },
+      {
+        "id": "mua_sam",
+        "name": "Mua sß║»m",
+        "description": "Quß║ºn ├ío, gi├áy d├⌐p."
+      },
+      {
+        "id": "du_lich",
+        "name": "Du lß╗ïch",
+        "description": "Trekking, ─æi ch╞íi xa."
+      }
+    ],
+    "created_at": "2026-07-16T07:49:43.002803+00:00",
+    "updated_at": "2026-07-16T07:49:43.002803+00:00"
+  },
+  {
+    "id": "b574af0d-231c-49af-b342-b7cf51d58512",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "2. Thu nhß║¡p Thß╗Ñ ─æß╗Öng",
+    "icon": "≡ƒÆ░",
+    "type": "income",
+    "order": 2,
+    "subcategories": [
+      {
+        "id": "lai_tiet_kiem",
+        "name": "L├úi tiß║┐t kiß╗çm",
+        "description": "L├úi NH."
+      },
+      {
+        "id": "co_tuc_lai_dau_tu",
+        "name": "Cß╗ò tß╗⌐c / L├úi ─æß║ºu t╞░",
+        "description": "L├úi ETF, Trade."
+      },
+      {
+        "id": "ban_tai_san",
+        "name": "B├ín t├ái sß║ún",
+        "description": "B├ín v├áng, chß╗æt lß╗¥i."
+      }
+    ],
+    "created_at": "2026-07-16T07:49:43.002803+00:00",
+    "updated_at": "2026-07-16T07:49:43.002803+00:00"
+  },
+  {
+    "id": "a7155c30-6ac6-4012-812d-a3dd9786d361",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "3. Ph├ít triß╗ân & Sß╗⌐c khß╗Åe",
+    "icon": "≡ƒÅï∩╕Å",
+    "type": "expense",
+    "order": 3,
+    "subcategories": [
+      {
+        "id": "giao_duc",
+        "name": "Gi├ío dß╗Ñc",
+        "description": "Kh├│a hß╗ìc, chß╗⌐ng chß╗ë."
+      },
+      {
+        "id": "the_thao",
+        "name": "Thß╗â thao",
+        "description": "Gym, v├╡ thuß║¡t."
+      },
+      {
+        "id": "suc_khoe",
+        "name": "Sß╗⌐c khß╗Åe",
+        "description": "Kh├ím bß╗çnh, TPCN."
+      }
+    ],
+    "created_at": "2026-07-16T07:49:43.002803+00:00",
+    "updated_at": "2026-07-16T07:49:43.002803+00:00"
+  },
+  {
+    "id": "65a63e98-ef58-4b17-992c-7622879eb7ae",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "3. Thu nhß║¡p Kh├íc",
+    "icon": "≡ƒÄü",
+    "type": "income",
+    "order": 3,
+    "subcategories": [
+      {
+        "id": "duoc_tang",
+        "name": "─É╞░ß╗úc tß║╖ng",
+        "description": "Qu├á sinh nhß║¡t."
+      },
+      {
+        "id": "hoan_tien",
+        "name": "Ho├án tiß╗ün",
+        "description": "Cashback."
+      },
+      {
+        "id": "chinh_so_quy",
+        "name": "Chß╗ënh sß╗ò quß╗╣",
+        "description": "Ghi nhß║¡n tiß╗ün d╞░."
+      },
+      {
+        "id": "di_vay_tam_ung",
+        "name": "─Éi vay / Tß║ím ß╗⌐ng",
+        "description": "Vay m╞░ß╗ún tiß╗ün mß║╖t tß╗½ ng╞░ß╗¥i kh├íc/thß║╗."
+      },
+      {
+        "id": "thu_hoi_no",
+        "name": "Thu hß╗ôi nß╗ú",
+        "description": "Ng╞░ß╗¥i kh├íc trß║ú lß║íi tiß╗ün ─æ├ú m╞░ß╗ún."
+      }
+    ],
+    "created_at": "2026-07-16T07:49:43.002803+00:00",
+    "updated_at": "2026-07-16T07:49:43.002803+00:00"
+  },
+  {
+    "id": "e9373434-f2c6-4273-98d4-3ff9d5a3f6f3",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "4. ─Éß║ºu t╞░ & T├¡ch l┼⌐y",
+    "icon": "≡ƒî▒",
+    "type": "expense",
+    "order": 4,
+    "subcategories": [
+      {
+        "id": "chung_khoan_quy",
+        "name": "Chß╗⌐ng kho├ín & Quß╗╣",
+        "description": "Cß╗ò phiß║┐u, ETF."
+      },
+      {
+        "id": "crypto",
+        "name": "Crypto",
+        "description": "Bitcoin, Altcoins."
+      },
+      {
+        "id": "trading",
+        "name": "Trading",
+        "description": "Vß╗æn MT5, e-commerce."
+      },
+      {
+        "id": "tich_luy",
+        "name": "T├¡ch l┼⌐y",
+        "description": "Tiß║┐t kiß╗çm, Mua v├áng."
+      }
+    ],
+    "created_at": "2026-07-16T07:49:43.002803+00:00",
+    "updated_at": "2026-07-16T07:49:43.002803+00:00"
+  },
+  {
+    "id": "058cbb31-8901-48dc-9e7f-f855a45ff11c",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "5. Giao tß║┐ & Ngh─⌐a vß╗Ñ",
+    "icon": "≡ƒñ¥",
+    "type": "expense",
+    "order": 5,
+    "subcategories": [
+      {
+        "id": "giao_te",
+        "name": "Giao tß║┐",
+        "description": "Qu├á tß║╖ng, mß╗½ng c╞░ß╗¢i."
+      },
+      {
+        "id": "tu_thien",
+        "name": "Tß╗½ thiß╗çn",
+        "description": "ß╗ªng hß╗Ö ng╞░ß╗¥i ngh├¿o."
+      },
+      {
+        "id": "tra_no",
+        "name": "Trß║ú nß╗ú",
+        "description": "Thanh to├ín Thß║╗ t├¡n dß╗Ñng, nß╗ú c┼⌐."
+      },
+      {
+        "id": "cho_muon",
+        "name": "Cho m╞░ß╗ún",
+        "description": "─É╞░a tiß╗ün mß║╖t cho bß║ín b├¿/ng╞░ß╗¥i th├ón m╞░ß╗ún."
+      }
+    ],
+    "created_at": "2026-07-16T07:49:43.002803+00:00",
+    "updated_at": "2026-07-16T07:49:43.002803+00:00"
+  },
+  {
+    "id": "tra_no_tra_gop",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "Trß║ú nß╗ú & Trß║ú g├│p",
+    "icon": "≡ƒÆ│",
+    "type": "installment_repaid",
+    "order": 6,
+    "subcategories": [
+      {
+        "id": "tra_gop",
+        "name": "Trß║ú g├│p",
+        "description": "Trß║ú tiß╗ün mua trß║ú g├│p h├áng th├íng"
+      },
+      {
+        "id": "tra_no_vay",
+        "name": "Trß║ú nß╗ú vay",
+        "description": "Trß║ú nß╗ú tiß╗ün mß║╖t ─æ├ú vay"
+      }
+    ],
+    "created_at": "2026-07-16T08:01:20.285375+00:00",
+    "updated_at": "2026-07-16T08:01:20.285375+00:00"
+  },
+  {
+    "id": "afddbab3-bd91-4db6-9143-eb3ff1f12fd9",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "Ch╞░a ph├ón loß║íi",
+    "icon": "Γ¥ô",
+    "type": "expense",
+    "order": 99,
+    "subcategories": [],
+    "created_at": "2026-07-16T07:49:43.002803+00:00",
+    "updated_at": "2026-07-16T07:49:43.002803+00:00"
+  },
+  {
+    "id": "0b8a79e1-9e67-481e-a857-9b0c9be3765a",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "Ch╞░a ph├ón loß║íi",
+    "icon": "Γ¥ô",
+    "type": "income",
+    "order": 99,
+    "subcategories": [],
+    "created_at": "2026-07-16T07:49:43.002803+00:00",
+    "updated_at": "2026-07-16T07:49:43.002803+00:00"
+  },
+  {
+    "id": "227ffc72-63bf-4040-9049-ed3aa95f26a4",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "Chuyß╗ân tiß╗ün",
+    "icon": "≡ƒÆ╕",
+    "type": "transfer",
+    "order": 100,
+    "subcategories": [],
+    "created_at": "2026-07-16T07:49:43.002803+00:00",
+    "updated_at": "2026-07-16T07:49:43.002803+00:00"
+  },
+  {
+    "id": "6a049fb3-f52c-4772-b54c-4032e4fd0af0",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "Cho m╞░ß╗ún (Hß╗ç thß╗æng)",
+    "icon": "≡ƒôñ",
+    "type": "loan_given",
+    "order": 101,
+    "subcategories": [],
+    "created_at": "2026-07-16T07:49:43.002803+00:00",
+    "updated_at": "2026-07-16T07:49:43.002803+00:00"
+  },
+  {
+    "id": "7dbc241f-494a-4607-a926-67a796a3b79c",
+    "user_id": "c361d02e-0f85-4144-84f0-ad70db5eeae3",
+    "name": "Nhß║¡n trß║ú nß╗ú (Hß╗ç thß╗æng)",
+    "icon": "≡ƒôÑ",
+    "type": "loan_repaid",
+    "order": 102,
+    "subcategories": [],
+    "created_at": "2026-07-16T07:49:43.002803+00:00",
+    "updated_at": "2026-07-16T07:49:43.002803+00:00"
+  }
+]

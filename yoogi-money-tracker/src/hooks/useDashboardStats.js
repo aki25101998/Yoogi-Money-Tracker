@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { isExpenseTransaction, isInstallmentPayment } from '../utils/transactionUtils';
 
 const COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#2dd4bf', '#fb923c', '#94a3b8'];
 
@@ -84,12 +85,18 @@ export const useDashboardStats = ({
 
     const summaryStats = useMemo(() => {
         const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
-        const expense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
-        return { income, expense, balance: income - expense };
+        
+        const ordinaryExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
+        const installmentExpense = filteredTransactions.filter(t => isInstallmentPayment(t)).reduce((sum, t) => sum + (t.amount || 0), 0);
+        const expense = ordinaryExpense + installmentExpense;
+        
+        return { income, expense, ordinaryExpense, installmentExpense, balance: income - expense };
     }, [filteredTransactions]);
 
     const pieChartData = useMemo(() => {
-        const filteredByType = filteredTransactions.filter(t => t.type === chartType);
+        const filteredByType = filteredTransactions.filter(t => 
+            chartType === 'expense' ? isExpenseTransaction(t) : t.type === chartType
+        );
         const totalAmount = filteredByType.reduce((sum, t) => sum + (t.amount || 0), 0);
 
         const catMap = {};
@@ -113,9 +120,11 @@ export const useDashboardStats = ({
 
     const categoryTransactions = useMemo(() => {
         if (!selectedCategoryForModal) return [];
-        return filteredTransactions.filter(t => t.type === chartType && (
-            selectedCategoryForModal.id ? t.categoryId === selectedCategoryForModal.id : !t.categoryId
-        ));
+        return filteredTransactions.filter(t => {
+            const isMatchChartType = chartType === 'expense' ? isExpenseTransaction(t) : t.type === chartType;
+            const isMatchCategory = selectedCategoryForModal.id ? t.categoryId === selectedCategoryForModal.id : !t.categoryId;
+            return isMatchChartType && isMatchCategory;
+        });
     }, [filteredTransactions, selectedCategoryForModal, chartType]);
 
     const recentTransactions = useMemo(() => filteredTransactions.slice(0, 5), [filteredTransactions]);

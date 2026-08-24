@@ -72,9 +72,9 @@ export const updateInstallmentPartialPayment = async (userId, installmentId, mon
     
     const partials = data.partial_payments || {};
     const current = parseFloat(partials[monthStr]) || 0;
-    partials[monthStr] = current + diffAmount;
+    partials[monthStr] = Math.max(0, current + diffAmount);
     
     await supabase.from('installments').update({ partial_payments: partials }).eq('id', installmentId).eq('user_id', userId);
 };
 
-// ============================================================
+// ============================================================
