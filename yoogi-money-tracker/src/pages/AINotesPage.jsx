@@ -50,6 +50,12 @@ const AINotesPage = ({ user, aiMemories, abbreviations = [], categories, hideHea
         return s ? s.name : '';
     };
 
+    const getSubcategories = (catId) => {
+        if (!catId) return [];
+        const category = categories?.find(c => c.id === catId);
+        return category?.subcategories || [];
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
