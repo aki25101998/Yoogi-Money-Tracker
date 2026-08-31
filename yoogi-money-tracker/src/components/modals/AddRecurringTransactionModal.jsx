@@ -27,6 +27,18 @@ const [form, setForm] = useState({
 
     if (!isOpen) return null;
 
+    
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const safeSubmit = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            await handleSubmit(e);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!user) {
@@ -73,7 +85,7 @@ const [form, setForm] = useState({
                     <button onClick={onClose} className="p-1 -mr-2"><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
+                <form onSubmit={safeSubmit} className="p-6 overflow-y-auto space-y-4">
                     {/* Types Toggle */}
                     <div className="flex gap-2">
                         <button

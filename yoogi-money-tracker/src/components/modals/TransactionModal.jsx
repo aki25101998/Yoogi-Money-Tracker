@@ -89,6 +89,18 @@ const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || 
 
     if (!isOpen) return null;
 
+    
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const safeSubmit = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            await handleSubmit(e);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     const handleSubmit = (e) => {
         e.preventDefault();
         
@@ -135,7 +147,7 @@ const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || 
                     </h3>
                     <button onClick={onClose}><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
                 </div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <form onSubmit={safeSubmit} className="p-6 space-y-4">
                     {/* Type Toggle */}
                     {form.type === 'expense' || form.type === 'income' ? (
                         <div className="flex gap-2">

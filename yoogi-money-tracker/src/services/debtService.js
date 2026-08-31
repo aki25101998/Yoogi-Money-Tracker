@@ -43,7 +43,8 @@ export const updateDebt = async (userId, id, updates) => {
     if (updates.repaidAmount !== undefined) {
         let amount = toSave.amount;
         if (amount === undefined) {
-            const { data: debt } = await supabase.from('debts').select('amount').eq('id', id).single();
+            const { data: debt, error: fetchErr } = await supabase.from('debts').select('amount').eq('id', id).eq('user_id', userId).single();
+            if (fetchErr && fetchErr.code !== 'PGRST116') throw fetchErr;
             amount = debt?.amount || 0;
         }
         toSave.remaining_amount = amount - updates.repaidAmount;
@@ -54,17 +55,21 @@ export const updateDebt = async (userId, id, updates) => {
         delete toSave.notes;
     }
     const result = await supabase.from('debts').update(mapToSnakeCase(toSave)).eq('id', id).eq('user_id', userId);
+    if (result.error) throw result.error;
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debts' }));
     return result;
 };
 
 export const deleteDebt = async (userId, id) => {
     // Xóa các giao dịch liên quan đến khoản nợ này trước
-    await supabase.from('transactions').delete().eq('debt_id', id).eq('user_id', userId);
+    const { error: err1 } = await supabase.from('transactions').delete().eq('debt_id', id).eq('user_id', userId);
+    if (err1) throw err1;
     // Cleanup cũ do mapping sai trước đây (lưu debtId vào installment_id)
-    await supabase.from('transactions').delete().eq('installment_id', id).in('type', ['loan_given', 'loan_repaid', 'debt']).eq('user_id', userId);
+    const { error: err2 } = await supabase.from('transactions').delete().eq('installment_id', id).in('type', ['loan_given', 'loan_repaid', 'debt']).eq('user_id', userId);
+    if (err2) throw err2;
     
     const result = await supabase.from('debts').delete().eq('id', id).eq('user_id', userId);
+    if (result.error) throw result.error;
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'transactions' }));
         window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debts' }));

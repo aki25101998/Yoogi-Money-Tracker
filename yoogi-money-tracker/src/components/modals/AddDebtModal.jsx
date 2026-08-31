@@ -30,6 +30,18 @@ const [form, setForm] = useState({
         }
     };
 
+    
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const safeSubmit = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            await handleSubmit(e);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!user) return;
@@ -84,7 +96,7 @@ const [form, setForm] = useState({
                     <button onClick={onClose} className="p-1 -mr-2"><X className="w-6 h-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <form onSubmit={safeSubmit} className="p-6 space-y-4">
                     <div className="flex gap-2">
                         <div className="relative flex-1">
                             <span className="absolute top-2 left-4 text-[10px] text-slate-400 font-medium">Người mượn</span>

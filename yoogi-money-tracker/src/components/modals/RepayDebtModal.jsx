@@ -23,6 +23,18 @@ const [form, setForm] = useState({
 
     const remaining = debt.totalAmount - (debt.repaidAmount || 0);
 
+    
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const safeSubmit = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            await handleSubmit(e);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!user) return;
@@ -104,7 +116,7 @@ const [form, setForm] = useState({
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <form onSubmit={safeSubmit} className="p-6 space-y-4">
                     <div>
                         <AmountInput
                             placeholder="Số tiền được trả"

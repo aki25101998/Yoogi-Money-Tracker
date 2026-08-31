@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { addTransaction, updateRecurringTransaction } from '../utils/supabaseHelpers';
+import { executeRecurringTransactionRPC } from '../utils/supabaseHelpers';
 
 export const useRecurringTransactions = (user, recurringTransactions) => {
     // ==========================================
@@ -29,7 +29,6 @@ export const useRecurringTransactions = (user, recurringTransactions) => {
                             isRecurring: true,
                             recurringId: rt.id
                         };
-                        await addTransaction(user.uid, transactionData);
 
                         // Calculate next date
                         const newNextDate = new Date(nextDate);
@@ -49,10 +48,24 @@ export const useRecurringTransactions = (user, recurringTransactions) => {
                             else if (rt.intervalUnit === 'Năm') newNextDate.setFullYear(newNextDate.getFullYear() + value);
                         }
 
-                        await updateRecurringTransaction(user.uid, rt.id, {
-                            nextDate: newNextDate.toISOString()
-                        });
-                        console.log("Executed recurring transaction:", rt.description);
+                        // Generate unique occurrence ID based on the expected nextDate (which represents the current occurrence being processed)
+                        const occurrenceId = `${rt.id}_${nextDate.toISOString()}`;
+
+                        const result = await executeRecurringTransactionRPC(
+                            user.uid,
+                            rt.id,
+                            occurrenceId,
+                            transactionData,
+                            nextDate.toISOString(),
+                            newNextDate.toISOString()
+                        );
+
+                        if (result && result.success) {
+                            console.log("Executed recurring transaction successfully:", rt.description, result.transaction_id);
+                        } else {
+                            console.log("Skipped recurring transaction execution:", rt.description, result?.reason);
+                        }
+
                     } catch (error) {
                         console.error("Error executing recurring transaction:", error);
                     }

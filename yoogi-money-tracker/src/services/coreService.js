@@ -239,11 +239,18 @@ export const fetchVersions = async (userId) => {
 };
 
 export const saveVersion = async (userId, name) => {
-    const data = await exportUserData(userId);
-    const { error } = await supabase
-        .from('version_history')
-        .insert([{ user_id: userId, name: name || 'Bản lưu thủ công', data }]);
-    if (error) throw error;
+    const { error } = await supabase.rpc('create_version_snapshot', {
+        p_user_id: userId,
+        p_name: name || 'Bản lưu thủ công'
+    });
+    if (error) {
+        console.error('RPC create_version_snapshot failed, falling back to client-side export', error);
+        const data = await exportUserData(userId);
+        const { error: insertError } = await supabase
+            .from('version_history')
+            .insert([{ user_id: userId, name: name || 'Bản lưu thủ công', data }]);
+        if (insertError) throw insertError;
+    }
 };
 
 export const cleanupOldAutoVersions = async (userId) => {

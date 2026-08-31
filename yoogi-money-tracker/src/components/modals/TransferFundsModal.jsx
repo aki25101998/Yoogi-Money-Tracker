@@ -51,6 +51,18 @@ const getCurrentTime = () => {
 
     if (!isOpen) return null;
 
+    
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const safeSubmit = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            await handleSubmit(e);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     const handleSubmit = (e) => {
         e.preventDefault();
         let combinedDate = date;
@@ -97,7 +109,7 @@ const getCurrentTime = () => {
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 pt-2 space-y-6">
+                <form onSubmit={safeSubmit} className="p-6 pt-2 space-y-6">
                     <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 space-y-4">
                         {/* From Wallet */}
                         <div>

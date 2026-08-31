@@ -22,6 +22,18 @@ const [form, setForm] = useState({
 
     const totalAmount = selectedItems.reduce((sum, wrapper) => sum + (wrapper.monthlyRemaining ?? wrapper.item.monthlyPayment), 0);
 
+    
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const safeSubmit = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            await handleSubmit(e);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     const handleSubmit = (e) => {
         e.preventDefault();
         onConfirm({ ...form, totalAmount, items: selectedItems });
@@ -47,7 +59,7 @@ const [form, setForm] = useState({
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <form onSubmit={safeSubmit} className="p-6 space-y-4">
                     <div className="relative">
                         <span className="absolute top-2 left-4 text-[10px] text-slate-400 font-medium">Dùng nguồn tiền từ ví</span>
                         <select

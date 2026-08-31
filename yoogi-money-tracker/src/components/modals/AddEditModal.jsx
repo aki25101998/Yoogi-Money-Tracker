@@ -27,7 +27,7 @@ const [formData, setFormData] = useState({
     });
 
     const [aiPrompt, setAiPrompt] = useState('');
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = React.useState(false);
 
     useEffect(() => {
         if (editingItem) {
@@ -59,6 +59,18 @@ const [formData, setFormData] = useState({
 
     if (!isOpen) return null;
 
+    
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const safeSubmit = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            await handleSubmit(e);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     const handleSubmit = (e) => {
         e.preventDefault();
         onSave(formData);
@@ -125,7 +137,7 @@ const [formData, setFormData] = useState({
                     <h3 className="font-bold text-lg text-slate-800 dark:text-white">{editingItem ? "Cập nhật" : "Thêm mới"}</h3>
                     <button onClick={onClose}><X className="w-6 h-6 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300" /></button>
                 </div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <form onSubmit={safeSubmit} className="p-6 space-y-4">
                     {/* AI Section - Hide if editing */}
                     {!editingItem && (
                         <div className="mb-2 bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100/50 dark:border-indigo-800/30">
