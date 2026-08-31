@@ -9,6 +9,9 @@ ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS occurrence_id text;
 ALTER TABLE public.transactions DROP CONSTRAINT IF EXISTS transactions_occurrence_id_unique;
 ALTER TABLE public.transactions ADD CONSTRAINT transactions_occurrence_id_unique UNIQUE (user_id, occurrence_id);
 
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS debt_id text;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS recurring_id text;
+
 CREATE INDEX IF NOT EXISTS idx_transactions_occurrence ON public.transactions(user_id, occurrence_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_debt ON public.transactions(user_id, debt_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_installment ON public.transactions(user_id, installment_id);
@@ -19,7 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_debts_user ON public.debts(user_id);
 -- Handles claiming the occurrence, inserting the transaction, and updating next_date atomically.
 CREATE OR REPLACE FUNCTION public.execute_recurring_transaction(
     p_user_id uuid,
-    p_recurring_id uuid,
+    p_recurring_id text,
     p_occurrence_id text,
     p_transaction_data jsonb,
     p_expected_next_date timestamp with time zone,
@@ -30,7 +33,7 @@ SECURITY DEFINER
 AS $$
 DECLARE
     v_current_next_date timestamp with time zone;
-    v_transaction_id uuid;
+    v_transaction_id text;
     v_result jsonb;
 BEGIN
     -- Lock the recurring transaction to prevent race conditions
@@ -59,11 +62,11 @@ BEGIN
             p_transaction_data->>'type',
             (p_transaction_data->>'amount')::numeric,
             p_transaction_data->>'note',
-            NULLIF(p_transaction_data->>'category_id', '')::uuid,
-            NULLIF(p_transaction_data->>'subcategory_id', '')::uuid,
+            NULLIF(p_transaction_data->>'category_id', ''),
+            NULLIF(p_transaction_data->>'subcategory_id', ''),
             p_transaction_data->>'date',
             p_transaction_data->>'time',
-            NULLIF(p_transaction_data->>'wallet_id', '')::uuid,
+            NULLIF(p_transaction_data->>'wallet_id', ''),
             (p_transaction_data->>'is_recurring')::boolean,
             p_recurring_id,
             p_occurrence_id
@@ -85,7 +88,7 @@ $$;
 -- 3. ATOMIC RPC FOR DELETING WALLET
 CREATE OR REPLACE FUNCTION public.delete_wallet_safely(
     p_user_id uuid,
-    p_wallet_id uuid
+    p_wallet_id text
 ) RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -120,7 +123,7 @@ $$;
 -- 4. ATOMIC RPC FOR INSTALLMENT PARTIAL PAYMENT
 CREATE OR REPLACE FUNCTION public.update_installment_payment_atomic(
     p_user_id uuid,
-    p_installment_id uuid,
+    p_installment_id text,
     p_month_str text,
     p_diff_amount numeric
 ) RETURNS boolean
@@ -221,7 +224,7 @@ $$;
 -- 6. ATOMIC RPC FOR DEBT REPAYMENT
 CREATE OR REPLACE FUNCTION public.update_debt_repayment_atomic(
     p_user_id uuid,
-    p_debt_id uuid,
+    p_debt_id text,
     p_diff_amount numeric
 ) RETURNS boolean
 LANGUAGE plpgsql
