@@ -435,9 +435,15 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
 
         const cat = categories.find(c => c.id === newCategoryId);
         const hasSub = cat?.subcategories?.length > 0;
+        const newType = cat?.type;
 
         try {
-            await updateTransaction(user.uid, transactionId, { categoryId: newCategoryId, subcategoryId: '' });
+            const updates = { categoryId: newCategoryId, subcategoryId: '' };
+            if (newType) {
+                updates.type = newType;
+            }
+
+            await updateTransaction(user.uid, transactionId, updates);
             
             if (!hasSub) {
                 await learnFromCorrection(user.uid, originalInput, newCategoryId, '');
@@ -449,7 +455,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                     return {
                         ...m,
                         text: hasSub ? 'Vui lòng chọn thêm danh mục phụ để AI học phân loại chính xác.' : '✅ Đã cập nhật danh mục và AI đã học ghi chú này!',
-                        transaction: { ...m.transaction, categoryId: newCategoryId, subcategoryId: '' }
+                        transaction: { ...m.transaction, ...updates }
                     };
                 }
                 return m;
