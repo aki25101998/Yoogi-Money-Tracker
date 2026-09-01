@@ -34,6 +34,28 @@ export const addDebt = async (userId, data) => {
     return mapToCamelCase(result);
 };
 
+export const markDebtPaidAtomic = async (userId, debtId, walletId) => {
+    const { data, error } = await supabase.rpc('mark_debt_paid_atomic', {
+        p_user_id: userId,
+        p_debt_id: debtId,
+        p_wallet_id: walletId
+    });
+
+    if (error) throw error;
+    if (!data.success) {
+        throw new Error(data.message || data.error || 'Thanh toán thất bại');
+    }
+
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debts' }));
+        window.dispatchEvent(new CustomEvent('supabase_mutate', { 
+            detail: { table: 'transactions', action: 'Thanh toán toàn bộ nợ' }
+        }));
+    }
+
+    return data;
+};
+
 export const updateDebt = async (userId, id, updates) => {
     const toSave = { ...updates };
     if (updates.totalAmount !== undefined) {

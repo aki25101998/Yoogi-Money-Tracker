@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Trash2, Pencil, Check, ChevronDown, RefreshCw } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
-import { updateDebt, updateTransaction, getTransactionByDebtId, deleteTransaction } from '../../utils/supabaseHelpers';
+import { updateDebt, updateTransaction, getTransactionByDebtId, deleteTransaction, markDebtPaidAtomic } from '../../utils/supabaseHelpers';
 import AmountInput from '../ui/AmountInput';
 import DebtHistoryList from './debt-details/DebtHistoryList';
 
@@ -15,6 +15,8 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
     const [paymentEditForm, setPaymentEditForm] = useState({ amount: '', walletId: '', notes: '', date: '' });
     
     const [isSaving, setIsSaving] = useState(false);
+    const [payingDebtId, setPayingDebtId] = useState(null);
+    const [confirmPaymentDebt, setConfirmPaymentDebt] = useState(null);
 
     if (!isOpen || !groupedDebt) return null;
 
@@ -67,6 +69,42 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
             alert("Lỗi: " + err.message);
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleQuickPayClick = async (debt) => {
+        let defaultWalletId = '';
+        if (user) {
+            try {
+                const txn = await getTransactionByDebtId(user.uid, debt.id);
+                if (txn && txn.walletId) {
+                    defaultWalletId = txn.walletId;
+                } else if (wallets && wallets.length > 0) {
+                    defaultWalletId = wallets[0].id;
+                }
+            } catch (err) {}
+        }
+        setConfirmPaymentDebt({ debt, walletId: defaultWalletId });
+    };
+
+    const confirmQuickPay = async () => {
+        if (!user || !confirmPaymentDebt) return;
+        const { debt, walletId } = confirmPaymentDebt;
+        
+        if (!walletId) {
+            alert("Vui lòng chọn ví để thanh toán.");
+            return;
+        }
+
+        setPayingDebtId(debt.id);
+        setConfirmPaymentDebt(null);
+
+        try {
+            await markDebtPaidAtomic(user.uid, debt.id, walletId);
+        } catch (err) {
+            alert("Lỗi thanh toán: " + err.message);
+        } finally {
+            setPayingDebtId(null);
         }
     };
 
@@ -247,7 +285,51 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
 
                                 return (
                                     <div key={debt.id} className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 relative overflow-hidden">
-                                        {editingDebtId === debt.id ? (
+                                        {confirmPaymentDebt?.debt.id === debt.id ? (
+                                            <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="font-bold text-sm text-slate-800 dark:text-white">Xác nhận trả nợ</span>
+                                                    <button onClick={() => setConfirmPaymentDebt(null)} className="p-1"><X className="w-4 h-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></button>
+                                                </div>
+                                                <div className="text-sm text-slate-600 dark:text-slate-300">
+                                                    Bạn muốn thanh toán toàn bộ phần nợ còn lại?
+                                                </div>
+                                                <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                                    <span className="text-xs font-medium text-slate-500">Số tiền:</span>
+                                                    <span className="font-bold text-emerald-500 text-base">{formatCurrency(remaining)}</span>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] text-slate-400 font-medium block mb-1">Trừ tiền từ ví</label>
+                                                    <div className="relative">
+                                                        <select
+                                                            value={confirmPaymentDebt.walletId}
+                                                            onChange={e => setConfirmPaymentDebt({ ...confirmPaymentDebt, walletId: e.target.value })}
+                                                            className="w-full pl-3 pr-8 py-2.5 appearance-none border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none cursor-pointer text-sm font-medium"
+                                                        >
+                                                            <option value="" disabled>Chọn ví</option>
+                                                            {wallets?.map(w => (
+                                                                <option key={w.id} value={w.id}>{w.icon} {w.name}</option>
+                                                            ))}
+                                                        </select>
+                                                        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                                    </div>
+                                                </div>
+                                                <div className="pt-2 flex gap-2">
+                                                    <button
+                                                        onClick={() => setConfirmPaymentDebt(null)}
+                                                        className="flex-1 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-bold transition-colors text-sm"
+                                                    >
+                                                        Hủy
+                                                    </button>
+                                                    <button
+                                                        onClick={confirmQuickPay}
+                                                        className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold shadow-md shadow-emerald-500/20 transition-colors flex items-center justify-center gap-2 text-sm"
+                                                    >
+                                                        <Check className="w-4 h-4" /> Xác nhận
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : editingDebtId === debt.id ? (
                                             <div className="space-y-3">
                                                 <div className="flex justify-between items-center mb-2">
                                                     <span className="font-bold text-sm text-slate-800 dark:text-white">Chỉnh sửa khoản nợ</span>
@@ -317,6 +399,20 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
                                                             <div className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
                                                                 Đã trả xong
                                                             </div>
+                                                        )}
+                                                        {debt.status === 'active' && (
+                                                            <button 
+                                                                onClick={(e) => { e.stopPropagation(); handleQuickPayClick(debt); }}
+                                                                disabled={payingDebtId === debt.id}
+                                                                className={`px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold flex items-center gap-1 transition-colors ${payingDebtId === debt.id ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-400 cursor-not-allowed' : 'bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-500 text-emerald-600 dark:text-emerald-400 hover:text-white border border-emerald-200 dark:border-emerald-800/40 hover:border-emerald-500'}`}
+                                                                title="Thanh toán toàn bộ phần còn lại"
+                                                            >
+                                                                {payingDebtId === debt.id ? (
+                                                                    <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Đang xử lý...</>
+                                                                ) : (
+                                                                    <><Check className="w-3.5 h-3.5" /> Đã trả</>
+                                                                )}
+                                                            </button>
                                                         )}
                                                         <button 
                                                             onClick={(e) => { e.stopPropagation(); startEdit(debt); }}
