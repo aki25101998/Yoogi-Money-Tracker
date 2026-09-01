@@ -123,3 +123,45 @@ export const getInstallmentSummaryForMonth = (transactions, year, month) => {
         byInstallment: Object.values(byInstallmentMap)
     };
 };
+
+export const calculateWrapperMonthlyRemaining = (wrapper, transactions) => {
+    const { item, monthStr: currentMonthStr } = wrapper;
+    const relatedTransactions = transactions?.filter(t => {
+        if (t.type !== 'installment_repaid') return false;
+        
+        const txMonthStr = getInstallmentPaymentMonth(t);
+
+        return (
+            (t.installmentId === item.id && txMonthStr === currentMonthStr) ||
+            ((t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`) || t.description?.startsWith(`Trả tối thiểu ${item.name}`)) && !t.installmentId && txMonthStr === currentMonthStr)
+        );
+    }) || [];
+
+    const partialPaid = relatedTransactions.reduce((acc, t) => acc + (t.amount || 0), 0);
+    return Math.max(item.monthlyPayment - partialPaid, 0);
+};
+
+export const calculateMonthlyDueForItems = (items, targetDate, transactions) => {
+    let totalDue = 0;
+    const targetMonthStr = getYearMonth(targetDate);
+    
+    items.forEach(item => {
+        const start = new Date(item.startDate);
+        const paidMonths = item.paidMonths || [];
+        
+        for (let i = 0; i < item.term; i++) {
+            const checkDate = new Date(start.getFullYear(), start.getMonth() + i, 1);
+            const mStr = getYearMonth(checkDate);
+            
+            if (mStr <= targetMonthStr) {
+                const isPaid = paidMonths.includes(mStr);
+                if (!isPaid) {
+                    const wrapper = { item, monthStr: mStr };
+                    totalDue += calculateWrapperMonthlyRemaining(wrapper, transactions);
+                }
+            }
+        }
+    });
+    
+    return totalDue;
+};

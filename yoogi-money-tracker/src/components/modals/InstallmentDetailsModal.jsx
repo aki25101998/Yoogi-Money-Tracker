@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Calendar, Trash2, Pencil, RefreshCw, ChevronDown, Plus } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import InstallmentItem from '../InstallmentItem';
-import { calculateItemStats, getYearMonth } from '../../utils/calculations';
+import { calculateItemStats, getYearMonth, calculateWrapperMonthlyRemaining } from '../../utils/calculations';
 
 const InstallmentDetailsModal = ({ 
     isOpen, 
@@ -84,34 +84,10 @@ const InstallmentDetailsModal = ({
     historyItems.sort((a, b) => b.monthStr.localeCompare(a.monthStr));
 
     const amountDueThisMonth = activeItems.reduce((sum, wrapper) => {
-        const item = wrapper.item;
-        const currentMonthStr = wrapper.monthStr;
-        
-        const relatedTransactions = transactions?.filter(t => {
-            if (t.type !== 'installment_repaid') return false;
-            
-            let txMonthStr = null;
-            const match = t.description?.match(/\(T(\d{2})\/(\d{4})\)$/);
-            if (match) {
-                txMonthStr = `${match[2]}-${match[1]}`;
-            } else if (t.description?.match(/\(T(\d{2})\)$/)) {
-                const m = t.description.match(/\(T(\d{2})\)$/)[1];
-                txMonthStr = t.date ? `${new Date(t.date).getFullYear()}-${m}` : null;
-            } else {
-                txMonthStr = t.date ? `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}` : null;
-            }
-
-            return (
-                (t.installmentId === item.id && txMonthStr === currentMonthStr) ||
-                ((t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`) || t.description?.startsWith(`Trả tối thiểu ${item.name}`)) && !t.installmentId && txMonthStr === currentMonthStr)
-            );
-        }) || [];
-
-        const partialPaid = relatedTransactions.reduce((acc, t) => acc + (t.amount || 0), 0);
-        const monthlyRemaining = Math.max(item.monthlyPayment - partialPaid, 0);
+        const monthlyRemaining = calculateWrapperMonthlyRemaining(wrapper, transactions);
         
         wrapper.monthlyRemaining = monthlyRemaining;
-        wrapper.partialPaid = partialPaid;
+        wrapper.partialPaid = wrapper.item.monthlyPayment - monthlyRemaining;
 
         return sum + monthlyRemaining;
     }, 0);

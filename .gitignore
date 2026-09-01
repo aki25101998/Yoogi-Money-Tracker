@@ -41,3 +41,5 @@ build_no_space.bat
 **/test_data.js
 **/migrate*.cjs
 **/sync_*.cjs
+
+build-tools/

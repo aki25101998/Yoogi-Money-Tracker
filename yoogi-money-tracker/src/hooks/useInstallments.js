@@ -1,5 +1,5 @@
 import { useMemo, useEffect } from 'react';
-import { calculateItemStats, getYearMonth } from '../utils/calculations';
+import { calculateItemStats, getYearMonth, calculateMonthlyDueForItems } from '../utils/calculations';
 import { updateInstallment } from '../utils/supabaseHelpers';
 import { getInstallmentPaymentMonth } from '../utils/transactionUtils';
 
@@ -94,6 +94,7 @@ export const useInstallments = ({
                     lenderName,
                     totalAmount: 0,
                     repaidAmount: 0,
+                    monthlyDue: 0,
                     items: [],
                     status: 'paid'
                 };
@@ -110,13 +111,18 @@ export const useInstallments = ({
             }
         });
         
+        // Calculate monthlyDue using the common helper and activeReferenceDate
+        Object.values(groups).forEach(group => {
+            group.monthlyDue = calculateMonthlyDueForItems(group.items, activeReferenceDate, transactions);
+        });
+
         return Object.values(groups).sort((a, b) => {
             const aActive = a.status === 'active';
             const bActive = b.status === 'active';
             if (aActive !== bActive) return aActive ? -1 : 1;
             return b.totalAmount - a.totalAmount;
         });
-    }, [filteredItems, transactions]);
+    }, [filteredItems, transactions, activeReferenceDate]);
 
     const { inProgressItems, completedItems } = useMemo(() => {
         const targetDate = activeReferenceDate;

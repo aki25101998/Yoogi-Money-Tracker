@@ -24,3 +24,9 @@ Vercel sẽ tự động deploy khi nhận push từ GitHub.
 - Không cần hỏi user trước khi push, hãy tự động làm
 - Nếu push bị lỗi, thông báo cho user
 
+## Android APK Build Rule
+
+Dự án này sử dụng Capacitor 8 để đóng gói Android. Nó **bắt buộc** phải có Java 21 và Android SDK.
+Vì máy của user không cài đặt sẵn môi trường Java và Android SDK trên hệ thống, tuyệt đối KHÔNG tự ý chạy `gradlew assembleDebug` một cách đơn độc.
+
+Để xuất file APK, luôn luôn sử dụng quy trình /export-apk (hoặc chạy script `build_apk.ps1` ở thư mục gốc).
