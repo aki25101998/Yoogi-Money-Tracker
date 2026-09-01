@@ -66,6 +66,11 @@ BEGIN
         RAISE EXCEPTION 'No items to process';
     END IF;
 
+    -- Security check: Đảm bảo user_id truyền vào khớp với user_id đang đăng nhập
+    IF auth.uid() IS NOT NULL AND auth.uid() <> p_user_id THEN
+        RAISE EXCEPTION 'Unauthorized: p_user_id does not match auth.uid()';
+    END IF;
+
     -- Lặp qua từng khoản trong payload
     FOR item IN SELECT * FROM jsonb_array_elements(p_items)
     LOOP
