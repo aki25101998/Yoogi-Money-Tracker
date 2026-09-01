@@ -48,31 +48,22 @@ export const calculateItemStats = (item, referenceDate = new Date(), transaction
         if (transactions && Array.isArray(transactions)) {
             const related = transactions.filter(t => t.type === 'installment_repaid' && (t.installmentId === item.id || (!t.installmentId && t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`))));
             for (const t of related) {
-                let txMonthStr = null;
-                const match = t.description?.match(/\(T(\d{2})\/(\d{4})\)$/);
-                if (match) {
-                    txMonthStr = `${match[2]}-${match[1]}`;
-                } else if (t.description?.match(/\(T(\d{2})\)$/)) {
-                    const m = t.description.match(/\(T(\d{2})\)$/)[1];
-                    txMonthStr = t.date ? `${new Date(t.date).getFullYear()}-${m}` : null;
-                } else {
-                    txMonthStr = t.date ? `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}` : null;
-                }
+                const txMonthStr = getInstallmentPaymentMonth(t);
 
-                if (txMonthStr && !item.paidMonths.includes(txMonthStr)) {
+                if (txMonthStr && txMonthStr <= currentYearMonth && !item.paidMonths.includes(txMonthStr)) {
                     totalPartialPaid += (t.amount || 0);
                 }
             }
         } else if (item.partialPayments) {
             for (const [mStr, amount] of Object.entries(item.partialPayments)) {
-                if (!item.paidMonths.includes(mStr)) {
-                    totalPartialPaid += amount;
+                if (mStr <= currentYearMonth && !item.paidMonths.includes(mStr)) {
+                    totalPartialPaid += parseFloat(amount) || 0;
                 }
             }
         }
         
         paidAmount += totalPartialPaid;
-        const remainingAmount = item.totalPayable - paidAmount;
+        const remainingAmount = Math.max(0, item.totalPayable - paidAmount);
 
         // Progress based on effectively paid amount at that time vs total
         const progress = item.totalPayable > 0 ? Math.min((paidAmount / item.totalPayable) * 100, 100) : 0;
@@ -96,9 +87,9 @@ export const calculateItemStats = (item, referenceDate = new Date(), transaction
 
     const effectiveMonths = Math.min(monthsPassed, item.term);
     const paidAmount = effectiveMonths * item.monthlyPayment;
-    const remainingAmount = item.totalPayable - paidAmount;
-    const progress = (effectiveMonths / item.term) * 100;
-    const isFinished = effectiveMonths >= item.term;
+    const remainingAmount = Math.max(0, item.totalPayable - paidAmount);
+    const progress = item.totalPayable > 0 ? (paidAmount / item.totalPayable) * 100 : 0;
+    const isFinished = remainingAmount <= 0 || effectiveMonths >= item.term;
 
     return { monthsPassed, effectiveMonths, paidAmount, remainingAmount, progress, isFinished };
 };

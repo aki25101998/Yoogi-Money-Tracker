@@ -1,6 +1,7 @@
 import { useMemo, useEffect } from 'react';
 import { calculateItemStats, getYearMonth } from '../utils/calculations';
 import { updateInstallment } from '../utils/supabaseHelpers';
+import { getInstallmentPaymentMonth } from '../utils/transactionUtils';
 
 export const useInstallments = ({
     items,
@@ -188,7 +189,7 @@ export const useInstallments = ({
             if (transactions && Array.isArray(transactions)) {
                 const related = transactions.filter(t => t.type === 'installment_repaid' && (t.installmentId === item.id || (!t.installmentId && t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`))));
                 for (const t of related) {
-                    const txMonthStr = t.date ? `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}` : null;
+                    const txMonthStr = getInstallmentPaymentMonth(t);
                     if (txMonthStr && !item.paidMonths?.includes(txMonthStr)) {
                         let match = false;
                         if (!filterDate) match = true;
@@ -217,14 +218,8 @@ export const useInstallments = ({
             
             remainingTotal += stats.remainingAmount;
 
-            const start = new Date(item.startDate);
-            const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-            let monthsDiff = (target.getFullYear() - start.getFullYear()) * 12 + (target.getMonth() - start.getMonth());
-            if (monthsDiff < 0) monthsDiff = 0;
-            
-            const projectedPayments = Math.min(monthsDiff, item.term);
-            const projectedPaidAmount = projectedPayments * item.monthlyPayment;
-            projectedRemainingTotal += (item.totalPayable - projectedPaidAmount);
+            const remaining = Math.max(0, item.totalPayable - stats.paidAmount);
+            projectedRemainingTotal += remaining;
         });
 
         inProgressItems.forEach(wrapper => {
