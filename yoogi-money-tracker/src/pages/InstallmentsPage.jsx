@@ -588,19 +588,12 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 <Card className="p-5 bg-gradient-to-br from-indigo-600 to-violet-600 border-none text-white relative overflow-hidden shadow-lg">
                     <div className="relative z-10 flex items-start justify-between">
-                        {filterDate && filterDate.length === 7 ? (
-                            <div>
-                                <p className="text-indigo-100 text-xs uppercase tracking-wider font-bold mb-1 opacity-90">Phải trả tháng này</p>
-                                <h2 className="text-3xl font-bold tracking-tight">{formatCurrency(totalStats.monthlyTotal)}</h2>
-                            </div>
-                        ) : (
-                            <div>
-                                <p className="text-indigo-100 text-xs uppercase tracking-wider font-bold mb-1 opacity-90">
-                                    {!filterDate ? 'Tổng đã thanh toán' : `Đã thanh toán năm ${filterDate}`}
-                                </p>
-                                <h2 className="text-3xl font-bold tracking-tight">{formatCurrency(totalStats.periodPaidTotal)}</h2>
-                            </div>
-                        )}
+                        <div>
+                            <p className="text-indigo-100 text-xs uppercase tracking-wider font-bold mb-1 opacity-90">
+                                {!filterDate ? 'Phải trả mỗi tháng' : 'Phải trả tháng này'}
+                            </p>
+                            <h2 className="text-3xl font-bold tracking-tight">{formatCurrency(totalStats.monthlyTotal)}</h2>
+                        </div>
                         <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-sm"><Calendar className="w-6 h-6 text-white" /></div>
                     </div>
                 </Card>
@@ -608,9 +601,9 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                     <div className="flex items-start justify-between relative z-10">
                         <div>
                             <p className="text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-bold mb-1">
-                                Dư nợ dự kiến T{activeReferenceDate.getMonth() + 1}/{activeReferenceDate.getFullYear()}
+                                {!filterDate ? 'Đã trả (Toàn bộ)' : filterDate.length === 4 ? `Đã trả năm ${filterDate}` : `Đã trả tháng ${filterDate.split('-').reverse().join('/')}`}
                             </p>
-                            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{formatCurrency(totalStats.projectedRemainingTotal)}</h2>
+                            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{formatCurrency(totalStats.periodPaidTotal)}</h2>
                         </div>
                         <div className="bg-emerald-50 dark:bg-emerald-900/20 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-800"><Target className="w-6 h-6 text-emerald-500 dark:text-emerald-400" /></div>
                     </div>
