@@ -168,9 +168,11 @@ export const useInstallments = ({
         let projectedRemainingTotal = 0;
         let periodPaidTotal = 0;
         const targetDate = activeReferenceDate;
+        const currentDate = new Date();
 
         filteredItems.forEach(item => {
-            const stats = calculateItemStats(item, targetDate, transactions);
+            const historicalStats = calculateItemStats(item, targetDate, transactions);
+            const currentStats = calculateItemStats(item, currentDate, transactions);
             
             // Add up periodPaidTotal manually for the specific filterDate if needed
             if (Array.isArray(item.paidMonths)) {
@@ -216,9 +218,9 @@ export const useInstallments = ({
                 }
             }
             
-            remainingTotal += stats.remainingAmount;
+            remainingTotal += currentStats.remainingAmount;
 
-            const remaining = Math.max(0, item.totalPayable - stats.paidAmount);
+            const remaining = Math.max(0, item.totalPayable - historicalStats.paidAmount);
             projectedRemainingTotal += remaining;
         });
 
