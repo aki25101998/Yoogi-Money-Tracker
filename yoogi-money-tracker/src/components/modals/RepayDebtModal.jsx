@@ -19,12 +19,13 @@ const [form, setForm] = useState({
         }
     }, [isOpen, wallets]);
 
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+
     if (!isOpen || !debt) return null;
 
     const remaining = debt.totalAmount - (debt.repaidAmount || 0);
 
     
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
     const safeSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
         if (isSubmitting) return;
