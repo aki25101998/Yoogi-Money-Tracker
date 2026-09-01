@@ -410,7 +410,7 @@ const [activeTab, setActiveTab] = useState('active'); // active, paid, history
                                                                 {payingDebtId === debt.id ? (
                                                                     <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Đang xử lý...</>
                                                                 ) : (
-                                                                    <><Check className="w-3.5 h-3.5" /> Đã trả</>
+                                                                    <><Check className="w-3.5 h-3.5" /> Chưa trả</>
                                                                 )}
                                                             </button>
                                                         )}
