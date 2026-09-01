@@ -4,13 +4,15 @@ import { X, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
 const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfirm }) => {
-const [form, setForm] = useState({
+    const [form, setForm] = useState({
         walletId: '',
         date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
     });
+    const [paymentBatchId, setPaymentBatchId] = useState(null);
 
     useEffect(() => {
         if (isOpen) {
+            setPaymentBatchId(crypto.randomUUID());
             setForm(prev => ({
                 ...prev,
                 walletId: prev.walletId || (wallets?.length > 0 ? wallets.find(w => w.isDefault)?.id || wallets[0].id : '')
@@ -37,7 +39,7 @@ const [form, setForm] = useState({
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await onConfirm({ ...form, totalAmount, items: selectedItems });
+            await onConfirm({ ...form, totalAmount, items: selectedItems, paymentBatchId });
             onClose();
         } catch (error) {
             console.error("Payment error:", error);

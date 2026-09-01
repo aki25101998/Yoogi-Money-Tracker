@@ -16,8 +16,8 @@ export const processBulkInstallmentPayment = async (userId, paymentData) => {
         throw new Error('Không có khoản nào được chọn để thanh toán.');
     }
 
-    // 1. Sinh UUID cho batch này để đảm bảo idempotency
-    const paymentBatchId = crypto.randomUUID();
+    // 1. Lấy paymentBatchId từ UI hoặc sinh UUID mới
+    const paymentBatchId = paymentData.paymentBatchId || crypto.randomUUID();
 
     // 2. Map payload thành cấu trúc JSONB cho RPC
     const itemsPayload = paidItems.map(wrapper => {
@@ -30,11 +30,8 @@ export const processBulkInstallmentPayment = async (userId, paymentData) => {
             throw new Error(`Khoản trả góp "${item.name}" có số tiền thanh toán không hợp lệ.`);
         }
 
-        // Validate state
-        const currentPaidMonths = item.paidMonths || [];
-        if (currentPaidMonths.includes(monthStr)) {
-            throw new Error(`Khoản trả góp "${item.name}" (tháng ${monthStr.split('-')[1]}) đã được thanh toán trước đó.`);
-        }
+        // Không kiểm tra paidMonths ở frontend nữa, để RPC xử lý idempotency (Already Processed)
+        // nhằm tránh lỗi race condition nếu UI chưa kịp refresh.
 
         const ownerName = item.owner || 'Tôi';
         const isPaying = ownerName === 'Tôi';
@@ -76,6 +73,9 @@ export const processBulkInstallmentPayment = async (userId, paymentData) => {
     if (data && !data.success) {
         throw new Error(data.error || 'Lỗi không xác định từ server.');
     }
+
+    // Không quăng lỗi nếu RPC trả về already_processed = true
+    // Đây là Business Idempotency giúp chống double click an toàn
 
     // 4. Dispatch sự kiện báo hiệu thanh toán thành công để Refresh
     if (typeof window !== 'undefined') {
