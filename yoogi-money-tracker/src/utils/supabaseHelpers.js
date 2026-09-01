@@ -6,3 +6,4 @@ export * from '../services/walletService';
 export * from '../services/installmentService';
 export * from '../services/aiService';
 export * from '../services/budgetService';
+export * from '../services/installmentPaymentService';

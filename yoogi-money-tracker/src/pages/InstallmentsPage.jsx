@@ -8,7 +8,7 @@ import {
     RotateCcw, ChevronUp, ChevronDown, Check, ChevronRight
 } from 'lucide-react';
 
-import { addPayer, deletePayer, addLender, deleteLender, updateLender, deleteTransaction, addInstallment, updateInstallment, deleteInstallment, addTransaction } from '../utils/supabaseHelpers';
+import { addPayer, deletePayer, addLender, deleteLender, updateLender, deleteTransaction, addInstallment, updateInstallment, deleteInstallment, addTransaction, processBulkInstallmentPayment } from '../utils/supabaseHelpers';
 import { supabase } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
 import { calculateLoan, calculateItemStats, getYearMonth } from '../utils/calculations';
@@ -463,44 +463,19 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
         if (!user) return;
         setIsProcessing(true);
         try {
-            const { walletId, date, totalAmount, items: paidItems } = paymentData;
-
-            // 1. Cập nhật paidMonths cho từng khoản
-            for (const wrapper of paidItems) {
-                const item = wrapper.item;
-                const monthStr = wrapper.monthStr;
-                const currentPaidMonths = item.paidMonths || [];
-                if (!currentPaidMonths.includes(monthStr)) {
-                    const newPaidMonths = [...currentPaidMonths, monthStr].sort();
-                    await updateInstallment(user.uid, item.id, { paidMonths: newPaidMonths });
-                }
-
-                // 2. Tạo giao dịch tương ứng cho từng khoản
-                const amountNum = wrapper.monthlyRemaining ?? item.monthlyPayment;
-                if (amountNum > 0) {
-                    const ownerName = item.owner || 'Tôi';
-                    const isPaying = ownerName === 'Tôi';
-                    const matchedCategoryId = isPaying 
-                        ? (categories?.find(c => c.type === 'installment_repaid')?.id || 'tra_no_tra_gop') 
-                        : (categories?.find(c => c.type === 'loan_repaid')?.id || 'loan_repaid');
-
-                    const transactionData = {
-                        type: isPaying ? 'installment_repaid' : 'loan_repaid',
-                        amount: amountNum,
-                        description: `Trả góp ${item.name} (T${monthStr.split('-')[1]}/${monthStr.split('-')[0]})`,
-                        categoryId: matchedCategoryId,
-                        subcategoryId: isPaying ? 'tra_gop' : '',
-                        date: new Date(date).toISOString(),
-                        time: `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`,
-                        walletId: walletId,
-                        installmentId: item.id
-                    };
-                    
-                    await addTransaction(user.uid, transactionData);
-                }
-            }
+            // Sử dụng service thanh toán bulk sử dụng RPC atomic
+            await processBulkInstallmentPayment(user.uid, {
+                ...paymentData,
+                categories
+            });
+            
+            // Đóng modal sau khi thành công
+            setIsPayInstallmentOpen(false);
+            setSelectedItemsForPayment([]);
         } catch (error) {
             alert('Lỗi khi thanh toán: ' + error.message);
+            // Ném lỗi ra để Modal có thể catch và giữ trạng thái mở cho user retry
+            throw error;
         } finally {
             setIsProcessing(false);
         }
