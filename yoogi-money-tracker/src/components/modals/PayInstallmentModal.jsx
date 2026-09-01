@@ -20,12 +20,12 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
         }
     }, [isOpen, wallets]);
 
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
     if (!isOpen || !selectedItems || selectedItems.length === 0) return null;
 
     const totalAmount = selectedItems.reduce((sum, wrapper) => sum + (wrapper.monthlyRemaining ?? wrapper.item.monthlyPayment), 0);
 
     
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
     const safeSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
         if (isSubmitting) return;

@@ -87,10 +87,10 @@ const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || 
         }
     }, [isOpen, initialData, defaultWallet]);
 
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
     if (!isOpen) return null;
 
     
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
     const safeSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
         if (isSubmitting) return;

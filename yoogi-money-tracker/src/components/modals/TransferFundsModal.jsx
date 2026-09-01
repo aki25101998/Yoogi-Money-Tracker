@@ -49,10 +49,10 @@ const getCurrentTime = () => {
         }
     }, [isOpen, wallets, initialData]);
 
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
     if (!isOpen) return null;
 
     
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
     const safeSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
         if (isSubmitting) return;

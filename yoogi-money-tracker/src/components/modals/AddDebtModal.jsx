@@ -19,6 +19,7 @@ const [form, setForm] = useState({
         }
     }, [isOpen, wallets]);
 
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
     if (!isOpen) return null;
 
     const handleQuickAdd = async () => {
@@ -31,7 +32,6 @@ const [form, setForm] = useState({
     };
 
     
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
     const safeSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
         if (isSubmitting) return;

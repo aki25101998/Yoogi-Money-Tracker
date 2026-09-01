@@ -24,10 +24,10 @@ const [formName, setFormName] = useState('');
         }
     }, [isOpen, mode, initialData]);
 
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
     if (!isOpen) return null;
 
     
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
     const safeSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
         if (isSubmitting) return;

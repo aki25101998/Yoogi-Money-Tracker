@@ -57,10 +57,10 @@ const [formData, setFormData] = useState({
         }
     }, [editingItem, isOpen, initialLender]);
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     if (!isOpen) return null;
 
-    
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const safeSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
         if (isSubmitting) return;
