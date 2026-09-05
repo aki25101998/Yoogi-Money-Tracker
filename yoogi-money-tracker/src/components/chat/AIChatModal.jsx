@@ -44,7 +44,12 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
 
         // Attempt to migrate from localStorage first if Firebase is empty
         const historyKey = `ai_chat_history_${user.uid}_${activeWallet.id}`;
-        const savedHistory = localStorage.getItem(historyKey);
+        let savedHistory = null;
+        try {
+            savedHistory = localStorage.getItem(historyKey);
+        } catch (e) {
+            console.warn('Lỗi đọc localStorage history', e);
+        }
         let localMessages = null;
         if (savedHistory) {
             try {

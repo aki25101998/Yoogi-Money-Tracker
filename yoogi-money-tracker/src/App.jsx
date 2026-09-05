@@ -50,7 +50,11 @@ export default function App() {
     // --- Theme ---
     const [theme, setTheme] = useState(() => {
         if (typeof window !== 'undefined') {
-            return localStorage.getItem('theme') || 'light';
+            try {
+                return localStorage.getItem('theme') || 'light';
+            } catch (e) {
+                return 'light';
+            }
         }
         return 'light';
     });
@@ -62,7 +66,11 @@ export default function App() {
         } else {
             root.classList.remove('dark');
         }
-        localStorage.setItem('theme', theme);
+        try {
+            localStorage.setItem('theme', theme);
+        } catch (e) {
+            console.error('Lỗi lưu theme:', e);
+        }
     }, [theme]);
 
     const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');

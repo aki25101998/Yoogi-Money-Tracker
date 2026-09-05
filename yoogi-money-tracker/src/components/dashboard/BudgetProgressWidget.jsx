@@ -7,13 +7,21 @@ import { isExpenseTransaction, isIncomeTransaction } from '../../utils/transacti
 const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budgetPortfolios, dateRange, onEditTransaction, onDeleteTransaction }) => {
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
     const [isCrossBudgetEnabled, setIsCrossBudgetEnabled] = useState(() => {
-        return localStorage.getItem('yoogi_cross_budget_enabled') === 'true';
+        try {
+            return localStorage.getItem('yoogi_cross_budget_enabled') === 'true';
+        } catch (e) {
+            return false;
+        }
     });
 
     const handleToggleCrossBudget = () => {
         const newValue = !isCrossBudgetEnabled;
         setIsCrossBudgetEnabled(newValue);
-        localStorage.setItem('yoogi_cross_budget_enabled', newValue);
+        try {
+            localStorage.setItem('yoogi_cross_budget_enabled', newValue);
+        } catch (e) {
+            console.error('Lỗi lưu cấu hình:', e);
+        }
     };
 
     // 1. Calculate base income and map expenses

@@ -13,7 +13,7 @@ import DashboardChart from '../components/dashboard/DashboardChart';
 import NetChangeSummary from '../components/dashboard/NetChangeSummary';
 import BudgetProgressWidget from '../components/dashboard/BudgetProgressWidget';
 import RecentTransactionsList from '../components/dashboard/RecentTransactionsList';
-import { addTransaction, incrementMemoryUsage, updateWalletOrder, addWallet, updateWallet, updateTransaction, processCorrections, deleteTransaction } from '../utils/supabaseHelpers';
+import { addTransaction, incrementMemoryUsage, updateWalletOrder, addWallet, updateWallet, updateTransaction, processCorrections, deleteTransaction, deleteWallet } from '../utils/supabaseHelpers';
 import { supabase } from '../config/supabase';
 import DateRangeSelector from '../components/DateRangeSelector';
 import { Bot, PenSquare } from 'lucide-react';
@@ -55,7 +55,11 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
     });
 
     useEffect(() => {
-        localStorage.setItem('yoogi_selected_wallet_ids', JSON.stringify(selectedWalletIds));
+        try {
+            localStorage.setItem('yoogi_selected_wallet_ids', JSON.stringify(selectedWalletIds));
+        } catch (e) {
+            console.error('Lỗi lưu ví:', e);
+        }
     }, [selectedWalletIds]);
     
     // Validate selectedWalletIds against loaded wallets to remove old Firebase IDs
@@ -82,6 +86,8 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
 
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
     const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteWalletModal, setDeleteWalletModal] = useState({ isOpen: false, id: null });
+    const [isDeletingWallet, setIsDeletingWallet] = useState(false);
 
     const [walletModalMode, setWalletModalMode] = useState('add');
     const [editingWallet, setEditingWallet] = useState(null);
@@ -205,6 +211,18 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
             alert("Lỗi khi xóa: " + error.message);
         }
         setIsDeleting(false);
+    };
+
+    const handleDeleteWalletConfirm = async () => {
+        if (!user || !deleteWalletModal.id) return;
+        setIsDeletingWallet(true);
+        try {
+            await deleteWallet(user.uid, deleteWalletModal.id);
+            setDeleteWalletModal({ isOpen: false, id: null });
+        } catch (error) {
+            alert("Lỗi khi xóa ví: " + error.message);
+        }
+        setIsDeletingWallet(false);
     };
 
     const openDeleteModal = (e, id) => {
@@ -399,6 +417,10 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                         mode={walletModalMode}
                         initialData={walletModalMode === 'edit' ? editingWallet : null}
                         onSave={handleSaveWallet}
+                        onDelete={(id) => {
+                            setIsWalletModalOpen(false);
+                            setDeleteWalletModal({ isOpen: true, id });
+                        }}
                     />
                 )}
 
@@ -445,6 +467,22 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
                         confirmText="Xóa"
                         confirmVariant="danger"
                         isProcessing={isDeleting}
+                        Icon={AlertTriangle}
+                        iconColorClass="text-rose-600"
+                        iconBgClass="bg-rose-100"
+                    />
+                )}
+
+                {deleteWalletModal.isOpen && (
+                    <ConfirmModal
+                        isOpen={deleteWalletModal.isOpen}
+                        onClose={() => setDeleteWalletModal({ isOpen: false, id: null })}
+                        onConfirm={handleDeleteWalletConfirm}
+                        title="Xóa ví tiền?"
+                        description="Lưu ý: Các giao dịch cũ thuộc ví này sẽ bị mồ côi (không thuộc ví nào). Bạn có chắc muốn xóa?"
+                        confirmText="Xóa"
+                        confirmVariant="danger"
+                        isProcessing={isDeletingWallet}
                         Icon={AlertTriangle}
                         iconColorClass="text-rose-600"
                         iconBgClass="bg-rose-100"

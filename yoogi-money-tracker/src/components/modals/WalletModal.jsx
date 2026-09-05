@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { X, Trash2 } from 'lucide-react';
 import AmountInput from '../ui/AmountInput';
 
 const EMOJI_PICKS = ['💵', '💳', '🏦', '📱', '💰', '💼', '🐖'];
 
-const WalletModal = ({ isOpen, onClose, mode = 'add', initialData = null, onSave }) => {
+const WalletModal = ({ isOpen, onClose, mode = 'add', initialData = null, onSave, onDelete }) => {
 const [formName, setFormName] = useState('');
     const [formIcon, setFormIcon] = useState('💵');
     const [initialBalance, setInitialBalance] = useState('');
@@ -95,9 +95,21 @@ const [formName, setFormName] = useState('');
                             placeholder="Vd: 500000"
                         />
                     </div>
-                    <button type="submit" className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl mt-2">
-                        Lưu
-                    </button>
+                    <div className="flex gap-3 mt-2">
+                        {mode === 'edit' && onDelete && initialData && (
+                            <button 
+                                type="button" 
+                                onClick={() => onDelete(initialData.id)} 
+                                className="py-3 px-4 bg-rose-100 hover:bg-rose-200 text-rose-600 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 dark:text-rose-400 font-bold rounded-xl transition-colors"
+                                title="Xóa ví"
+                            >
+                                <Trash2 className="w-5 h-5" />
+                            </button>
+                        )}
+                        <button type="submit" className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors">
+                            Lưu
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>,

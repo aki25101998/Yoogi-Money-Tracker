@@ -194,6 +194,10 @@ const WalletsSettings = ({ user, wallets, userSettings }) => {
                 mode={editModal.mode}
                 initialData={editModal.data}
                 onSave={handleSave}
+                onDelete={(id) => {
+                    setEditModal({ isOpen: false });
+                    setConfirmState({ isOpen: true, data: id });
+                }}
             />
 
             <ConfirmModal

@@ -23,7 +23,11 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
     });
 
     React.useEffect(() => {
-        localStorage.setItem('yoogi_selected_wallet_ids', JSON.stringify(selectedWalletIds));
+        try {
+            localStorage.setItem('yoogi_selected_wallet_ids', JSON.stringify(selectedWalletIds));
+        } catch (e) {
+            console.error('Lỗi lưu ví:', e);
+        }
     }, [selectedWalletIds]);
     
     // Validate selectedWalletIds against loaded wallets to remove old Firebase IDs

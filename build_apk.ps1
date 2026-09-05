@@ -34,8 +34,11 @@ Write-Host "Accepting Android SDK licenses..."
 $y = "y`n" * 100
 $y | & "$cmdlineDir\bin\sdkmanager.bat" --licenses | Out-Null
 
-Write-Host "Syncing capacitor..."
+Write-Host "Building web assets..."
 Set-Location -Path $workspace
+cmd.exe /c "npm run build"
+
+Write-Host "Syncing capacitor..."
 cmd.exe /c "npx cap sync android"
 
 Write-Host "Building APK..."
