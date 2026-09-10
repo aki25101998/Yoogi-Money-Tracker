@@ -158,9 +158,6 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
         if (isSubmitting) return;
         setIsSubmitting(true);
         try {
-            // Tạm dừng 5 giây theo yêu cầu của user để copy log
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            
             await handleSubmit(e);
         } finally {
             paymentDebugLog('MODAL', 'SUBMIT_FINALLY', { traceId: paymentBatchId, isSubmittingAfter: false });
