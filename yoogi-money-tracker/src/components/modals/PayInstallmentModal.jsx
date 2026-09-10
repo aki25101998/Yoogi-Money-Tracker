@@ -85,16 +85,50 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
 
     useEffect(() => {
         if (!isOpen) return;
+        
+        const rawLogContainer = document.createElement('div');
+        rawLogContainer.style.position = 'fixed';
+        rawLogContainer.style.top = '0';
+        rawLogContainer.style.left = '0';
+        rawLogContainer.style.zIndex = '999999';
+        rawLogContainer.style.backgroundColor = 'rgba(200,0,0,0.9)';
+        rawLogContainer.style.color = 'white';
+        rawLogContainer.style.padding = '5px';
+        rawLogContainer.style.fontFamily = 'monospace';
+        rawLogContainer.style.fontSize = '10px';
+        rawLogContainer.style.pointerEvents = 'none';
+        rawLogContainer.style.width = '100%';
+        rawLogContainer.style.maxHeight = '200px';
+        rawLogContainer.style.overflow = 'auto';
+        document.body.appendChild(rawLogContainer);
+
+        const addRawLog = (msg) => {
+            const line = document.createElement('div');
+            line.textContent = msg;
+            rawLogContainer.appendChild(line);
+            if (rawLogContainer.childNodes.length > 20) {
+                rawLogContainer.removeChild(rawLogContainer.firstChild);
+            }
+            console.log("RAW_LOG:", msg);
+        };
+
         const handleCapture = (event) => {
             const target = event.target;
+            const tClass = typeof target.className === 'string' ? target.className : '';
+            addRawLog(`CLICK @ (${event.clientX},${event.clientY}): ${target.tagName}.${tClass.split(' ')[0]}`);
             
-            // Log ALL clicks inside the modal to see if we're even getting them
+            if (target.closest('[data-yoogi-payment-submit]')) {
+                addRawLog(`-> HIT BUTTON! disabled=${target.closest('[data-yoogi-payment-submit]').disabled}`);
+            } else if (target.closest('form')) {
+                addRawLog(`-> HIT FORM!`);
+            }
+            
             if (target && target.closest && target.closest('.max-w-md')) {
                  const btn = target.closest('[data-yoogi-payment-submit]');
                  paymentDebugLog('DOM', 'ANY_MODAL_CLICK', {
                      traceId: paymentBatchId,
                      targetTag: target.tagName,
-                     targetClass: typeof target.className === 'string' ? target.className : '',
+                     targetClass: tClass,
                      hasSubmitAttr: !!btn,
                      isSubmitting
                  });
@@ -105,14 +139,26 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                 paymentDebugLog('DOM', 'WINDOW_CAPTURE_CLICK', {
                     traceId: paymentBatchId,
                     targetTag: target.tagName,
-                    targetClass: typeof target.className === 'string' ? target.className : '',
+                    targetClass: tClass,
                     buttonDisabled: btn?.disabled,
                     isSubmitting
                 });
             }
         };
+        
+        const handleError = (e) => addRawLog(`ERR: ${e.message}`);
+        
         window.addEventListener('click', handleCapture, true);
-        return () => window.removeEventListener('click', handleCapture, true);
+        window.addEventListener('error', handleError, true);
+        addRawLog(`RAW LOGGER INIT (isOpen=${isOpen})`);
+        
+        return () => {
+            window.removeEventListener('click', handleCapture, true);
+            window.removeEventListener('error', handleError, true);
+            if (document.body.contains(rawLogContainer)) {
+                document.body.removeChild(rawLogContainer);
+            }
+        };
     }, [isOpen, isSubmitting, paymentBatchId]);
 
     const logButtonEvent = (e, eventType) => {
