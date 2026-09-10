@@ -8,7 +8,7 @@ import {
     RotateCcw, ChevronUp, ChevronDown, Check, ChevronRight
 } from 'lucide-react';
 
-import { addPayer, deletePayer, addLender, deleteLender, updateLender, deleteTransaction, addInstallment, updateInstallment, deleteInstallment, addTransaction, processBulkInstallmentPayment } from '../utils/supabaseHelpers';
+import { addPayer, deletePayer, addLender, deleteLender, updateLender, deleteTransaction, addInstallment, updateInstallment, deleteInstallment, addTransaction, processBulkInstallmentPayment, paymentDebugLog } from '../utils/supabaseHelpers';
 import { supabase } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
 import { calculateLoan, calculateItemStats, getYearMonth } from '../utils/calculations';
@@ -460,23 +460,41 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
     };
 
     const handleConfirmPayment = async (paymentData) => {
+        paymentDebugLog('PAGE', 'HANDLE_CONFIRM START', {
+            userId: user?.uid,
+            walletId: paymentData.walletId,
+            date: paymentData.date,
+            paymentBatchId: paymentData.paymentBatchId,
+            itemCount: paymentData.items?.length,
+            totalAmount: paymentData.totalAmount
+        });
+
         if (!user) return;
         setIsProcessing(true);
         try {
+            paymentDebugLog('PAGE', 'SERVICE CALL START');
             // Sử dụng service thanh toán bulk sử dụng RPC atomic
             await processBulkInstallmentPayment(user.uid, {
                 ...paymentData,
                 categories
             });
+            paymentDebugLog('PAGE', 'SERVICE SUCCESS');
             
             // Đóng modal sau khi thành công
             setIsPayInstallmentOpen(false);
             setSelectedItemsForPayment([]);
         } catch (error) {
+            paymentDebugLog('PAGE][ERROR', 'SERVICE FAILED', {
+                message: error?.message,
+                name: error?.name,
+                stack: error?.stack,
+                error
+            });
             alert('Lỗi khi thanh toán: ' + error.message);
             // Ném lỗi ra để Modal có thể catch và giữ trạng thái mở cho user retry
             throw error;
         } finally {
+            paymentDebugLog('PAGE', 'HANDLE_CONFIRM FINALLY');
             setIsProcessing(false);
         }
     };

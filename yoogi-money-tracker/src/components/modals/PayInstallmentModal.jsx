@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
+import { paymentDebugLog } from '../../utils/supabaseHelpers';
 
 const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfirm }) => {
     const [form, setForm] = useState({
@@ -12,13 +13,28 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
 
     useEffect(() => {
         if (isOpen) {
-            setPaymentBatchId(crypto.randomUUID());
-            setForm(prev => ({
-                ...prev,
-                walletId: prev.walletId || (wallets?.length > 0 ? wallets.find(w => w.isDefault)?.id || wallets[0].id : '')
-            }));
+            const newBatchId = crypto.randomUUID();
+            setPaymentBatchId(newBatchId);
+            
+            const defaultWalletId = wallets?.length > 0 ? wallets.find(w => w.isDefault)?.id || wallets[0].id : '';
+            
+            setForm(prev => {
+                const walletIdToUse = prev.walletId || defaultWalletId;
+                
+                paymentDebugLog('MODAL', 'OPEN', {
+                    selectedItemsLength: selectedItems?.length,
+                    walletId: walletIdToUse,
+                    date: prev.date,
+                    paymentBatchId: newBatchId
+                });
+                
+                return {
+                    ...prev,
+                    walletId: walletIdToUse
+                };
+            });
         }
-    }, [isOpen, wallets]);
+    }, [isOpen, wallets, selectedItems]);
 
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     if (!isOpen || !selectedItems || selectedItems.length === 0) return null;
@@ -28,20 +44,38 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     
     const safeSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
+        
+        paymentDebugLog('MODAL', 'SUBMIT START', {
+            isSubmittingBeforeSubmit: isSubmitting,
+            selectedItemsLength: selectedItems?.length,
+            totalAmount,
+            walletId: form.walletId,
+            date: form.date,
+            paymentBatchId
+        });
+        
         if (isSubmitting) return;
         setIsSubmitting(true);
         try {
             await handleSubmit(e);
         } finally {
+            paymentDebugLog('MODAL', 'SUBMIT FINALLY', { isSubmittingAfter: false });
             setIsSubmitting(false);
         }
     };
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e && e.preventDefault) e.preventDefault();
         try {
+            paymentDebugLog('MODAL', 'ON_CONFIRM START');
             await onConfirm({ ...form, totalAmount, items: selectedItems, paymentBatchId });
+            paymentDebugLog('MODAL', 'ON_CONFIRM SUCCESS');
             onClose();
         } catch (error) {
+            paymentDebugLog('MODAL][ERROR', 'ON_CONFIRM FAILED', {
+                message: error?.message,
+                stack: error?.stack,
+                name: error?.name
+            });
             console.error("Payment error:", error);
         }
     };
