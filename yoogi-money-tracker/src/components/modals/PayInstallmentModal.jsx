@@ -302,16 +302,16 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                         <div className="mb-2">
                             <span className="text-slate-400 block mb-1">Trace:</span>
                             <div className="flex flex-wrap gap-1">
-                                {debugLogs.map((l, i) => (
-                                    <span key={i} className={l.stage.includes('ERROR') || l.event.includes('ERROR') ? 'text-red-400' : 'text-emerald-400'}>
-                                        {l.stage}_{l.event}
+                                {debugLogs.map((logItem, i) => (
+                                    <span key={i} className={logItem.stage.includes('ERROR') || logItem.event.includes('ERROR') ? 'text-red-400' : 'text-emerald-400'}>
+                                        {logItem.stage}_{logItem.event}
                                         {i < debugLogs.length - 1 ? ' → ' : ''}
                                     </span>
                                 ))}
                             </div>
                         </div>
                         {(() => {
-                            const lastError = debugLogs.slice().reverse().find(l => l.stage.includes('ERROR') || l.event.includes('ERROR') || l.event.includes('FAILED'));
+                            const lastError = debugLogs.slice().reverse().find(logItem => logItem.stage.includes('ERROR') || logItem.event.includes('ERROR') || logItem.event.includes('FAILED'));
                             if (lastError) {
                                 return (
                                     <div className="mt-2 text-red-400 border-t border-red-900/50 pt-2 break-all">
