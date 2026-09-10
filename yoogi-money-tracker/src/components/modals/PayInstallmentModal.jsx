@@ -75,7 +75,8 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                         exists: !!submitButtonRef.current,
                         disabled: submitButtonRef.current.disabled,
                         type: submitButtonRef.current.type,
-                        className: submitButtonRef.current.className
+                        className: submitButtonRef.current.className,
+                        dataYoogiPaymentSubmit: submitButtonRef.current.getAttribute('data-yoogi-payment-submit')
                     });
                 }
             }, 100);
@@ -90,8 +91,9 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                 const btn = target.closest('[data-yoogi-payment-submit]');
                 paymentDebugLog('DOM', 'WINDOW_CAPTURE_CLICK', {
                     traceId: paymentBatchId,
-                    target: target.tagName,
-                    disabled: btn?.disabled,
+                    targetTag: target.tagName,
+                    targetClass: typeof target.className === 'string' ? target.className : '',
+                    buttonDisabled: btn?.disabled,
                     isSubmitting
                 });
             }
@@ -101,13 +103,12 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     }, [isOpen, isSubmitting, paymentBatchId]);
 
     const logButtonEvent = (e, eventType) => {
-        const isBtnDisabled = submitButtonRef.current?.disabled || isSubmitting;
+        const disabled = submitButtonRef.current?.disabled;
         
         paymentDebugLog('BUTTON', eventType, {
             traceId: paymentBatchId,
             eventType,
-            disabled: isBtnDisabled,
-            tagName: e.target?.tagName,
+            disabled: disabled,
             isSubmitting
         });
 
@@ -115,19 +116,18 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
             const el = document.elementFromPoint(e.clientX, e.clientY);
             paymentDebugLog('DOM', 'ELEMENT_FROM_POINT', {
                 traceId: paymentBatchId,
-                expectedButton: !!e.currentTarget,
                 actualElement: el?.tagName,
-                actualClassName: el?.className,
-                actualDataAttribute: el?.getAttribute('data-yoogi-payment-submit')
+                actualClassName: typeof el?.className === 'string' ? el.className : '',
+                actualDataAttribute: el?.getAttribute?.('data-yoogi-payment-submit'),
+                buttonElement: submitButtonRef.current?.tagName,
+                buttonContains: submitButtonRef.current?.contains?.(el)
             });
         }
         
-        if (eventType === 'CLICK' && isBtnDisabled) {
+        if (disabled === true) {
             paymentDebugLog('BUTTON', 'DISABLED', {
                 traceId: paymentBatchId,
-                reason: 'isSubmitting_or_disabled',
-                isSubmitting,
-                disabledProp: submitButtonRef.current?.disabled
+                isSubmitting
             });
         }
     };
