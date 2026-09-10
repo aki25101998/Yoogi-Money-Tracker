@@ -1,19 +1,30 @@
 import { supabase } from '../config/supabase';
 
-export const paymentDebugLog = (stage, message, data = null) => {
+export const paymentDebugLog = (stage, event, data = {}) => {
     const timestamp = new Date().toISOString();
-    const prefix = stage.startsWith('[') ? stage : `[${stage}]`;
+    const prefix = `[YOOGI_PAYMENT][${stage}][${event}]`;
+    const traceId = data?.traceId || 'NO_TRACE_ID';
+    
     const logEntry = {
         timestamp,
-        stage: prefix,
-        message,
+        stage,
+        event,
+        traceId,
+        message: prefix,
         data
     };
     
-    if (prefix.includes('[ERROR]')) {
-        console.error(`${prefix} ${timestamp} ${message}`, data || '');
+    const isError = stage.includes('ERROR') || event.includes('ERROR') || event.includes('FAILED');
+    const isWarn = stage.includes('WARN') || event.includes('WARN');
+    
+    const logArgs = [`${prefix} ${timestamp} [Trace: ${traceId}]`, data];
+    
+    if (isError) {
+        console.error(...logArgs);
+    } else if (isWarn) {
+        console.warn(...logArgs);
     } else {
-        console.info(`${prefix} ${timestamp} ${message}`, data || '');
+        console.info(...logArgs);
     }
 
     if (typeof window !== 'undefined') {
@@ -26,8 +37,18 @@ export const paymentDebugLog = (stage, message, data = null) => {
         if (!window.exportYoogiPaymentDebug) {
              window.exportYoogiPaymentDebug = () => JSON.stringify(window.__YOOGI_PAYMENT_DEBUG__, null, 2);
         }
+        
+        window.dispatchEvent(new CustomEvent('yoogi_payment_debug_event', { detail: logEntry }));
     }
 };
+
+if (typeof window !== 'undefined' && !window.__YOOGI_PAYMENT_DEBUG_INIT__) {
+    window.__YOOGI_PAYMENT_DEBUG_INIT__ = true;
+    paymentDebugLog('SYSTEM', 'DEBUG_VERSION', {
+       version: 'payment-debug-v2',
+       commit: 'added-ui-trace-id'
+    });
+}
 
 /**
  * Xử lý thanh toán trả góp hàng loạt (Atomic RPC)
@@ -39,7 +60,7 @@ export const paymentDebugLog = (stage, message, data = null) => {
  * @param {Array} paymentData.categories - Danh sách categories để lookup categoryId
  */
 export const processBulkInstallmentPayment = async (userId, paymentData) => {
-    const { walletId, date, items: paidItems, categories } = paymentData;
+    const { walletId, date, items: paidItems, categories, traceId } = paymentData;
 
     if (!paidItems || paidItems.length === 0) {
         throw new Error('Không có khoản nào được chọn để thanh toán.');
@@ -86,7 +107,8 @@ export const processBulkInstallmentPayment = async (userId, paymentData) => {
     const paymentDate = new Date(year, parseInt(month) - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
     const isoDateString = paymentDate.toISOString();
 
-    paymentDebugLog('INSTALLMENT_PAYMENT][SERVICE', 'RPC START', {
+    paymentDebugLog('SERVICE', 'RPC_START', {
+        traceId,
         userId,
         walletId,
         date,
@@ -95,7 +117,8 @@ export const processBulkInstallmentPayment = async (userId, paymentData) => {
         itemsPayload
     });
 
-    paymentDebugLog('INSTALLMENT_PAYMENT][RPC', 'CALL START', {
+    paymentDebugLog('RPC', 'CALL_START', {
+        traceId,
         rpcName: 'process_bulk_installment_payment',
         userId,
         walletId,
@@ -118,25 +141,16 @@ export const processBulkInstallmentPayment = async (userId, paymentData) => {
 
     const rpcDuration = performance.now() - rpcStartedAt;
 
-    paymentDebugLog('INSTALLMENT_PAYMENT][RPC', 'RESPONSE', {
+    paymentDebugLog('RPC', 'RESPONSE', {
+        traceId,
         durationMs: rpcDuration,
         hasData: !!data,
         hasError: !!error
     });
 
     if (error) {
-        console.error(
-            '[INSTALLMENT_PAYMENT][RPC][ERROR]',
-            {
-                message: error?.message,
-                details: error?.details,
-                hint: error?.hint,
-                code: error?.code,
-                error,
-                durationMs: rpcDuration
-            }
-        );
-        paymentDebugLog('INSTALLMENT_PAYMENT][RPC][ERROR', 'RPC FAILED', {
+        paymentDebugLog('RPC', 'ERROR', {
+            traceId,
             message: error?.message,
             details: error?.details,
             hint: error?.hint,
@@ -147,13 +161,15 @@ export const processBulkInstallmentPayment = async (userId, paymentData) => {
         throw error;
     }
 
-    paymentDebugLog('INSTALLMENT_PAYMENT][RPC', 'SUCCESS', {
+    paymentDebugLog('RPC', 'SUCCESS', {
+        traceId,
         durationMs: rpcDuration,
         data
     });
 
     if (data) {
-        paymentDebugLog('INSTALLMENT_PAYMENT][RESULT', 'RPC RESULT DATA', {
+        paymentDebugLog('RESULT', 'RPC_RESULT_DATA', {
+            traceId,
             success: data?.success,
             alreadyProcessed: data?.already_processed,
             error: data?.error
@@ -169,7 +185,8 @@ export const processBulkInstallmentPayment = async (userId, paymentData) => {
 
     // 4. Dispatch sự kiện báo hiệu thanh toán thành công để Refresh
     if (typeof window !== 'undefined') {
-        paymentDebugLog('INSTALLMENT_PAYMENT][SERVICE', 'REFRESH EVENT DISPATCH', {
+        paymentDebugLog('SERVICE', 'REFRESH_EVENT_DISPATCH', {
+            traceId,
             table: 'all',
             action: `Tự động lưu: Thanh toán ${paidItems.length} khoản trả góp`
         });

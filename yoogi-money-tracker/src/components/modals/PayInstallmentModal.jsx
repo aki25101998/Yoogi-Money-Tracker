@@ -10,11 +10,27 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
         date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
     });
     const [paymentBatchId, setPaymentBatchId] = useState(null);
+    const [debugLogs, setDebugLogs] = useState([]);
+
+    useEffect(() => {
+        const handleDebugLog = (e) => {
+            if (e.detail?.traceId === paymentBatchId || !paymentBatchId) {
+                setDebugLogs(prev => {
+                    const newLogs = [...prev, e.detail];
+                    if (newLogs.length > 50) newLogs.shift();
+                    return newLogs;
+                });
+            }
+        };
+        window.addEventListener('yoogi_payment_debug_event', handleDebugLog);
+        return () => window.removeEventListener('yoogi_payment_debug_event', handleDebugLog);
+    }, [paymentBatchId]);
 
     useEffect(() => {
         if (isOpen) {
             const newBatchId = crypto.randomUUID();
             setPaymentBatchId(newBatchId);
+            setDebugLogs([]); // reset logs for new session
             
             const defaultWalletId = wallets?.length > 0 ? wallets.find(w => w.isDefault)?.id || wallets[0].id : '';
             
@@ -22,6 +38,7 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                 const walletIdToUse = prev.walletId || defaultWalletId;
                 
                 paymentDebugLog('MODAL', 'OPEN', {
+                    traceId: newBatchId,
                     selectedItemsLength: selectedItems?.length,
                     walletId: walletIdToUse,
                     date: prev.date,
@@ -36,8 +53,29 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
         }
     }, [isOpen, wallets, selectedItems]);
 
+    useEffect(() => {
+        if (isOpen && paymentBatchId) {
+            paymentDebugLog('MODAL', 'RENDER', {
+                traceId: paymentBatchId,
+                selectedItemsLength: selectedItems?.length,
+                walletId: form.walletId,
+                paymentBatchId
+            });
+        }
+    }, [isOpen, form.walletId, paymentBatchId]);
+
     const [isSubmitting, setIsSubmitting] = React.useState(false);
-    if (!isOpen || !selectedItems || selectedItems.length === 0) return null;
+    
+    if (!isOpen || !selectedItems || selectedItems.length === 0) {
+        if (isOpen) {
+            paymentDebugLog('MODAL', 'EARLY_RETURN', {
+                traceId: paymentBatchId,
+                isOpen,
+                selectedItemsLength: selectedItems?.length
+            });
+        }
+        return null;
+    }
 
     const totalAmount = selectedItems.reduce((sum, wrapper) => sum + (wrapper.monthlyRemaining ?? wrapper.item.monthlyPayment), 0);
 
@@ -45,7 +83,8 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     const safeSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
         
-        paymentDebugLog('MODAL', 'SUBMIT START', {
+        paymentDebugLog('MODAL', 'SUBMIT_START', {
+            traceId: paymentBatchId,
             isSubmittingBeforeSubmit: isSubmitting,
             selectedItemsLength: selectedItems?.length,
             totalAmount,
@@ -59,19 +98,21 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
         try {
             await handleSubmit(e);
         } finally {
-            paymentDebugLog('MODAL', 'SUBMIT FINALLY', { isSubmittingAfter: false });
+            paymentDebugLog('MODAL', 'SUBMIT_FINALLY', { traceId: paymentBatchId, isSubmittingAfter: false });
             setIsSubmitting(false);
         }
     };
     const handleSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
         try {
-            paymentDebugLog('MODAL', 'ON_CONFIRM START');
+            paymentDebugLog('MODAL', 'ON_CONFIRM_START', { traceId: paymentBatchId });
             await onConfirm({ ...form, totalAmount, items: selectedItems, paymentBatchId });
-            paymentDebugLog('MODAL', 'ON_CONFIRM SUCCESS');
+            paymentDebugLog('MODAL', 'ON_CONFIRM_SUCCESS', { traceId: paymentBatchId });
             onClose();
         } catch (error) {
-            paymentDebugLog('MODAL][ERROR', 'ON_CONFIRM FAILED', {
+            paymentDebugLog('MODAL', 'ERROR', {
+                traceId: paymentBatchId,
+                eventContext: 'ON_CONFIRM_FAILED',
                 message: error?.message,
                 stack: error?.stack,
                 name: error?.name
@@ -99,7 +140,16 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                     </p>
                 </div>
 
-                <form onSubmit={safeSubmit} className="p-6 space-y-4">
+                <form 
+                    onSubmit={(e) => {
+                        paymentDebugLog('FORM', 'SUBMIT', {
+                            traceId: paymentBatchId,
+                            defaultPrevented: e.defaultPrevented
+                        });
+                        return safeSubmit(e);
+                    }} 
+                    className="p-6 space-y-4"
+                >
                     <div className="relative">
                         <span className="absolute top-2 left-4 text-[10px] text-slate-400 font-medium">Dùng nguồn tiền từ ví</span>
                         <select
@@ -148,6 +198,15 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                         <button
                             type="submit"
                             disabled={isSubmitting}
+                            onClick={(e) => {
+                                paymentDebugLog('BUTTON', 'CLICK', {
+                                    traceId: paymentBatchId,
+                                    type: e?.type,
+                                    target: e?.target?.tagName,
+                                    currentTarget: e?.currentTarget?.tagName,
+                                    isSubmitting
+                                });
+                            }}
                             className={`flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 transition-colors flex justify-center items-center gap-2 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
                         >
                             {isSubmitting ? (
@@ -166,6 +225,38 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                         </button>
                     </div>
                 </form>
+                {debugLogs.length > 0 && (
+                    <div className="p-3 bg-slate-900 text-xs text-emerald-400 font-mono overflow-y-auto max-h-48 border-t border-slate-700">
+                        <div className="font-bold text-white mb-2 pb-1 border-b border-slate-700">DEBUG PAYMENT</div>
+                        <div className="mb-2 text-indigo-300">
+                            <span className="text-slate-400">Last event: </span>
+                            {debugLogs[debugLogs.length - 1]?.message}
+                        </div>
+                        <div className="mb-2">
+                            <span className="text-slate-400 block mb-1">Trace:</span>
+                            <div className="flex flex-wrap gap-1">
+                                {debugLogs.map((l, i) => (
+                                    <span key={i} className={l.stage.includes('ERROR') || l.event.includes('ERROR') ? 'text-red-400' : 'text-emerald-400'}>
+                                        {l.stage}_{l.event}
+                                        {i < debugLogs.length - 1 ? ' → ' : ''}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        {(() => {
+                            const lastError = debugLogs.slice().reverse().find(l => l.stage.includes('ERROR') || l.event.includes('ERROR') || l.event.includes('FAILED'));
+                            if (lastError) {
+                                return (
+                                    <div className="mt-2 text-red-400 border-t border-red-900/50 pt-2 break-all">
+                                        <span className="font-bold block">Last error:</span>
+                                        {lastError.data?.message || lastError.data?.name || JSON.stringify(lastError.data)}
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })()}
+                    </div>
+                )}
             </div>
         </div>,
         document.body

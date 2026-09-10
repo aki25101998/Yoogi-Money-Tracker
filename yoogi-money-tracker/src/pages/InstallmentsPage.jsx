@@ -460,7 +460,10 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
     };
 
     const handleConfirmPayment = async (paymentData) => {
-        paymentDebugLog('PAGE', 'HANDLE_CONFIRM START', {
+        const traceId = paymentData.paymentBatchId || 'PAGE_NO_TRACE';
+        
+        paymentDebugLog('PAGE', 'HANDLE_CONFIRM_START', {
+            traceId,
             userId: user?.uid,
             walletId: paymentData.walletId,
             date: paymentData.date,
@@ -472,19 +475,22 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
         if (!user) return;
         setIsProcessing(true);
         try {
-            paymentDebugLog('PAGE', 'SERVICE CALL START');
+            paymentDebugLog('PAGE', 'SERVICE_CALL_START', { traceId });
             // Sử dụng service thanh toán bulk sử dụng RPC atomic
             await processBulkInstallmentPayment(user.uid, {
                 ...paymentData,
-                categories
+                categories,
+                traceId
             });
-            paymentDebugLog('PAGE', 'SERVICE SUCCESS');
+            paymentDebugLog('PAGE', 'SERVICE_SUCCESS', { traceId });
             
             // Đóng modal sau khi thành công
             setIsPayInstallmentOpen(false);
             setSelectedItemsForPayment([]);
         } catch (error) {
-            paymentDebugLog('PAGE][ERROR', 'SERVICE FAILED', {
+            paymentDebugLog('PAGE', 'ERROR', {
+                traceId,
+                eventContext: 'SERVICE_FAILED',
                 message: error?.message,
                 name: error?.name,
                 stack: error?.stack,
@@ -494,7 +500,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
             // Ném lỗi ra để Modal có thể catch và giữ trạng thái mở cho user retry
             throw error;
         } finally {
-            paymentDebugLog('PAGE', 'HANDLE_CONFIRM FINALLY');
+            paymentDebugLog('PAGE', 'HANDLE_CONFIRM_FINALLY', { traceId });
             setIsProcessing(false);
         }
     };
