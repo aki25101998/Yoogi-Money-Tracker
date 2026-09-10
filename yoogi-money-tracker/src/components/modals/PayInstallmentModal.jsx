@@ -145,6 +145,7 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     }
 
     const totalAmount = selectedItems.reduce((sum, wrapper) => sum + (wrapper.monthlyRemaining ?? wrapper.item.monthlyPayment), 0);
+    const lastErrorLog = debugLogs.length > 0 ? [...debugLogs].reverse().find(logItem => logItem.stage.includes('ERROR') || logItem.event.includes('ERROR') || logItem.event.includes('FAILED')) : null;
 
     
     const safeSubmit = async (e) => {
@@ -310,18 +311,12 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                                 ))}
                             </div>
                         </div>
-                        {(() => {
-                            const lastError = debugLogs.slice().reverse().find(logItem => logItem.stage.includes('ERROR') || logItem.event.includes('ERROR') || logItem.event.includes('FAILED'));
-                            if (lastError) {
-                                return (
-                                    <div className="mt-2 text-red-400 border-t border-red-900/50 pt-2 break-all">
-                                        <span className="font-bold block">Last error:</span>
-                                        {lastError.data?.message || lastError.data?.name || JSON.stringify(lastError.data)}
-                                    </div>
-                                );
-                            }
-                            return null;
-                        })()}
+                        {lastErrorLog && (
+                            <div className="mt-2 text-red-400 border-t border-red-900/50 pt-2 break-all">
+                                <span className="font-bold block">Last error:</span>
+                                {lastErrorLog.data?.message || lastErrorLog.data?.name || JSON.stringify(lastErrorLog.data)}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
