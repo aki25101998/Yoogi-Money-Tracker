@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
@@ -11,6 +11,7 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     });
     const [paymentBatchId, setPaymentBatchId] = useState(null);
     const [debugLogs, setDebugLogs] = useState([]);
+    const submitButtonRef = useRef(null);
 
     useEffect(() => {
         const handleDebugLog = (e) => {
@@ -59,10 +60,76 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                 traceId: paymentBatchId,
                 selectedItemsLength: selectedItems?.length,
                 walletId: form.walletId,
-                paymentBatchId
+                paymentBatchId,
+                disabled: isSubmitting,
+                isSubmitting,
+                buttonType: 'submit',
+                hasSelectedItems: !!selectedItems?.length
+            });
+
+            setTimeout(() => {
+                if (submitButtonRef.current) {
+                    paymentDebugLog('MODAL', 'RENDER_BUTTON_REF_CHECK', {
+                        traceId: paymentBatchId,
+                        exists: !!submitButtonRef.current,
+                        disabled: submitButtonRef.current.disabled,
+                        type: submitButtonRef.current.type,
+                        className: submitButtonRef.current.className
+                    });
+                }
+            }, 100);
+        }
+    }, [isOpen, form.walletId, paymentBatchId, isSubmitting, selectedItems?.length]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleCapture = (event) => {
+            const target = event.target;
+            if (target && target.closest && target.closest('[data-yoogi-payment-submit]')) {
+                const btn = target.closest('[data-yoogi-payment-submit]');
+                paymentDebugLog('DOM', 'WINDOW_CAPTURE_CLICK', {
+                    traceId: paymentBatchId,
+                    target: target.tagName,
+                    disabled: btn?.disabled,
+                    isSubmitting
+                });
+            }
+        };
+        window.addEventListener('click', handleCapture, true);
+        return () => window.removeEventListener('click', handleCapture, true);
+    }, [isOpen, isSubmitting, paymentBatchId]);
+
+    const logButtonEvent = (e, eventType) => {
+        const isBtnDisabled = submitButtonRef.current?.disabled || isSubmitting;
+        
+        paymentDebugLog('BUTTON', eventType, {
+            traceId: paymentBatchId,
+            eventType,
+            disabled: isBtnDisabled,
+            tagName: e.target?.tagName,
+            isSubmitting
+        });
+
+        if (eventType === 'POINTER_DOWN') {
+            const el = document.elementFromPoint(e.clientX, e.clientY);
+            paymentDebugLog('DOM', 'ELEMENT_FROM_POINT', {
+                traceId: paymentBatchId,
+                expectedButton: !!e.currentTarget,
+                actualElement: el?.tagName,
+                actualClassName: el?.className,
+                actualDataAttribute: el?.getAttribute('data-yoogi-payment-submit')
             });
         }
-    }, [isOpen, form.walletId, paymentBatchId]);
+        
+        if (eventType === 'CLICK' && isBtnDisabled) {
+            paymentDebugLog('BUTTON', 'DISABLED', {
+                traceId: paymentBatchId,
+                reason: 'isSubmitting_or_disabled',
+                isSubmitting,
+                disabledProp: submitButtonRef.current?.disabled
+            });
+        }
+    };
 
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     
@@ -196,16 +263,16 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                             Hủy bỏ
                         </button>
                         <button
+                            ref={submitButtonRef}
                             type="submit"
+                            data-yoogi-payment-submit="true"
                             disabled={isSubmitting}
+                            onPointerDown={(e) => logButtonEvent(e, 'POINTER_DOWN')}
+                            onPointerUp={(e) => logButtonEvent(e, 'POINTER_UP')}
+                            onMouseDown={(e) => logButtonEvent(e, 'MOUSE_DOWN')}
+                            onMouseUp={(e) => logButtonEvent(e, 'MOUSE_UP')}
                             onClick={(e) => {
-                                paymentDebugLog('BUTTON', 'CLICK', {
-                                    traceId: paymentBatchId,
-                                    type: e?.type,
-                                    target: e?.target?.tagName,
-                                    currentTarget: e?.currentTarget?.tagName,
-                                    isSubmitting
-                                });
+                                logButtonEvent(e, 'CLICK');
                             }}
                             className={`flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 transition-colors flex justify-center items-center gap-2 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
                         >
