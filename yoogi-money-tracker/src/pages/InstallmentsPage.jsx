@@ -8,7 +8,8 @@ import {
     RotateCcw, ChevronUp, ChevronDown, Check, ChevronRight
 } from 'lucide-react';
 
-import { addPayer, deletePayer, addLender, deleteLender, updateLender, deleteTransaction, addInstallment, updateInstallment, deleteInstallment, addTransaction, processBulkInstallmentPayment, paymentDebugLog } from '../utils/supabaseHelpers';
+import { addPayer, deletePayer, addLender, deleteLender, updateLender, deleteTransaction, addInstallment, updateInstallment, deleteInstallment, addTransaction, paymentDebugLog } from '../utils/supabaseHelpers';
+import { processBulkInstallmentPayment } from '../services/installmentPaymentService';
 import { supabase } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
 import { calculateLoan, calculateItemStats, getYearMonth } from '../utils/calculations';
