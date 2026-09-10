@@ -12,6 +12,7 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     const [paymentBatchId, setPaymentBatchId] = useState(null);
     const [debugLogs, setDebugLogs] = useState([]);
     const submitButtonRef = useRef(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         const handleDebugLog = (e) => {
@@ -131,7 +132,6 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
         }
     };
 
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
     
     if (!isOpen || !selectedItems || selectedItems.length === 0) {
         if (isOpen) {
