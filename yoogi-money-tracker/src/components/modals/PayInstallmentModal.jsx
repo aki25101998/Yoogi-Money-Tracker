@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { X, ChevronDown, CheckCircle2, Copy, Check } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { paymentDebugLog } from '../../utils/supabaseHelpers';
 
@@ -13,6 +13,17 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     const [debugLogs, setDebugLogs] = useState([]);
     const submitButtonRef = useRef(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const handleCopyLogs = () => {
+        const trace = debugLogs.map(l => `${l.stage}_${l.event}`).join(' -> ');
+        const lastErrorLog = debugLogs.length > 0 ? [...debugLogs].reverse().find(logItem => logItem.stage.includes('ERROR') || logItem.event.includes('ERROR') || logItem.event.includes('FAILED')) : null;
+        const lastErr = lastErrorLog ? `\nLast error: ${lastErrorLog.data?.message || lastErrorLog.data?.name || JSON.stringify(lastErrorLog.data)}` : '';
+        const fullLog = `Trace:\n${trace}${lastErr}`;
+        navigator.clipboard.writeText(fullLog);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     useEffect(() => {
         const handleDebugLog = (e) => {
@@ -83,83 +94,7 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
         }
     }, [isOpen, form.walletId, paymentBatchId, isSubmitting, selectedItems?.length]);
 
-    useEffect(() => {
-        if (!isOpen) return;
-        
-        const rawLogContainer = document.createElement('div');
-        rawLogContainer.style.position = 'fixed';
-        rawLogContainer.style.top = '0';
-        rawLogContainer.style.left = '0';
-        rawLogContainer.style.zIndex = '999999';
-        rawLogContainer.style.backgroundColor = 'rgba(200,0,0,0.9)';
-        rawLogContainer.style.color = 'white';
-        rawLogContainer.style.padding = '5px';
-        rawLogContainer.style.fontFamily = 'monospace';
-        rawLogContainer.style.fontSize = '10px';
-        rawLogContainer.style.pointerEvents = 'none';
-        rawLogContainer.style.width = '100%';
-        rawLogContainer.style.maxHeight = '200px';
-        rawLogContainer.style.overflow = 'auto';
-        document.body.appendChild(rawLogContainer);
 
-        const addRawLog = (msg) => {
-            const line = document.createElement('div');
-            line.textContent = msg;
-            rawLogContainer.appendChild(line);
-            if (rawLogContainer.childNodes.length > 20) {
-                rawLogContainer.removeChild(rawLogContainer.firstChild);
-            }
-            console.log("RAW_LOG:", msg);
-        };
-
-        const handleCapture = (event) => {
-            const target = event.target;
-            const tClass = typeof target.className === 'string' ? target.className : '';
-            addRawLog(`CLICK @ (${event.clientX},${event.clientY}): ${target.tagName}.${tClass.split(' ')[0]}`);
-            
-            if (target.closest('[data-yoogi-payment-submit]')) {
-                addRawLog(`-> HIT BUTTON! disabled=${target.closest('[data-yoogi-payment-submit]').disabled}`);
-            } else if (target.closest('form')) {
-                addRawLog(`-> HIT FORM!`);
-            }
-            
-            if (target && target.closest && target.closest('.max-w-md')) {
-                 const btn = target.closest('[data-yoogi-payment-submit]');
-                 paymentDebugLog('DOM', 'ANY_MODAL_CLICK', {
-                     traceId: paymentBatchId,
-                     targetTag: target.tagName,
-                     targetClass: tClass,
-                     hasSubmitAttr: !!btn,
-                     isSubmitting
-                 });
-            }
-
-            if (target && target.closest && target.closest('[data-yoogi-payment-submit]')) {
-                const btn = target.closest('[data-yoogi-payment-submit]');
-                paymentDebugLog('DOM', 'WINDOW_CAPTURE_CLICK', {
-                    traceId: paymentBatchId,
-                    targetTag: target.tagName,
-                    targetClass: tClass,
-                    buttonDisabled: btn?.disabled,
-                    isSubmitting
-                });
-            }
-        };
-        
-        const handleError = (e) => addRawLog(`ERR: ${e.message}`);
-        
-        window.addEventListener('click', handleCapture, true);
-        window.addEventListener('error', handleError, true);
-        addRawLog(`RAW LOGGER INIT (isOpen=${isOpen})`);
-        
-        return () => {
-            window.removeEventListener('click', handleCapture, true);
-            window.removeEventListener('error', handleError, true);
-            if (document.body.contains(rawLogContainer)) {
-                document.body.removeChild(rawLogContainer);
-            }
-        };
-    }, [isOpen, isSubmitting, paymentBatchId]);
 
     const logButtonEvent = (e, eventType) => {
         const disabled = submitButtonRef.current?.disabled;
@@ -357,7 +292,17 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                 </form>
                 {debugLogs.length > 0 && (
                     <div className="p-3 bg-slate-900 text-xs text-emerald-400 font-mono overflow-y-auto max-h-48 border-t border-slate-700">
-                        <div className="font-bold text-white mb-2 pb-1 border-b border-slate-700">DEBUG PAYMENT</div>
+                        <div className="flex items-center justify-between border-b border-slate-700 mb-2 pb-1">
+                            <div className="font-bold text-white">DEBUG PAYMENT</div>
+                            <button
+                                type="button"
+                                onClick={handleCopyLogs}
+                                className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded transition-colors"
+                            >
+                                {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                {copied ? 'Copied' : 'Copy'}
+                            </button>
+                        </div>
                         <div className="mb-2 text-indigo-300">
                             <span className="text-slate-400">Last event: </span>
                             {debugLogs[debugLogs.length - 1]?.message}
