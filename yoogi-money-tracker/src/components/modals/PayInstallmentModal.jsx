@@ -87,6 +87,19 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
         if (!isOpen) return;
         const handleCapture = (event) => {
             const target = event.target;
+            
+            // Log ALL clicks inside the modal to see if we're even getting them
+            if (target && target.closest && target.closest('.max-w-md')) {
+                 const btn = target.closest('[data-yoogi-payment-submit]');
+                 paymentDebugLog('DOM', 'ANY_MODAL_CLICK', {
+                     traceId: paymentBatchId,
+                     targetTag: target.tagName,
+                     targetClass: typeof target.className === 'string' ? target.className : '',
+                     hasSubmitAttr: !!btn,
+                     isSubmitting
+                 });
+            }
+
             if (target && target.closest && target.closest('[data-yoogi-payment-submit]')) {
                 const btn = target.closest('[data-yoogi-payment-submit]');
                 paymentDebugLog('DOM', 'WINDOW_CAPTURE_CLICK', {
@@ -278,17 +291,17 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                             className={`flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 transition-colors flex justify-center items-center gap-2 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
                         >
                             {isSubmitting ? (
-                                <>
+                                <span className="pointer-events-none flex items-center">
                                     <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
                                     Đang xử lý...
-                                </>
+                                </span>
                             ) : (
-                                <>
+                                <span className="pointer-events-none flex items-center gap-2">
                                     <CheckCircle2 className="w-5 h-5" /> Thanh toán
-                                </>
+                                </span>
                             )}
                         </button>
                     </div>
