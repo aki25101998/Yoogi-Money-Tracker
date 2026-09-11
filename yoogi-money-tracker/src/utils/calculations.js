@@ -26,69 +26,79 @@ export const getYearMonth = (date) => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 
+export const isTransactionForInstallment = (t, item) => {
+    if (t.type !== 'installment_repaid') return false;
+    
+    if (t.installmentId) return t.installmentId === item.id;
+    
+    if (!t.installmentId && t.description) {
+        return t.description.startsWith(`Trả lẻ trả góp ${item.name}:`) || 
+               t.description.startsWith(`Trả tối thiểu ${item.name}`);
+    }
+    
+    return false;
+};
+
+export const getPartialPaymentForMonth = (item, monthStr, transactions) => {
+    let partialPaid = 0;
+    
+    if (transactions && Array.isArray(transactions)) {
+        const relatedTransactions = transactions.filter(t => 
+            isTransactionForInstallment(t, item) && 
+            getInstallmentPaymentMonth(t) === monthStr
+        );
+        partialPaid = relatedTransactions.reduce((acc, t) => acc + (t.amount || 0), 0);
+    } else if (item.partialPayments && item.partialPayments[monthStr]) {
+        partialPaid = parseFloat(item.partialPayments[monthStr]) || 0;
+    }
+    
+    return partialPaid;
+};
+
 export const calculateItemStats = (item, referenceDate = new Date(), transactions = null) => {
     const start = new Date(item.startDate);
     const now = new Date(referenceDate);
 
-    // Helper to compare "YYYY-MM" strings
-    const currentYearMonth = getYearMonth(now);
+    let monthsPassed = monthDiff(start, now);
+    if (now < start) monthsPassed = 0;
 
-    // Logic based on Manual Payment (paidMonths)
+    let effectiveMonths = 0;
+    let paidAmount = 0;
+
     if (Array.isArray(item.paidMonths)) {
-        // Filter payments made ON or BEFORE the reference month
-        // logic: we count how many "paid marks" are <= currentYearMonth
-        const validPaidMonths = item.paidMonths.filter(pm => pm <= currentYearMonth);
-
-        const effectiveMonths = validPaidMonths.length;
-        let paidAmount = effectiveMonths * item.monthlyPayment;
+        effectiveMonths = item.paidMonths.length;
+        paidAmount = effectiveMonths * item.monthlyPayment;
         
-        // Add partial payments for months that are NOT fully paid
         let totalPartialPaid = 0;
         
         if (transactions && Array.isArray(transactions)) {
-            const related = transactions.filter(t => t.type === 'installment_repaid' && (t.installmentId === item.id || (!t.installmentId && t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`))));
+            const related = transactions.filter(t => isTransactionForInstallment(t, item));
             for (const t of related) {
                 const txMonthStr = getInstallmentPaymentMonth(t);
-
-                if (txMonthStr && txMonthStr <= currentYearMonth && !item.paidMonths.includes(txMonthStr)) {
+                if (txMonthStr && !item.paidMonths.includes(txMonthStr)) {
                     totalPartialPaid += (t.amount || 0);
                 }
             }
         } else if (item.partialPayments) {
             for (const [mStr, amount] of Object.entries(item.partialPayments)) {
-                if (mStr <= currentYearMonth && !item.paidMonths.includes(mStr)) {
+                if (!item.paidMonths.includes(mStr)) {
                     totalPartialPaid += parseFloat(amount) || 0;
                 }
             }
         }
         
         paidAmount += totalPartialPaid;
-        const remainingAmount = Math.max(0, item.totalPayable - paidAmount);
-
-        // Progress based on effectively paid amount at that time vs total
-        const progress = item.totalPayable > 0 ? Math.min((paidAmount / item.totalPayable) * 100, 100) : 0;
-
-        // Finished if we have paid enough months (total term) AND strictly speaking, 
-        // if we are viewing current time, it's finished. 
-        // If viewing past, "isFinished" might be true if we had paid in advance?
-        // Usually, isFinished = effectiveMonths >= term.
-        const isFinished = remainingAmount <= 0 || effectiveMonths >= item.term;
-
-        // Calculate months passed for schedule context
-        let monthsPassed = monthDiff(start, now);
-        if (now < start) monthsPassed = 0;
-
-        return { monthsPassed, effectiveMonths, paidAmount, remainingAmount, progress, isFinished };
+    } else {
+        effectiveMonths = Math.min(monthsPassed, item.term);
+        paidAmount = effectiveMonths * item.monthlyPayment;
     }
 
-    // Fallback: Legacy Time-based Logic (Only if paidMonths is missing)
-    let monthsPassed = monthDiff(start, now);
-    if (now < start) monthsPassed = 0;
+    paidAmount = Math.min(paidAmount, item.totalPayable);
 
-    const effectiveMonths = Math.min(monthsPassed, item.term);
-    const paidAmount = effectiveMonths * item.monthlyPayment;
     const remainingAmount = Math.max(0, item.totalPayable - paidAmount);
-    const progress = item.totalPayable > 0 ? (paidAmount / item.totalPayable) * 100 : 0;
+
+    const progress = item.totalPayable > 0 ? Math.min((paidAmount / item.totalPayable) * 100, 100) : 0;
+
     const isFinished = remainingAmount <= 0 || effectiveMonths >= item.term;
 
     return { monthsPassed, effectiveMonths, paidAmount, remainingAmount, progress, isFinished };
@@ -110,11 +120,21 @@ export const getInstallmentSummaryForMonth = (transactions, year, month) => {
     
     const byInstallmentMap = {};
     installmentTxns.forEach(t => {
-        if (!t.installmentId) return;
-        if (!byInstallmentMap[t.installmentId]) {
-            byInstallmentMap[t.installmentId] = { installmentId: t.installmentId, amount: 0 };
+        let itemId = t.installmentId;
+        
+        if (!itemId) {
+            const match = t.description?.match(/trả góp (.*?):/i) || t.description?.match(/tối thiểu (.*)/i);
+            if (match) {
+                itemId = match[1].trim();
+            }
         }
-        byInstallmentMap[t.installmentId].amount += (t.amount || 0);
+
+        if (!itemId) return;
+
+        if (!byInstallmentMap[itemId]) {
+            byInstallmentMap[itemId] = { installmentId: itemId, amount: 0 };
+        }
+        byInstallmentMap[itemId].amount += (t.amount || 0);
     });
     
     return {
@@ -126,18 +146,7 @@ export const getInstallmentSummaryForMonth = (transactions, year, month) => {
 
 export const calculateWrapperMonthlyRemaining = (wrapper, transactions) => {
     const { item, monthStr: currentMonthStr } = wrapper;
-    const relatedTransactions = transactions?.filter(t => {
-        if (t.type !== 'installment_repaid') return false;
-        
-        const txMonthStr = getInstallmentPaymentMonth(t);
-
-        return (
-            (t.installmentId === item.id && txMonthStr === currentMonthStr) ||
-            ((t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`) || t.description?.startsWith(`Trả tối thiểu ${item.name}`)) && !t.installmentId && txMonthStr === currentMonthStr)
-        );
-    }) || [];
-
-    const partialPaid = relatedTransactions.reduce((acc, t) => acc + (t.amount || 0), 0);
+    const partialPaid = getPartialPaymentForMonth(item, currentMonthStr, transactions);
     return Math.max(item.monthlyPayment - partialPaid, 0);
 };
 
@@ -156,8 +165,8 @@ export const calculateMonthlyDueForItems = (items, targetDate, transactions) => 
             if (mStr <= targetMonthStr) {
                 const isPaid = paidMonths.includes(mStr);
                 if (!isPaid) {
-                    const wrapper = { item, monthStr: mStr };
-                    totalDue += calculateWrapperMonthlyRemaining(wrapper, transactions);
+                    const partialPaid = getPartialPaymentForMonth(item, mStr, transactions);
+                    totalDue += Math.max(item.monthlyPayment - partialPaid, 0);
                 }
             }
         }

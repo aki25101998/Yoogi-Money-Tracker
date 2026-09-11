@@ -9,7 +9,7 @@ vi.mock('react', () => ({
     useState: (val) => [val, () => {}]
 }));
 
-describe('Installment Logic Tests', () => {
+describe('Installment Logic Tests (Phase 1)', () => {
 
     const baseInstallment = {
         id: 'inst-1',
@@ -22,68 +22,99 @@ describe('Installment Logic Tests', () => {
         partialPayments: {}
     };
 
-    it('Test 1 — Payment: Single payment should reflect correctly in dashboard stats', () => {
-        const transactions = [
-            { id: 't1', type: 'installment_repaid', amount: 2000000, installmentId: 'inst-1', date: '2026-08-15T00:00:00Z', walletId: 'w1' }
-        ];
-        const wallets = [{ id: 'w1', initialBalance: 10000000 }];
-
-        const stats = useDashboardStats({
-            transactions,
-            localWallets: wallets,
-            selectedWalletIds: ['w1'],
-            dateRange: {},
-            categories: [],
-            chartType: 'expense',
-            selectedCategoryForModal: null
-        });
-
-        expect(stats.totalBalance).toBe(8000000); // 10M - 2M
-        expect(stats.summaryStats.installmentExpense).toBe(2000000);
-        expect(stats.summaryStats.ordinaryExpense).toBe(0);
-        expect(stats.summaryStats.expense).toBe(2000000);
+    it('Case A: No payment', () => {
+        const stats = calculateItemStats(baseInstallment, new Date('2026-08-20'), []);
+        expect(stats.paidAmount).toBe(0);
+        expect(stats.remainingAmount).toBe(10000000);
     });
 
-    it('Test 2 — Partial Payment: Paid less than required', () => {
-        const item = { ...baseInstallment, partialPayments: { '2026-08': 1000000 }, paidMonths: [] };
-        const stats = calculateItemStats(item, new Date('2026-08-20'));
-        expect(stats.paidAmount).toBe(1000000);
-        expect(stats.remainingAmount).toBe(9000000);
-    });
-
-    it('Test 3 — Full Payment: Fully paid month', () => {
-        const item = { ...baseInstallment, paidMonths: ['2026-08'] };
-        const stats = calculateItemStats(item, new Date('2026-08-20'));
+    it('Case B: 1 month fully paid via paidMonths', () => {
+        const item = { ...baseInstallment, paidMonths: ['2026-06'] };
+        const stats = calculateItemStats(item, new Date('2026-08-20'), []);
         expect(stats.paidAmount).toBe(2000000);
         expect(stats.remainingAmount).toBe(8000000);
     });
 
-    it('Test 4 — Delete: getInstallmentPaymentMonth correctly identifies month for rollback', () => {
+    it('Case C: Partial payment via transaction', () => {
+        const txns = [
+            { id: 't1', type: 'installment_repaid', amount: 300000, installmentId: 'inst-1', date: '2026-06-15T00:00:00Z' }
+        ];
+        const stats = calculateItemStats(baseInstallment, new Date('2026-08-20'), txns);
+        expect(stats.paidAmount).toBe(300000);
+        expect(stats.remainingAmount).toBe(9700000);
+    });
+
+    it('Case D: Multiple partial transactions for the same month', () => {
+        const txns = [
+            { id: 't1', type: 'installment_repaid', amount: 300000, installmentId: 'inst-1', date: '2026-06-15T00:00:00Z' },
+            { id: 't2', type: 'installment_repaid', amount: 200000, installmentId: 'inst-1', date: '2026-06-20T00:00:00Z' }
+        ];
+        const stats = calculateItemStats(baseInstallment, new Date('2026-08-20'), txns);
+        expect(stats.paidAmount).toBe(500000);
+        expect(stats.remainingAmount).toBe(9500000);
+    });
+
+    it('Case E: paidMonths + transaction in same month - NO double count', () => {
+        const item = { ...baseInstallment, paidMonths: ['2026-06'] };
+        const txns = [
+            // Transaction belongs to the month that is already fully paid
+            { id: 't1', type: 'installment_repaid', amount: 2000000, installmentId: 'inst-1', date: '2026-06-15T00:00:00Z' }
+        ];
+        const stats = calculateItemStats(item, new Date('2026-08-20'), txns);
+        // It should just be 2,000,000, not 4,000,000
+        expect(stats.paidAmount).toBe(2000000);
+        expect(stats.remainingAmount).toBe(8000000);
+    });
+
+    it('Case F: Transaction for different installment doesnt affect current one', () => {
+        const txns = [
+            { id: 't1', type: 'installment_repaid', amount: 500000, installmentId: 'inst-2', date: '2026-06-15T00:00:00Z' }
+        ];
+        const stats = calculateItemStats(baseInstallment, new Date('2026-08-20'), txns);
+        expect(stats.paidAmount).toBe(0);
+        expect(stats.remainingAmount).toBe(10000000);
+    });
+
+    it('Case G: Legacy transaction handling without installmentId', () => {
+        const txns = [
+            { id: 't1', type: 'installment_repaid', amount: 700000, description: 'Trả lẻ trả góp iPhone: T06/2026', date: '2026-06-15T00:00:00Z' }
+        ];
+        const stats = calculateItemStats(baseInstallment, new Date('2026-08-20'), txns);
+        expect(stats.paidAmount).toBe(700000);
+    });
+
+    it('Case H: Installment exceeds term limits math bounds', () => {
+        const item = { ...baseInstallment, paidMonths: ['2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11'] }; // 6 months, term is 5
+        const stats = calculateItemStats(item, new Date('2026-12-01'), []);
+        // should bound to totalPayable
+        expect(stats.paidAmount).toBe(10000000); 
+        expect(stats.remainingAmount).toBe(0);
+        expect(stats.isFinished).toBe(true);
+    });
+
+    it('Test: getInstallmentPaymentMonth correctly identifies month', () => {
         const txn1 = { date: '2026-08-15T00:00:00Z' };
         const txn2 = { description: 'Trả góp iPhone (T08/2026)' };
-        const txn3 = { description: 'Trả góp (T08)', date: '2026-05-15T00:00:00Z' }; // Month from desc, year from date
+        const txn3 = { description: 'Trả góp (T08)', date: '2026-05-15T00:00:00Z' };
         
         expect(getInstallmentPaymentMonth(txn1)).toBe('2026-08');
         expect(getInstallmentPaymentMonth(txn2)).toBe('2026-08');
         expect(getInstallmentPaymentMonth(txn3)).toBe('2026-08');
     });
 
-    it('Test 5 & 6 — Edit: Handled in transactionService diff, pure functions not applicable here', () => {
-        expect(true).toBe(true); // Edit logic verified manually via transactionService.js diff calculation
-    });
-
-    it('Test 7 — Monthly Filter: getInstallmentSummaryForMonth', () => {
+    it('Test: Monthly Filter getInstallmentSummaryForMonth', () => {
         const transactions = [
             { type: 'installment_repaid', amount: 2000000, date: '2026-07-15' },
-            { type: 'installment_repaid', amount: 3000000, date: '2026-08-15' },
+            { type: 'installment_repaid', amount: 3000000, date: '2026-08-15', installmentId: 'inst-1' },
             { type: 'installment_repaid', amount: 4000000, date: '2026-09-15' }
         ];
         
         const summary = getInstallmentSummaryForMonth(transactions, 2026, 8);
         expect(summary.total).toBe(3000000);
+        expect(summary.byInstallment[0].installmentId).toBe('inst-1');
     });
 
-    it('Test 8 — Wallet Filter', () => {
+    it('Test: Dashboard Stats - Wallet Filter', () => {
         const transactions = [
             { type: 'installment_repaid', amount: 2000000, walletId: 'walletA', date: '2026-08-15' },
             { type: 'installment_repaid', amount: 3000000, walletId: 'walletB', date: '2026-08-16' }
@@ -99,24 +130,20 @@ describe('Installment Logic Tests', () => {
         expect(statsA.totalBalance).toBe(3000000); // Only wallet A's payment
     });
 
-    it('Test 9 — Transfer: Transfer must not become Expense', () => {
+    it('Test: Transfer must not become Expense', () => {
         const txn = { type: 'transfer', amount: 1000000 };
         expect(isExpenseTransaction(txn)).toBe(false);
     });
 
-    it('Test 10 — No Double Counting', () => {
+    it('Test: Dashboard Stats - No Double Counting', () => {
         const transactions = [
             { type: 'installment_repaid', amount: 2000000, date: '2026-08-15' }
         ];
         const stats = useDashboardStats({ transactions, localWallets: [], selectedWalletIds: [], dateRange: {}, categories: [] });
         
-        // Single payment is counted exactly once as expense
         expect(stats.summaryStats.ordinaryExpense).toBe(0);
         expect(stats.summaryStats.installmentExpense).toBe(2000000);
         expect(stats.summaryStats.expense).toBe(2000000); // 0 + 2000000
     });
-
-    it('Test 11 & 12 — Math constraints verified via Math.max in services', () => {
-        expect(true).toBe(true);
-    });
 });
+

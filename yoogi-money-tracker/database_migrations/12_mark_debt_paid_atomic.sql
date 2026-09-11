@@ -78,30 +78,38 @@ BEGIN
             CONTINUE;
         END IF;
 
-        -- Thêm vào paid_months sử dụng COALESCE an toàn
+        -- Restore Idempotency Check
+        IF EXISTS (
+            SELECT 1 FROM public.transactions 
+            WHERE user_id = p_user_id AND installment_payment_key = v_payment_key
+        ) THEN
+            IF NOT (COALESCE(v_installment_record.paid_months, '[]'::jsonb) ? v_month_str) THEN
+                UPDATE public.installments
+                SET paid_months = COALESCE(paid_months, '[]'::jsonb) || jsonb_build_array(v_month_str)
+                WHERE id = v_installment_id AND user_id = p_user_id;
+            END IF;
+            v_already_processed := true;
+            CONTINUE;
+        END IF;
+
+        -- Update paid_months
         IF NOT (COALESCE(v_installment_record.paid_months, '[]'::jsonb) ? v_month_str) THEN
             UPDATE public.installments
             SET paid_months = COALESCE(paid_months, '[]'::jsonb) || jsonb_build_array(v_month_str)
             WHERE id = v_installment_id AND user_id = p_user_id;
         END IF;
 
-        -- Insert Transaction
-        BEGIN
-            INSERT INTO public.transactions (
-                user_id, type, amount, date, category_id, subcategory_id,
-                wallet_id, installment_id, note, payment_batch_id,
-                installment_payment_key, ai_categorized
-            ) VALUES (
-                p_user_id, v_transaction_type, v_amount, p_date,
-                NULLIF(v_category_id, ''), NULLIF(v_subcategory_id, ''),
-                NULLIF(p_wallet_id, ''), v_installment_id, v_description,
-                NULLIF(p_payment_batch_id, ''), v_payment_key, false
-            );
-        EXCEPTION WHEN unique_violation THEN
-            -- Xử lý an toàn khi Race condition
-            v_already_processed := true;
-            CONTINUE;
-        END;
+        -- Insert Transaction WITHOUT swallowing exceptions! Let it throw if there is an error.
+        INSERT INTO public.transactions (
+            user_id, type, amount, date, category_id, subcategory_id,
+            wallet_id, installment_id, note, payment_batch_id,
+            installment_payment_key, ai_categorized
+        ) VALUES (
+            p_user_id, v_transaction_type, v_amount, p_date,
+            NULLIF(v_category_id, ''), NULLIF(v_subcategory_id, ''),
+            NULLIF(p_wallet_id, ''), v_installment_id, v_description,
+            NULLIF(p_payment_batch_id, ''), v_payment_key, false
+        );
     END LOOP;
 
     RETURN jsonb_build_object('success', true, 'already_processed', v_already_processed);

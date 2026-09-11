@@ -1,5 +1,5 @@
 import { useMemo, useEffect } from 'react';
-import { calculateItemStats, getYearMonth, calculateMonthlyDueForItems } from '../utils/calculations';
+import { calculateItemStats, getYearMonth, calculateMonthlyDueForItems, isTransactionForInstallment } from '../utils/calculations';
 import { updateInstallment } from '../utils/supabaseHelpers';
 import { getInstallmentPaymentMonth } from '../utils/transactionUtils';
 
@@ -19,15 +19,9 @@ export const useInstallments = ({
     // Auto-fix data hook: Remove over-ticked months
     useEffect(() => {
         if (!user || items.length === 0) return;
-        items.forEach(async (item) => {
+        items.forEach((item) => {
             if (Array.isArray(item.paidMonths) && item.paidMonths.length > item.term) {
-                const newPaidMonths = item.paidMonths.slice(0, item.term);
-                try {
-                    await updateInstallment(user.uid, item.id, { paidMonths: newPaidMonths });
-                    console.log(`Auto-fixed item ${item.name}: ${item.paidMonths.length} -> ${item.term}`);
-                } catch (e) {
-                    console.error("Auto-fix error:", e);
-                }
+                console.warn(`[Invariant Violation] Installment ${item.name} has more paidMonths (${item.paidMonths.length}) than term (${item.term}). Please check data.`);
             }
         });
     }, [items, user]);
@@ -195,7 +189,7 @@ export const useInstallments = ({
             }
             
             if (transactions && Array.isArray(transactions)) {
-                const related = transactions.filter(t => t.type === 'installment_repaid' && (t.installmentId === item.id || (!t.installmentId && t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`))));
+                const related = transactions.filter(t => isTransactionForInstallment(t, item));
                 for (const t of related) {
                     const txMonthStr = getInstallmentPaymentMonth(t);
                     if (txMonthStr && !item.paidMonths?.includes(txMonthStr)) {
