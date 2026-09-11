@@ -1,8 +1,12 @@
 # Project Rules - Yoogi Money Tracker
 
-## Auto Deploy Rule
+Dự án Yoogi Money Tracker áp dụng một "Hiến pháp" (Constitution) rất nghiêm ngặt để đảm bảo an toàn dữ liệu và tính ổn định. 
 
-**BẮT BUỘC**: AI LUÔN LUÔN phải tự động thực hiện tiến trình sau khi hoàn thành BẤT KỲ thay đổi code nào (dù là nhỏ nhất, fix bug, hay thêm feature). TUYỆT ĐỐI KHÔNG được chờ User nhắc "up github đi" hay "deploy đi". ĐÂY LÀ ĐIỀU LUẬT TỐI THƯỢNG (HIẾN PHÁP).
+> **QUAN TRỌNG:** Toàn bộ chi tiết về Hiến pháp (Kiến trúc ứng dụng, quy tắc viết Atomic RPC, quy định UX/UI, và các hành vi bị nghiêm cấm) đều đã được chia nhỏ và đặt trong thư mục `.agents/rules/`. Các AI Agent sẽ tự động đọc các luật này trước khi thực thi bất cứ tác vụ nào.
+
+## Auto Deploy Rule (LUẬT TỐI THƯỢNG)
+
+**BẮT BUỘC**: AI LUÔN LUÔN phải tự động thực hiện tiến trình sau khi hoàn thành BẤT KỲ thay đổi code nào (dù là nhỏ nhất, fix bug, hay thêm feature). TUYỆT ĐỐI KHÔNG được chờ User nhắc "up github đi" hay "deploy đi". 
 
 1. Chạy Build để đảm bảo không có lỗi:
 ```powershell
