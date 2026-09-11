@@ -27,6 +27,28 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     };
 
     useEffect(() => {
+        return () => {
+            console.warn('[YOOGI_PAYMENT][MODAL] UNMOUNT', {
+                traceId: initialSessionBatchIdRef.current
+            });
+        };
+    }, []);
+
+    if ((typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) || process.env.NODE_ENV === 'development') {
+        console.log('[YOOGI_PAYMENT][MODAL] RENDER_CYCLE', {
+            isOpen,
+            isSubmitting,
+            paymentBatchId,
+            initialSessionBatchId: initialSessionBatchIdRef.current
+        });
+        if (!isOpen && isSubmitting) {
+            console.warn('[YOOGI_PAYMENT][MODAL][CLOSED_DURING_SUBMIT]', {
+                isOpen, isSubmitting, paymentBatchId, initialSessionBatchId: initialSessionBatchIdRef.current
+            });
+        }
+    }
+
+    useEffect(() => {
         const handleDebugLog = (e) => {
             if (e.detail?.stage === 'DEBUG' && e.detail?.event === 'EVENT_RECEIVED') return;
 
@@ -202,8 +224,22 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
             paymentDebugLog('MODAL', 'BEFORE_HANDLE_SUBMIT', {
                 traceId: initialSessionBatchIdRef.current || paymentBatchId
             });
+            
+            paymentDebugLog('MODAL', 'DEBUG_DELAY_START', {
+                traceId: initialSessionBatchIdRef.current || paymentBatchId,
+                delayMs: 5000
+            });
             // Tạm dừng 5 giây để user copy debug log
             await new Promise(resolve => setTimeout(resolve, 5000));
+            
+            paymentDebugLog('MODAL', 'DEBUG_DELAY_END', {
+                traceId: initialSessionBatchIdRef.current || paymentBatchId
+            });
+
+            console.info('[YOOGI_PAYMENT][SAFE_SUBMIT] ABOUT_TO_CALL_HANDLE_SUBMIT');
+            paymentDebugLog('MODAL', 'ABOUT_TO_CALL_HANDLE_SUBMIT', {
+                traceId: initialSessionBatchIdRef.current || paymentBatchId
+            });
             
             await handleSubmit(e);
         } finally {
@@ -213,11 +249,16 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     };
     const handleSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
-        console.info('[YOOGI_PAYMENT][HANDLE_SUBMIT] entered');
+        console.info('[YOOGI_PAYMENT][HANDLE_SUBMIT] ENTERED');
         const currentBatchId = initialSessionBatchIdRef.current || paymentBatchId;
         
+        paymentDebugLog('MODAL', 'HANDLE_SUBMIT_ENTERED', {
+            traceId: currentBatchId
+        });
+
         paymentDebugLog('MODAL', 'ON_CONFIRM_START', { traceId: currentBatchId });
         try {
+            paymentDebugLog('MODAL', 'CALLING_ON_CONFIRM', { traceId: currentBatchId });
             await onConfirm({ ...form, totalAmount, items: selectedItems, paymentBatchId: currentBatchId });
             paymentDebugLog('MODAL', 'ON_CONFIRM_SUCCESS', { traceId: currentBatchId });
             onClose();
