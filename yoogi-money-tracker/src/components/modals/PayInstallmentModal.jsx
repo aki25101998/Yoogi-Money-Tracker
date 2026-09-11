@@ -27,10 +27,44 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     };
 
     useEffect(() => {
+        console.info('[YOOGI_PAYMENT][MODAL_MOUNT]', initialSessionBatchIdRef.current);
         return () => {
-            console.warn('[YOOGI_PAYMENT][MODAL] UNMOUNT', {
-                traceId: initialSessionBatchIdRef.current
+            console.warn('[YOOGI_PAYMENT][MODAL_UNMOUNT]', initialSessionBatchIdRef.current);
+            paymentDebugLog('MODAL', 'MODAL_UNMOUNT', {
+                traceId: initialSessionBatchIdRef.current,
+                isOpen,
+                isSubmitting
             });
+        };
+    }, []);
+
+    useEffect(() => {
+        console.info('[YOOGI_PAYMENT][OPEN_STATE_CHANGED]', { isOpen, traceId: initialSessionBatchIdRef.current || paymentBatchId });
+        paymentDebugLog('MODAL', 'OPEN_STATE_CHANGED', { isOpen, traceId: initialSessionBatchIdRef.current || paymentBatchId });
+    }, [isOpen]);
+
+    useEffect(() => {
+        const handleError = (event) => {
+            console.error('[YOOGI_PAYMENT][WINDOW_ERROR]', event.error || event.message);
+            paymentDebugLog('MODAL', 'WINDOW_ERROR', {
+                traceId: initialSessionBatchIdRef.current,
+                message: event.error?.message || event.message || 'Unknown window error',
+                stack: event.error?.stack
+            });
+        };
+        const handleUnhandledRejection = (event) => {
+            console.error('[YOOGI_PAYMENT][UNHANDLED_REJECTION]', event.reason);
+            paymentDebugLog('MODAL', 'UNHANDLED_REJECTION', {
+                traceId: initialSessionBatchIdRef.current,
+                message: event.reason?.message || String(event.reason),
+                stack: event.reason?.stack
+            });
+        };
+        window.addEventListener('error', handleError);
+        window.addEventListener('unhandledrejection', handleUnhandledRejection);
+        return () => {
+            window.removeEventListener('error', handleError);
+            window.removeEventListener('unhandledrejection', handleUnhandledRejection);
         };
     }, []);
 
@@ -204,49 +238,6 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     const lastErrorLog = debugLogs.length > 0 ? [...debugLogs].reverse().find(logItem => logItem.stage.includes('ERROR') || logItem.event.includes('ERROR') || logItem.event.includes('FAILED')) : null;
 
     
-    const safeSubmit = async (e) => {
-        if (e && e.preventDefault) e.preventDefault();
-        console.info('[YOOGI_PAYMENT][SAFE_SUBMIT] calling handleSubmit');
-        
-        paymentDebugLog('MODAL', 'SUBMIT_START', {
-            traceId: initialSessionBatchIdRef.current || paymentBatchId,
-            isSubmittingBeforeSubmit: isSubmitting,
-            selectedItemsLength: selectedItems?.length,
-            totalAmount,
-            walletId: form.walletId,
-            date: form.date,
-            paymentBatchId: initialSessionBatchIdRef.current || paymentBatchId
-        });
-        
-        if (isSubmitting) return;
-        setIsSubmitting(true);
-        try {
-            paymentDebugLog('MODAL', 'BEFORE_HANDLE_SUBMIT', {
-                traceId: initialSessionBatchIdRef.current || paymentBatchId
-            });
-            
-            paymentDebugLog('MODAL', 'DEBUG_DELAY_START', {
-                traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                delayMs: 5000
-            });
-            // Tạm dừng 5 giây để user copy debug log
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            
-            paymentDebugLog('MODAL', 'DEBUG_DELAY_END', {
-                traceId: initialSessionBatchIdRef.current || paymentBatchId
-            });
-
-            console.info('[YOOGI_PAYMENT][SAFE_SUBMIT] ABOUT_TO_CALL_HANDLE_SUBMIT');
-            paymentDebugLog('MODAL', 'ABOUT_TO_CALL_HANDLE_SUBMIT', {
-                traceId: initialSessionBatchIdRef.current || paymentBatchId
-            });
-            
-            await handleSubmit(e);
-        } finally {
-            paymentDebugLog('MODAL', 'SUBMIT_FINALLY', { traceId: initialSessionBatchIdRef.current || paymentBatchId, isSubmittingAfter: false });
-            setIsSubmitting(false);
-        }
-    };
     const handleSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
         console.info('[YOOGI_PAYMENT][HANDLE_SUBMIT] ENTERED');
@@ -271,6 +262,84 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                 name: error?.name
             });
             console.error("Payment error:", error);
+        }
+    };
+
+    const safeSubmit = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        console.info('[YOOGI_PAYMENT][SAFE_SUBMIT] calling handleSubmit');
+        
+        paymentDebugLog('MODAL', 'SUBMIT_START', {
+            traceId: initialSessionBatchIdRef.current || paymentBatchId,
+            isSubmittingBeforeSubmit: isSubmitting,
+            selectedItemsLength: selectedItems?.length,
+            totalAmount,
+            walletId: form.walletId,
+            date: form.date,
+            paymentBatchId: initialSessionBatchIdRef.current || paymentBatchId
+        });
+        
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            paymentDebugLog('MODAL', 'BEFORE_HANDLE_SUBMIT', {
+                traceId: initialSessionBatchIdRef.current || paymentBatchId
+            });
+            
+            paymentDebugLog('MODAL', 'DEBUG_DELAY_START', {
+                traceId: initialSessionBatchIdRef.current || paymentBatchId,
+                isOpen,
+                isSubmitting
+            });
+            console.info('[YOOGI_PAYMENT][DEBUG_DELAY_START]', initialSessionBatchIdRef.current || paymentBatchId);
+
+            try {
+                await new Promise((resolve) => {
+                    const traceId = initialSessionBatchIdRef.current || paymentBatchId;
+                    console.info('[YOOGI_PAYMENT][DEBUG_TIMER_CREATED]', traceId);
+                    paymentDebugLog('MODAL', 'DEBUG_TIMER_CREATED', { traceId, isOpen, isSubmitting });
+                    
+                    setTimeout(() => {
+                        console.info('[YOOGI_PAYMENT][DEBUG_TIMER_FIRED]', traceId);
+                        paymentDebugLog('MODAL', 'DEBUG_TIMER_FIRED', { traceId, isOpen, isSubmitting });
+                        resolve();
+                    }, 5000);
+                });
+                
+                console.info('[YOOGI_PAYMENT][DEBUG_DELAY_END]', initialSessionBatchIdRef.current || paymentBatchId);
+                paymentDebugLog('MODAL', 'DEBUG_DELAY_END', {
+                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
+                    isOpen,
+                    isSubmitting
+                });
+            } catch (error) {
+                console.error('[YOOGI_PAYMENT][DEBUG_DELAY_ERROR]', error);
+                paymentDebugLog('MODAL', 'DEBUG_DELAY_ERROR', {
+                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
+                    message: error?.message,
+                    stack: error?.stack,
+                    name: error?.name
+                });
+                throw error;
+            }
+
+            console.info('[YOOGI_PAYMENT][ABOUT_TO_CALL_HANDLE_SUBMIT]', {
+                traceId: initialSessionBatchIdRef.current || paymentBatchId,
+                isOpen,
+                isSubmitting,
+                handleSubmitType: typeof handleSubmit
+            });
+            paymentDebugLog('MODAL', 'ABOUT_TO_CALL_HANDLE_SUBMIT', {
+                traceId: initialSessionBatchIdRef.current || paymentBatchId,
+                isOpen,
+                isSubmitting,
+                handleSubmitType: typeof handleSubmit
+            });
+            
+            await handleSubmit(e);
+        } finally {
+            paymentDebugLog('MODAL', 'SUBMIT_FINALLY', { traceId: initialSessionBatchIdRef.current || paymentBatchId, isSubmittingAfter: false });
+            setIsSubmitting(false);
         }
     };
 
