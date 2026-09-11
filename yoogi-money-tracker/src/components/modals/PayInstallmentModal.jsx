@@ -14,6 +14,7 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     const [debugLogs, setDebugLogs] = useState([]);
     const submitButtonRef = useRef(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const isSubmittingRef = useRef(false);
     const [copied, setCopied] = useState(false);
 
     const handleCopyLogs = () => {
@@ -280,7 +281,7 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
             paymentDebugLog('MODAL', 'CALLING_ON_CONFIRM', { traceId: currentBatchId });
             await onConfirm({ ...form, totalAmount, items: selectedItems, paymentBatchId: currentBatchId });
             paymentDebugLog('MODAL', 'ON_CONFIRM_SUCCESS', { traceId: currentBatchId });
-            onClose();
+            // Let the parent controller close the modal to prevent premature shutdown on pending UI updates.
         } catch (error) {
             paymentDebugLog('MODAL', 'ERROR', {
                 traceId: currentBatchId,
@@ -308,21 +309,10 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                 paymentBatchId: initialSessionBatchIdRef.current || paymentBatchId
             });
             
-            if (isSubmitting) return;
-
-            console.info('[YOOGI_PAYMENT][BEFORE_SET_SUBMITTING_TRUE]', {
-                traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                timestamp: Date.now(),
-                isOpen,
-                isSubmitting
-            });
-            paymentDebugLog('MODAL', 'BEFORE_SET_SUBMITTING_TRUE', {
-                traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                timestamp: Date.now(),
-                isOpen,
-                isSubmitting
-            });
-
+            if (isSubmittingRef.current) return;
+            
+            // Synchronously block duplicate calls
+            isSubmittingRef.current = true;
             setIsSubmitting(true);
 
             console.info('[YOOGI_PAYMENT][AFTER_SET_SUBMITTING_TRUE]', {
@@ -474,6 +464,7 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
 
                 paymentDebugLog('MODAL', 'SUBMIT_FINALLY', { traceId: initialSessionBatchIdRef.current || paymentBatchId, isSubmittingAfter: false });
                 setIsSubmitting(false);
+                isSubmittingRef.current = false;
             }
         } catch (error) {
             console.error('[YOOGI_PAYMENT][SAFE_SUBMIT_ERROR]', error);
