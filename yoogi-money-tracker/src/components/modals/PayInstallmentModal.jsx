@@ -202,6 +202,9 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
             paymentDebugLog('MODAL', 'BEFORE_HANDLE_SUBMIT', {
                 traceId: initialSessionBatchIdRef.current || paymentBatchId
             });
+            // Tạm dừng 5 giây để user copy debug log
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            
             await handleSubmit(e);
         } finally {
             paymentDebugLog('MODAL', 'SUBMIT_FINALLY', { traceId: initialSessionBatchIdRef.current || paymentBatchId, isSubmittingAfter: false });
