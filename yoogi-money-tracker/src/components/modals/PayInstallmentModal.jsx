@@ -10,6 +10,7 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
         date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
     });
     const [paymentBatchId, setPaymentBatchId] = useState(null);
+    const initialSessionBatchIdRef = useRef(null);
     const [debugLogs, setDebugLogs] = useState([]);
     const submitButtonRef = useRef(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,6 +28,17 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
 
     useEffect(() => {
         const handleDebugLog = (e) => {
+            if (e.detail?.stage === 'DEBUG' && e.detail?.event === 'EVENT_RECEIVED') return;
+
+            const isDev = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) || process.env.NODE_ENV === 'development';
+            if (isDev) {
+                paymentDebugLog('DEBUG', 'EVENT_RECEIVED', {
+                    eventTraceId: e.detail?.traceId,
+                    currentTraceId: paymentBatchId,
+                    matched: e.detail?.traceId === paymentBatchId
+                });
+            }
+
             if (e.detail?.traceId === paymentBatchId || !paymentBatchId) {
                 setDebugLogs(prev => {
                     const newLogs = [...prev, e.detail];
@@ -43,8 +55,14 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
         if (isOpen) {
             const newBatchId = crypto.randomUUID();
             setPaymentBatchId(newBatchId);
+            initialSessionBatchIdRef.current = newBatchId;
             setDebugLogs([]); // reset logs for new session
             
+            paymentDebugLog('SESSION', 'BATCH_ID_CREATED', {
+                traceId: newBatchId,
+                reason: 'MODAL_OPEN'
+            });
+
             const defaultWalletId = wallets?.length > 0 ? wallets.find(w => w.isDefault)?.id || wallets[0].id : '';
             
             setForm(prev => {
@@ -63,9 +81,22 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                     walletId: walletIdToUse
                 };
             });
+        } else {
+            setPaymentBatchId(null);
+            initialSessionBatchIdRef.current = null;
         }
-    }, [isOpen, wallets, selectedItems]);
+    }, [isOpen]); // ONLY DEPENDS ON isOpen
 
+    useEffect(() => {
+        const isDev = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) || process.env.NODE_ENV === 'development';
+        if (isDev && isOpen && paymentBatchId && initialSessionBatchIdRef.current && paymentBatchId !== initialSessionBatchIdRef.current) {
+            paymentDebugLog('SESSION', 'ERROR', {
+                reason: 'PAYMENT_BATCH_ID_CHANGED_DURING_SESSION',
+                previousTraceId: initialSessionBatchIdRef.current,
+                currentTraceId: paymentBatchId
+            });
+        }
+    }, [isOpen, paymentBatchId]);
     useEffect(() => {
         if (isOpen && paymentBatchId) {
             paymentDebugLog('MODAL', 'RENDER', {
@@ -166,8 +197,8 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     };
     const handleSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
+        paymentDebugLog('MODAL', 'ON_CONFIRM_START', { traceId: paymentBatchId });
         try {
-            paymentDebugLog('MODAL', 'ON_CONFIRM_START', { traceId: paymentBatchId });
             await onConfirm({ ...form, totalAmount, items: selectedItems, paymentBatchId });
             paymentDebugLog('MODAL', 'ON_CONFIRM_SUCCESS', { traceId: paymentBatchId });
             onClose();
