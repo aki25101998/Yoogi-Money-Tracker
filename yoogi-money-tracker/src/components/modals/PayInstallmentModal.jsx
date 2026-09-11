@@ -27,20 +27,48 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     };
 
     useEffect(() => {
-        console.info('[YOOGI_PAYMENT][MODAL_MOUNT]', initialSessionBatchIdRef.current);
+        const traceId = initialSessionBatchIdRef.current || paymentBatchId;
+        console.warn('[YOOGI_PAYMENT][MODAL_MOUNT]', {
+            traceId,
+            timestamp: Date.now()
+        });
+        paymentDebugLog('MODAL', 'MODAL_MOUNT', {
+            traceId,
+            timestamp: Date.now()
+        });
         return () => {
-            console.warn('[YOOGI_PAYMENT][MODAL_UNMOUNT]', initialSessionBatchIdRef.current);
+            console.warn('[YOOGI_PAYMENT][MODAL_UNMOUNT]', {
+                traceId: initialSessionBatchIdRef.current || paymentBatchId,
+                timestamp: Date.now()
+            });
             paymentDebugLog('MODAL', 'MODAL_UNMOUNT', {
-                traceId: initialSessionBatchIdRef.current,
-                isOpen,
-                isSubmitting
+                traceId: initialSessionBatchIdRef.current || paymentBatchId,
+                timestamp: Date.now()
             });
         };
     }, []);
 
     useEffect(() => {
-        console.info('[YOOGI_PAYMENT][OPEN_STATE_CHANGED]', { isOpen, traceId: initialSessionBatchIdRef.current || paymentBatchId });
-        paymentDebugLog('MODAL', 'OPEN_STATE_CHANGED', { isOpen, traceId: initialSessionBatchIdRef.current || paymentBatchId });
+        console.info('[YOOGI_PAYMENT][BATCH_ID_CHANGED]', {
+            paymentBatchId,
+            sessionBatchId: initialSessionBatchIdRef.current,
+            timestamp: Date.now(),
+            isOpen,
+            isSubmitting
+        });
+    }, [paymentBatchId]);
+
+    useEffect(() => {
+        console.info('[YOOGI_PAYMENT][OPEN_STATE_CHANGED]', {
+            isOpen,
+            timestamp: Date.now(),
+            traceId: initialSessionBatchIdRef.current || paymentBatchId
+        });
+        paymentDebugLog('MODAL', 'OPEN_STATE_CHANGED', {
+            isOpen,
+            timestamp: Date.now(),
+            traceId: initialSessionBatchIdRef.current || paymentBatchId
+        });
     }, [isOpen]);
 
     useEffect(() => {
@@ -286,42 +314,83 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                 traceId: initialSessionBatchIdRef.current || paymentBatchId
             });
             
-            paymentDebugLog('MODAL', 'DEBUG_DELAY_START', {
+            console.info('[YOOGI_PAYMENT][DEBUG_TIMER_SETUP]', {
                 traceId: initialSessionBatchIdRef.current || paymentBatchId,
+                timestamp: Date.now(),
                 isOpen,
                 isSubmitting
             });
-            console.info('[YOOGI_PAYMENT][DEBUG_DELAY_START]', initialSessionBatchIdRef.current || paymentBatchId);
 
-            try {
-                await new Promise((resolve) => {
-                    const traceId = initialSessionBatchIdRef.current || paymentBatchId;
-                    console.info('[YOOGI_PAYMENT][DEBUG_TIMER_CREATED]', traceId);
-                    paymentDebugLog('MODAL', 'DEBUG_TIMER_CREATED', { traceId, isOpen, isSubmitting });
-                    
-                    setTimeout(() => {
-                        console.info('[YOOGI_PAYMENT][DEBUG_TIMER_FIRED]', traceId);
-                        paymentDebugLog('MODAL', 'DEBUG_TIMER_FIRED', { traceId, isOpen, isSubmitting });
+            paymentDebugLog('MODAL', 'DEBUG_TIMER_SETUP', {
+                traceId: initialSessionBatchIdRef.current || paymentBatchId,
+                timestamp: Date.now(),
+                isOpen,
+                isSubmitting
+            });
+
+            await new Promise((resolve) => {
+                const timerTraceId = initialSessionBatchIdRef.current || paymentBatchId;
+                const startedAt = Date.now();
+
+                console.info('[YOOGI_PAYMENT][DEBUG_TIMER_CREATED]', {
+                    traceId: timerTraceId,
+                    startedAt,
+                    expectedFireAt: startedAt + 5000
+                });
+
+                const timerId = window.setTimeout(() => {
+                    const firedAt = Date.now();
+
+                    console.info('[YOOGI_PAYMENT][DEBUG_TIMER_CALLBACK_ENTERED]', {
+                        traceId: timerTraceId,
+                        firedAt,
+                        elapsedMs: firedAt - startedAt
+                    });
+
+                    try {
+                        paymentDebugLog('MODAL', 'DEBUG_TIMER_FIRED', {
+                            traceId: timerTraceId,
+                            firedAt,
+                            elapsedMs: firedAt - startedAt
+                        });
+
+                        console.info('[YOOGI_PAYMENT][DEBUG_TIMER_RESOLVING]', {
+                            traceId: timerTraceId,
+                            elapsedMs: firedAt - startedAt
+                        });
+
                         resolve();
-                    }, 5000);
+
+                        console.info('[YOOGI_PAYMENT][DEBUG_TIMER_RESOLVED]', {
+                            traceId: timerTraceId
+                        });
+                    } catch (error) {
+                        console.error('[YOOGI_PAYMENT][DEBUG_TIMER_CALLBACK_ERROR]', error);
+                        paymentDebugLog('MODAL', 'DEBUG_TIMER_CALLBACK_ERROR', {
+                            traceId: timerTraceId,
+                            message: error?.message,
+                            stack: error?.stack,
+                            name: error?.name
+                        });
+                        resolve();
+                    }
+                }, 5000);
+
+                console.info('[YOOGI_PAYMENT][DEBUG_TIMER_ID_ASSIGNED]', {
+                    traceId: timerTraceId,
+                    timerId
                 });
-                
-                console.info('[YOOGI_PAYMENT][DEBUG_DELAY_END]', initialSessionBatchIdRef.current || paymentBatchId);
-                paymentDebugLog('MODAL', 'DEBUG_DELAY_END', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    isOpen,
-                    isSubmitting
-                });
-            } catch (error) {
-                console.error('[YOOGI_PAYMENT][DEBUG_DELAY_ERROR]', error);
-                paymentDebugLog('MODAL', 'DEBUG_DELAY_ERROR', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    message: error?.message,
-                    stack: error?.stack,
-                    name: error?.name
-                });
-                throw error;
-            }
+            });
+
+            console.info('[YOOGI_PAYMENT][DEBUG_DELAY_END]', {
+                traceId: initialSessionBatchIdRef.current || paymentBatchId,
+                timestamp: Date.now()
+            });
+
+            paymentDebugLog('MODAL', 'DEBUG_DELAY_END', {
+                traceId: initialSessionBatchIdRef.current || paymentBatchId,
+                timestamp: Date.now()
+            });
 
             console.info('[YOOGI_PAYMENT][ABOUT_TO_CALL_HANDLE_SUBMIT]', {
                 traceId: initialSessionBatchIdRef.current || paymentBatchId,
