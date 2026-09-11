@@ -78,20 +78,6 @@ BEGIN
             CONTINUE;
         END IF;
 
-        -- Restore Idempotency Check
-        IF EXISTS (
-            SELECT 1 FROM public.transactions 
-            WHERE user_id = p_user_id AND installment_payment_key = v_payment_key
-        ) THEN
-            IF NOT (COALESCE(v_installment_record.paid_months, '[]'::jsonb) ? v_month_str) THEN
-                UPDATE public.installments
-                SET paid_months = COALESCE(paid_months, '[]'::jsonb) || jsonb_build_array(v_month_str)
-                WHERE id = v_installment_id AND user_id = p_user_id;
-            END IF;
-            v_already_processed := true;
-            CONTINUE;
-        END IF;
-
         -- Update paid_months
         IF NOT (COALESCE(v_installment_record.paid_months, '[]'::jsonb) ? v_month_str) THEN
             UPDATE public.installments

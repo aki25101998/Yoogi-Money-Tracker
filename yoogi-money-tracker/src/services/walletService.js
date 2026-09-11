@@ -16,12 +16,10 @@ export const updateWallet = async (userId, id, updates) => {
     window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'wallets' }));
 };
 export const deleteWallet = async (userId, id) => {
-    await supabase.from('ai_chat_history').delete().eq('wallet_id', id).eq('user_id', userId);
-    await supabase.from('transactions').update({ wallet_id: null }).eq('wallet_id', id).eq('user_id', userId);
-    await supabase.from('transactions').update({ to_wallet_id: null }).eq('to_wallet_id', id).eq('user_id', userId);
-    await supabase.from('debts').update({ wallet_id: null }).eq('wallet_id', id).eq('user_id', userId);
-    await supabase.from('recurring_transactions').update({ wallet_id: null }).eq('wallet_id', id).eq('user_id', userId);
-    const { error } = await supabase.from('wallets').delete().eq('id', id).eq('user_id', userId);
+    const { error } = await supabase.rpc('delete_wallet_safely', {
+        p_user_id: userId,
+        p_wallet_id: id
+    });
     if (error) throw error;
     window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'wallets' }));
     window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'transactions' }));

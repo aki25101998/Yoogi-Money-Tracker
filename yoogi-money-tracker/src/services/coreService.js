@@ -195,28 +195,17 @@ export const exportUserData = async (userId) => {
 };
 
 export const importUserData = async (userId, data) => {
-    // 1. Delete existing data
-    for (const table of TABLES_DELETE_ORDER) {
-        const { data: ids } = await supabase.from(table).select('id').eq('user_id', userId);
-        if (ids && ids.length > 0) {
-            const chunkSize = 100;
-            for (let i = 0; i < ids.length; i += chunkSize) {
-                const chunk = ids.slice(i, i + chunkSize).map(r => r.id);
-                await supabase.from(table).delete().in('id', chunk);
-            }
-        }
+    const payload = {};
+    for (const key of Object.keys(data)) {
+        payload[key] = data[key].map(row => mapToSnakeCase({ ...row, user_id: userId }));
     }
-    
-    // 2. Insert new data
-    for (const table of TABLES_INSERT_ORDER) {
-        if (data[table] && data[table].length > 0) {
-            const chunkSize = 500;
-            for (let i = 0; i < data[table].length; i += chunkSize) {
-                const chunk = data[table].slice(i, i + chunkSize);
-                await supabase.from(table).insert(chunk);
-            }
-        }
-    }
+
+    const { error } = await supabase.rpc('restore_user_data_atomic', {
+        p_user_id: userId,
+        p_payload: payload
+    });
+
+    if (error) throw error;
     
     // Dispatch events to refresh UI
     if (typeof window !== 'undefined') {

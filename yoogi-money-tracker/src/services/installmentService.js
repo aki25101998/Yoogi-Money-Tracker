@@ -78,25 +78,14 @@ export const deleteInstallment = async (userId, id) => {
 };
 
 export const updateInstallmentPartialPayment = async (userId, installmentId, monthStr, diffAmount) => {
-    const { data, error } = await supabase.from('installments').select('partial_payments, paid_months, monthly_payment').eq('id', installmentId).eq('user_id', userId).single();
+    const { error } = await supabase.rpc('update_installment_payment_atomic', {
+        p_user_id: userId,
+        p_installment_id: installmentId,
+        p_month_str: monthStr,
+        p_diff_amount: diffAmount
+    });
+    
     if (error) throw error;
-    
-    const partials = data.partial_payments || {};
-    const current = parseFloat(partials[monthStr]) || 0;
-    const newTotal = Math.max(0, current + diffAmount);
-    partials[monthStr] = newTotal;
-    
-    let newPaidMonths = data.paid_months || [];
-    if (newTotal < (data.monthly_payment || 0) && newPaidMonths.includes(monthStr)) {
-        newPaidMonths = newPaidMonths.filter(m => m !== monthStr);
-    } else if (newTotal >= (data.monthly_payment || 0) && !newPaidMonths.includes(monthStr) && newTotal > 0) {
-        newPaidMonths = [...newPaidMonths, monthStr];
-    }
-    
-    await supabase.from('installments').update({ 
-        partial_payments: partials,
-        paid_months: newPaidMonths
-    }).eq('id', installmentId).eq('user_id', userId);
     
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'installments' }));
 };
