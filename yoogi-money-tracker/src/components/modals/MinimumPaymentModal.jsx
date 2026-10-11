@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Wallet, ChevronDown } from 'lucide-react';
-import { addTransaction, updateInstallmentPartialPayment } from '../../utils/supabaseHelpers';
+import { addTransaction, updateInstallmentPartialPayment, deleteTransaction } from '../../utils/supabaseHelpers';
 
 import AmountInput from '../ui/AmountInput';
 import { formatCurrency } from '../../utils/formatters';
@@ -73,10 +73,22 @@ const [form, setForm] = useState({
                 installmentId: item.id
             };
 
-            await addTransaction(user.uid, transactionData);
+            let createdTxn = null;
+            try {
+                createdTxn = await addTransaction(user.uid, transactionData);
 
-            if (monthStr && item?.id) {
-                await updateInstallmentPartialPayment(user.uid, item.id, monthStr, amountNum);
+                if (monthStr && item?.id) {
+                    await updateInstallmentPartialPayment(user.uid, item.id, monthStr, amountNum);
+                }
+            } catch (innerErr) {
+                if (createdTxn?.id) {
+                    try {
+                        await deleteTransaction(user.uid, createdTxn.id, createdTxn);
+                    } catch (rollbackErr) {
+                        console.error('Failed to rollback transaction:', rollbackErr);
+                    }
+                }
+                throw innerErr;
             }
 
             onClose();

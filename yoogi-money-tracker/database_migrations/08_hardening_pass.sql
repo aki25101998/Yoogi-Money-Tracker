@@ -132,11 +132,16 @@ SECURITY DEFINER
 AS $$
 DECLARE
     v_partial_payments jsonb;
-    v_paid_months text[];
+    v_paid_months jsonb;
     v_monthly_payment numeric;
     v_current_paid numeric;
     v_new_paid numeric;
 BEGIN
+    -- Security check
+    IF auth.uid() IS NOT NULL AND auth.uid() <> p_user_id THEN
+        RAISE EXCEPTION 'Unauthorized: p_user_id does not match auth.uid()';
+    END IF;
+
     -- Lock row for update to prevent lost updates
     SELECT partial_payments, paid_months, monthly_payment 
     INTO v_partial_payments, v_paid_months, v_monthly_payment
@@ -149,9 +154,15 @@ BEGIN
     END IF;
 
     -- Ensure JSONB is initialized
-    IF v_partial_payments IS NULL THEN
+    IF v_partial_payments IS NULL OR jsonb_typeof(v_partial_payments) <> 'object' THEN
         v_partial_payments := '{}'::jsonb;
     END IF;
+
+    IF v_paid_months IS NULL OR jsonb_typeof(v_paid_months) <> 'array' THEN
+        v_paid_months := '[]'::jsonb;
+    END IF;
+
+    v_monthly_payment := COALESCE(v_monthly_payment, 0);
 
     -- Get current paid amount for the month
     v_current_paid := COALESCE((v_partial_payments->>p_month_str)::numeric, 0);
@@ -165,16 +176,16 @@ BEGIN
     -- Update JSONB
     v_partial_payments := jsonb_set(v_partial_payments, ARRAY[p_month_str], to_jsonb(v_new_paid));
 
-    -- Handle paid_months array
-    IF v_new_paid >= v_monthly_payment THEN
+    -- Handle paid_months jsonb array
+    IF v_monthly_payment > 0 AND v_new_paid >= v_monthly_payment THEN
         -- Add to paid_months if not exists
-        IF NOT p_month_str = ANY(COALESCE(v_paid_months, ARRAY[]::text[])) THEN
-            v_paid_months := array_append(COALESCE(v_paid_months, ARRAY[]::text[]), p_month_str);
+        IF NOT (v_paid_months ? p_month_str) THEN
+            v_paid_months := v_paid_months || jsonb_build_array(p_month_str);
         END IF;
     ELSE
         -- Remove from paid_months if exists
-        IF p_month_str = ANY(COALESCE(v_paid_months, ARRAY[]::text[])) THEN
-            v_paid_months := array_remove(v_paid_months, p_month_str);
+        IF (v_paid_months ? p_month_str) THEN
+            v_paid_months := v_paid_months - p_month_str;
         END IF;
     END IF;
 
