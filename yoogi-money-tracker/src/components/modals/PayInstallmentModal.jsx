@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronDown, CheckCircle2, Copy, Check } from 'lucide-react';
+import { X, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { paymentDebugLog } from '../../utils/supabaseHelpers';
 
@@ -11,37 +11,16 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     });
     const [paymentBatchId, setPaymentBatchId] = useState(null);
     const initialSessionBatchIdRef = useRef(null);
-    const [debugLogs, setDebugLogs] = useState([]);
-    const submitButtonRef = useRef(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const isSubmittingRef = useRef(false);
-    const [copied, setCopied] = useState(false);
-
-    const handleCopyLogs = () => {
-        const trace = debugLogs.map(l => `${l.stage}_${l.event}`).join(' -> ');
-        const lastErrorLog = debugLogs.length > 0 ? [...debugLogs].reverse().find(logItem => logItem.stage.includes('ERROR') || logItem.event.includes('ERROR') || logItem.event.includes('FAILED')) : null;
-        const lastErr = lastErrorLog ? `\nLast error: ${lastErrorLog.data?.message || lastErrorLog.data?.name || JSON.stringify(lastErrorLog.data)}` : '';
-        const fullLog = `Trace:\n${trace}${lastErr}`;
-        navigator.clipboard.writeText(fullLog);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
 
     useEffect(() => {
         const traceId = initialSessionBatchIdRef.current || paymentBatchId;
-        console.warn('[YOOGI_PAYMENT][MODAL_MOUNT]', {
-            traceId,
-            timestamp: Date.now()
-        });
         paymentDebugLog('MODAL', 'MODAL_MOUNT', {
             traceId,
             timestamp: Date.now()
         });
         return () => {
-            console.warn('[YOOGI_PAYMENT][MODAL_UNMOUNT]', {
-                traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                timestamp: Date.now()
-            });
             paymentDebugLog('MODAL', 'MODAL_UNMOUNT', {
                 traceId: initialSessionBatchIdRef.current || paymentBatchId,
                 timestamp: Date.now()
@@ -50,21 +29,6 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     }, []);
 
     useEffect(() => {
-        console.info('[YOOGI_PAYMENT][BATCH_ID_CHANGED]', {
-            paymentBatchId,
-            sessionBatchId: initialSessionBatchIdRef.current,
-            timestamp: Date.now(),
-            isOpen,
-            isSubmitting
-        });
-    }, [paymentBatchId]);
-
-    useEffect(() => {
-        console.info('[YOOGI_PAYMENT][OPEN_STATE_CHANGED]', {
-            isOpen,
-            timestamp: Date.now(),
-            traceId: initialSessionBatchIdRef.current || paymentBatchId
-        });
         paymentDebugLog('MODAL', 'OPEN_STATE_CHANGED', {
             isOpen,
             timestamp: Date.now(),
@@ -73,87 +37,21 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     }, [isOpen]);
 
     useEffect(() => {
-        const handleError = (event) => {
-            console.error('[YOOGI_PAYMENT][WINDOW_ERROR]', event.error || event.message);
-            paymentDebugLog('MODAL', 'WINDOW_ERROR', {
-                traceId: initialSessionBatchIdRef.current,
-                message: event.error?.message || event.message || 'Unknown window error',
-                stack: event.error?.stack
-            });
-        };
-        const handleUnhandledRejection = (event) => {
-            console.error('[YOOGI_PAYMENT][UNHANDLED_REJECTION]', event.reason);
-            paymentDebugLog('MODAL', 'UNHANDLED_REJECTION', {
-                traceId: initialSessionBatchIdRef.current,
-                message: event.reason?.message || String(event.reason),
-                stack: event.reason?.stack
-            });
-        };
-        window.addEventListener('error', handleError);
-        window.addEventListener('unhandledrejection', handleUnhandledRejection);
-        return () => {
-            window.removeEventListener('error', handleError);
-            window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-        };
-    }, []);
-
-    if ((typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) || process.env.NODE_ENV === 'development') {
-        console.log('[YOOGI_PAYMENT][MODAL] RENDER_CYCLE', {
-            isOpen,
-            isSubmitting,
-            paymentBatchId,
-            initialSessionBatchId: initialSessionBatchIdRef.current
-        });
-        if (!isOpen && isSubmitting) {
-            console.warn('[YOOGI_PAYMENT][MODAL][CLOSED_DURING_SUBMIT]', {
-                isOpen, isSubmitting, paymentBatchId, initialSessionBatchId: initialSessionBatchIdRef.current
-            });
-        }
-    }
-
-    useEffect(() => {
-        const handleDebugLog = (e) => {
-            if (e.detail?.stage === 'DEBUG' && e.detail?.event === 'EVENT_RECEIVED') return;
-
-            const currentBatchId = initialSessionBatchIdRef.current;
-            const isDev = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) || process.env.NODE_ENV === 'development';
-            if (isDev) {
-                paymentDebugLog('DEBUG', 'EVENT_RECEIVED', {
-                    eventTraceId: e.detail?.traceId,
-                    currentTraceId: currentBatchId,
-                    matched: e.detail?.traceId === currentBatchId
-                });
-            }
-
-            if (e.detail?.traceId === currentBatchId || !currentBatchId) {
-                setDebugLogs(prev => {
-                    const newLogs = [...prev, e.detail];
-                    if (newLogs.length > 50) newLogs.shift();
-                    return newLogs;
-                });
-            }
-        };
-        window.addEventListener('yoogi_payment_debug_event', handleDebugLog);
-        return () => window.removeEventListener('yoogi_payment_debug_event', handleDebugLog);
-    }, []);
-
-    useEffect(() => {
         if (isOpen) {
             const newBatchId = crypto.randomUUID();
             setPaymentBatchId(newBatchId);
             initialSessionBatchIdRef.current = newBatchId;
-            setDebugLogs([]); // reset logs for new session
-            
+
             paymentDebugLog('SESSION', 'BATCH_ID_CREATED', {
                 traceId: newBatchId,
                 reason: 'MODAL_OPEN'
             });
 
             const defaultWalletId = wallets?.length > 0 ? wallets.find(w => w.isDefault)?.id || wallets[0].id : '';
-            
+
             setForm(prev => {
                 const walletIdToUse = prev.walletId || defaultWalletId;
-                
+
                 paymentDebugLog('MODAL', 'OPEN', {
                     traceId: newBatchId,
                     selectedItemsLength: selectedItems?.length,
@@ -161,7 +59,7 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                     date: prev.date,
                     paymentBatchId: newBatchId
                 });
-                
+
                 return {
                     ...prev,
                     walletId: walletIdToUse
@@ -171,26 +69,8 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
             setPaymentBatchId(null);
             initialSessionBatchIdRef.current = null;
         }
-    }, [isOpen]); // ONLY DEPENDS ON isOpen
+    }, [isOpen]);
 
-    useEffect(() => {
-        const isDev = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) || process.env.NODE_ENV === 'development';
-        if (isDev && isOpen && paymentBatchId && initialSessionBatchIdRef.current && paymentBatchId !== initialSessionBatchIdRef.current) {
-            console.error(
-                '[YOOGI_PAYMENT][SESSION][FATAL]',
-                {
-                    previousTraceId: initialSessionBatchIdRef.current,
-                    currentTraceId: paymentBatchId,
-                    reason: 'TRACE_ID_CHANGED_DURING_ACTIVE_PAYMENT'
-                }
-            );
-            paymentDebugLog('SESSION', 'ERROR', {
-                reason: 'PAYMENT_BATCH_ID_CHANGED_DURING_SESSION',
-                previousTraceId: initialSessionBatchIdRef.current,
-                currentTraceId: paymentBatchId
-            });
-        }
-    }, [isOpen, paymentBatchId]);
     useEffect(() => {
         if (isOpen && paymentBatchId) {
             paymentDebugLog('MODAL', 'RENDER', {
@@ -203,55 +83,9 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                 buttonType: 'submit',
                 hasSelectedItems: !!selectedItems?.length
             });
-
-            setTimeout(() => {
-                if (submitButtonRef.current) {
-                    paymentDebugLog('MODAL', 'RENDER_BUTTON_REF_CHECK', {
-                        traceId: paymentBatchId,
-                        exists: !!submitButtonRef.current,
-                        disabled: submitButtonRef.current.disabled,
-                        type: submitButtonRef.current.type,
-                        className: submitButtonRef.current.className,
-                        dataYoogiPaymentSubmit: submitButtonRef.current.getAttribute('data-yoogi-payment-submit')
-                    });
-                }
-            }, 100);
         }
     }, [isOpen, form.walletId, paymentBatchId, isSubmitting, selectedItems?.length]);
 
-
-
-    const logButtonEvent = (e, eventType) => {
-        const disabled = submitButtonRef.current?.disabled;
-        
-        paymentDebugLog('BUTTON', eventType, {
-            traceId: paymentBatchId,
-            eventType,
-            disabled: disabled,
-            isSubmitting
-        });
-
-        if (eventType === 'POINTER_DOWN') {
-            const el = document.elementFromPoint(e.clientX, e.clientY);
-            paymentDebugLog('DOM', 'ELEMENT_FROM_POINT', {
-                traceId: paymentBatchId,
-                actualElement: el?.tagName,
-                actualClassName: typeof el?.className === 'string' ? el.className : '',
-                actualDataAttribute: el?.getAttribute?.('data-yoogi-payment-submit'),
-                buttonElement: submitButtonRef.current?.tagName,
-                buttonContains: submitButtonRef.current?.contains?.(el)
-            });
-        }
-        
-        if (disabled === true) {
-            paymentDebugLog('BUTTON', 'DISABLED', {
-                traceId: paymentBatchId,
-                isSubmitting
-            });
-        }
-    };
-
-    
     if (!isOpen || !selectedItems || selectedItems.length === 0) {
         if (isOpen) {
             paymentDebugLog('MODAL', 'EARLY_RETURN', {
@@ -264,14 +98,11 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     }
 
     const totalAmount = selectedItems.reduce((sum, wrapper) => sum + (wrapper.monthlyRemaining ?? wrapper.item.monthlyPayment), 0);
-    const lastErrorLog = debugLogs.length > 0 ? [...debugLogs].reverse().find(logItem => logItem.stage.includes('ERROR') || logItem.event.includes('ERROR') || logItem.event.includes('FAILED')) : null;
 
-    
     const handleSubmit = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
-        console.info('[YOOGI_PAYMENT][HANDLE_SUBMIT] ENTERED');
         const currentBatchId = initialSessionBatchIdRef.current || paymentBatchId;
-        
+
         paymentDebugLog('MODAL', 'HANDLE_SUBMIT_ENTERED', {
             traceId: currentBatchId
         });
@@ -281,7 +112,6 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
             paymentDebugLog('MODAL', 'CALLING_ON_CONFIRM', { traceId: currentBatchId });
             await onConfirm({ ...form, totalAmount, items: selectedItems, paymentBatchId: currentBatchId });
             paymentDebugLog('MODAL', 'ON_CONFIRM_SUCCESS', { traceId: currentBatchId });
-            // Let the parent controller close the modal to prevent premature shutdown on pending UI updates.
         } catch (error) {
             paymentDebugLog('MODAL', 'ERROR', {
                 traceId: currentBatchId,
@@ -297,8 +127,7 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
     const safeSubmit = async (e) => {
         try {
             if (e && e.preventDefault) e.preventDefault();
-            console.info('[YOOGI_PAYMENT][SAFE_SUBMIT] calling handleSubmit');
-            
+
             paymentDebugLog('MODAL', 'SUBMIT_START', {
                 traceId: initialSessionBatchIdRef.current || paymentBatchId,
                 isSubmittingBeforeSubmit: isSubmitting,
@@ -308,160 +137,16 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                 date: form.date,
                 paymentBatchId: initialSessionBatchIdRef.current || paymentBatchId
             });
-            
+
             if (isSubmittingRef.current) return;
-            
+
             // Synchronously block duplicate calls
             isSubmittingRef.current = true;
             setIsSubmitting(true);
 
-            console.info('[YOOGI_PAYMENT][AFTER_SET_SUBMITTING_TRUE]', {
-                traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                timestamp: Date.now(),
-                isOpen,
-                isSubmitting
-            });
-            paymentDebugLog('MODAL', 'AFTER_SET_SUBMITTING_TRUE', {
-                traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                timestamp: Date.now(),
-                isOpen,
-                isSubmitting
-            });
-
             try {
-                paymentDebugLog('MODAL', 'BEFORE_HANDLE_SUBMIT', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId
-                });
-                
-                console.info('[YOOGI_PAYMENT][DEBUG_TIMER_SETUP]', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    timestamp: Date.now(),
-                    isOpen,
-                    isSubmitting
-                });
-
-                paymentDebugLog('MODAL', 'DEBUG_TIMER_SETUP', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    timestamp: Date.now(),
-                    isOpen,
-                    isSubmitting
-                });
-
-                console.info('[YOOGI_PAYMENT][BEFORE_PROMISE_CREATION]', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    timestamp: Date.now()
-                });
-                paymentDebugLog('MODAL', 'BEFORE_PROMISE_CREATION', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    timestamp: Date.now()
-                });
-
-                await new Promise((resolve) => {
-                    console.info('[YOOGI_PAYMENT][PROMISE_EXECUTOR_ENTERED]', {
-                        traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                        timestamp: Date.now()
-                    });
-                    paymentDebugLog('MODAL', 'PROMISE_EXECUTOR_ENTERED', {
-                        traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                        timestamp: Date.now()
-                    });
-
-                    const timerTraceId = initialSessionBatchIdRef.current || paymentBatchId;
-                    const startedAt = Date.now();
-
-                    console.info('[YOOGI_PAYMENT][DEBUG_TIMER_CREATED]', {
-                        traceId: timerTraceId,
-                        startedAt,
-                        expectedFireAt: startedAt + 5000
-                    });
-
-                    const timerId = window.setTimeout(() => {
-                        const firedAt = Date.now();
-
-                        console.info('[YOOGI_PAYMENT][DEBUG_TIMER_CALLBACK_ENTERED]', {
-                            traceId: timerTraceId,
-                            firedAt,
-                            elapsedMs: firedAt - startedAt
-                        });
-
-                        try {
-                            paymentDebugLog('MODAL', 'DEBUG_TIMER_FIRED', {
-                                traceId: timerTraceId,
-                                firedAt,
-                                elapsedMs: firedAt - startedAt
-                            });
-
-                            console.info('[YOOGI_PAYMENT][DEBUG_TIMER_RESOLVING]', {
-                                traceId: timerTraceId,
-                                elapsedMs: firedAt - startedAt
-                            });
-
-                            resolve();
-
-                            console.info('[YOOGI_PAYMENT][DEBUG_TIMER_RESOLVED]', {
-                                traceId: timerTraceId
-                            });
-                        } catch (error) {
-                            console.error('[YOOGI_PAYMENT][DEBUG_TIMER_CALLBACK_ERROR]', error);
-                            paymentDebugLog('MODAL', 'DEBUG_TIMER_CALLBACK_ERROR', {
-                                traceId: timerTraceId,
-                                message: error?.message,
-                                stack: error?.stack,
-                                name: error?.name
-                            });
-                            resolve();
-                        }
-                    }, 5000);
-
-                    console.info('[YOOGI_PAYMENT][DEBUG_TIMER_ID_ASSIGNED]', {
-                        traceId: timerTraceId,
-                        timerId
-                    });
-                });
-
-                console.info('[YOOGI_PAYMENT][AFTER_PROMISE_AWAIT]', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    timestamp: Date.now()
-                });
-                paymentDebugLog('MODAL', 'AFTER_PROMISE_AWAIT', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    timestamp: Date.now()
-                });
-
-                console.info('[YOOGI_PAYMENT][DEBUG_DELAY_END]', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    timestamp: Date.now()
-                });
-
-                paymentDebugLog('MODAL', 'DEBUG_DELAY_END', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    timestamp: Date.now()
-                });
-
-                console.info('[YOOGI_PAYMENT][ABOUT_TO_CALL_HANDLE_SUBMIT]', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    isOpen,
-                    isSubmitting,
-                    handleSubmitType: typeof handleSubmit
-                });
-                paymentDebugLog('MODAL', 'ABOUT_TO_CALL_HANDLE_SUBMIT', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    isOpen,
-                    isSubmitting,
-                    handleSubmitType: typeof handleSubmit
-                });
-                
                 await handleSubmit(e);
             } finally {
-                console.info('[YOOGI_PAYMENT][SAFE_SUBMIT_FINALLY_ENTERED]', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    timestamp: Date.now()
-                });
-                paymentDebugLog('MODAL', 'SAFE_SUBMIT_FINALLY_ENTERED', {
-                    traceId: initialSessionBatchIdRef.current || paymentBatchId,
-                    timestamp: Date.now()
-                });
-
                 paymentDebugLog('MODAL', 'SUBMIT_FINALLY', { traceId: initialSessionBatchIdRef.current || paymentBatchId, isSubmittingAfter: false });
                 setIsSubmitting(false);
                 isSubmittingRef.current = false;
@@ -497,16 +182,7 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                     </p>
                 </div>
 
-                <form 
-                    onSubmit={(e) => {
-                        paymentDebugLog('FORM', 'SUBMIT', {
-                            traceId: paymentBatchId,
-                            defaultPrevented: e.defaultPrevented
-                        });
-                        return safeSubmit(e);
-                    }} 
-                    className="p-6 space-y-4"
-                >
+                <form onSubmit={safeSubmit} className="p-6 space-y-4">
                     <div className="relative">
                         <span className="absolute top-2 left-4 text-[10px] text-slate-400 font-medium">Dùng nguồn tiền từ ví</span>
                         <select
@@ -553,17 +229,8 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                             Hủy bỏ
                         </button>
                         <button
-                            ref={submitButtonRef}
                             type="submit"
-                            data-yoogi-payment-submit="true"
                             disabled={isSubmitting}
-                            onPointerDown={(e) => logButtonEvent(e, 'POINTER_DOWN')}
-                            onPointerUp={(e) => logButtonEvent(e, 'POINTER_UP')}
-                            onMouseDown={(e) => logButtonEvent(e, 'MOUSE_DOWN')}
-                            onMouseUp={(e) => logButtonEvent(e, 'MOUSE_UP')}
-                            onClick={(e) => {
-                                logButtonEvent(e, 'CLICK');
-                            }}
                             className={`flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 transition-colors flex justify-center items-center gap-2 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
                         >
                             {isSubmitting ? (
@@ -582,42 +249,6 @@ const PayInstallmentModal = ({ isOpen, onClose, wallets, selectedItems, onConfir
                         </button>
                     </div>
                 </form>
-                {debugLogs.length > 0 && (
-                    <div className="p-3 bg-slate-900 text-xs text-emerald-400 font-mono overflow-y-auto max-h-48 border-t border-slate-700">
-                        <div className="flex items-center justify-between border-b border-slate-700 mb-2 pb-1">
-                            <div className="font-bold text-white">DEBUG PAYMENT</div>
-                            <button
-                                type="button"
-                                onClick={handleCopyLogs}
-                                className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded transition-colors"
-                            >
-                                {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                                {copied ? 'Copied' : 'Copy'}
-                            </button>
-                        </div>
-                        <div className="mb-2 text-indigo-300">
-                            <span className="text-slate-400">Last event: </span>
-                            {debugLogs[debugLogs.length - 1]?.message}
-                        </div>
-                        <div className="mb-2">
-                            <span className="text-slate-400 block mb-1">Trace:</span>
-                            <div className="flex flex-wrap gap-1">
-                                {debugLogs.map((logItem, i) => (
-                                    <span key={i} className={logItem.stage.includes('ERROR') || logItem.event.includes('ERROR') ? 'text-red-400' : 'text-emerald-400'}>
-                                        {logItem.stage}_{logItem.event}
-                                        {i < debugLogs.length - 1 ? ' → ' : ''}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                        {lastErrorLog && (
-                            <div className="mt-2 text-red-400 border-t border-red-900/50 pt-2 break-all">
-                                <span className="font-bold block">Last error:</span>
-                                {lastErrorLog.data?.message || lastErrorLog.data?.name || JSON.stringify(lastErrorLog.data)}
-                            </div>
-                        )}
-                    </div>
-                )}
             </div>
         </div>,
         document.body
