@@ -343,6 +343,7 @@ const DashboardPage = ({ user, userSettings, transactions, categories, aiMemorie
             <BudgetProgressWidget
                 transactions={budgetTransactions}
                 categories={categories}
+                wallets={wallets}
                 budgetSettings={budgetSettings}
                 budgetPortfolios={budgetPortfolios}
                 dateRange={dateRange}

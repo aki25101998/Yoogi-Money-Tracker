@@ -2,10 +2,12 @@ import React, { useMemo, useState } from 'react';
 import { Target, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import PortfolioTransactionsModal from '../modals/PortfolioTransactionsModal';
+import BaseIncomeModal from '../modals/BaseIncomeModal';
 import { isExpenseTransaction, isIncomeTransaction } from '../../utils/transactionUtils';
 
-const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budgetPortfolios, dateRange, onEditTransaction, onDeleteTransaction }) => {
+const BudgetProgressWidget = ({ transactions, categories, wallets, budgetSettings, budgetPortfolios, dateRange, onEditTransaction, onDeleteTransaction }) => {
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+    const [isBaseIncomeModalOpen, setIsBaseIncomeModalOpen] = useState(false);
     const [isCrossBudgetEnabled, setIsCrossBudgetEnabled] = useState(() => {
         try {
             return localStorage.getItem('yoogi_cross_budget_enabled') === 'true';
@@ -25,9 +27,10 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
     };
 
     // 1. Calculate base income and map expenses
-    const { totalIncome, categoryExpenses } = useMemo(() => {
+    const { totalIncome, categoryExpenses, baseIncomeTransactions } = useMemo(() => {
         let income = 0;
         const expenses = {};
+        const baseTxns = [];
 
         const validIncomeIds = budgetSettings?.incomeCategoryIds || [];
         const validWalletIds = budgetSettings?.walletIds || [];
@@ -36,8 +39,14 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
         transactions.forEach(t => {
             if (applyWalletFilter && !validWalletIds.includes(t.walletId)) return;
 
-            if (isIncomeTransaction(t) && validIncomeIds.includes(t.categoryId)) {
+            const isIncomeMatch = isIncomeTransaction(t) && (
+                validIncomeIds.includes(t.categoryId) || 
+                (t.subcategoryId && validIncomeIds.includes(t.subcategoryId))
+            );
+
+            if (isIncomeMatch) {
                 income += Number(t.amount) || 0;
+                baseTxns.push(t);
             } else if (isExpenseTransaction(t)) {
                 const amount = Number(t.amount) || 0;
                 const idToTrack = t.subcategoryId || t.categoryId;
@@ -47,7 +56,9 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
             }
         });
 
-        return { totalIncome: income, categoryExpenses: expenses };
+        baseTxns.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+        return { totalIncome: income, categoryExpenses: expenses, baseIncomeTransactions: baseTxns };
     }, [transactions, budgetSettings]);
 
     // 2. Filter active portfolios
@@ -125,8 +136,21 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                         Bù trừ chéo
                     </label>
                 </div>
-                <div className="text-sm text-slate-500 pl-7">
-                    Thu nhập cơ sở: <span className="font-bold text-emerald-600">{formatCurrency(totalIncome)}</span>
+                <div className="pl-7">
+                    <button
+                        type="button"
+                        onClick={() => setIsBaseIncomeModalOpen(true)}
+                        className="group inline-flex items-center gap-1.5 px-2.5 py-1 -ml-2.5 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-transparent hover:border-emerald-200/60 dark:hover:border-emerald-800/60 transition-all cursor-pointer text-left"
+                        title="Bấm để xem thống kê các nguồn thu nhập cơ sở"
+                    >
+                        <span className="pointer-events-none">Thu nhập cơ sở:</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 underline decoration-dashed underline-offset-4 group-hover:decoration-solid pointer-events-none">
+                            {formatCurrency(totalIncome)}
+                        </span>
+                        <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-1.5 py-0.5 rounded-md ml-0.5 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/60 transition-colors pointer-events-none">
+                            Chi tiết
+                        </span>
+                    </button>
                 </div>
             </div>
 
@@ -221,6 +245,17 @@ const BudgetProgressWidget = ({ transactions, categories, budgetSettings, budget
                 portfolio={selectedPortfolio}
                 transactions={transactions.filter(t => isExpenseTransaction(t) && selectedPortfolio?.expenseCategoryIds?.includes(t.subcategoryId || t.categoryId))}
                 categories={categories}
+                onEditTransaction={onEditTransaction}
+                onDeleteTransaction={onDeleteTransaction}
+            />
+
+            <BaseIncomeModal
+                isOpen={isBaseIncomeModalOpen}
+                onClose={() => setIsBaseIncomeModalOpen(false)}
+                totalIncome={totalIncome}
+                transactions={baseIncomeTransactions}
+                categories={categories}
+                wallets={wallets}
                 onEditTransaction={onEditTransaction}
                 onDeleteTransaction={onDeleteTransaction}
             />
