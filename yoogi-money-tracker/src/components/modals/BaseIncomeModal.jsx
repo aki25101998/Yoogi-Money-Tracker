@@ -145,7 +145,7 @@ const BaseIncomeModal = ({
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-4 pb-6 space-y-4">
                     {/* 1. Các thanh progress bar thống kê theo nguồn thu ở trên cùng */}
                     {categoryBreakdown.length > 0 && (
                         <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-4 border border-slate-200/70 dark:border-slate-700/60 space-y-3.5">
@@ -224,13 +224,10 @@ const BaseIncomeModal = ({
 
                     {/* 2. Danh sách các khoản thu gọn gàng (không chứa thông tin ví và danh mục) */}
                     <div className="space-y-2">
-                        <div className="flex items-center justify-between px-1">
+                        <div className="px-1">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                 Danh sách giao dịch ({transactions.length})
                             </h3>
-                            <span className="text-[11px] text-slate-400 italic">
-                                Nhấp vào giao dịch để sửa
-                            </span>
                         </div>
 
                         {transactions.length === 0 ? (
@@ -301,18 +298,6 @@ const BaseIncomeModal = ({
                             </div>
                         )}
                     </div>
-                </div>
-
-                {/* Footer Notice */}
-                <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                    <span>💡 Nguồn thu nhập cơ sở dùng để tính hạn mức ngân quỹ.</span>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
-                    >
-                        Đóng
-                    </button>
                 </div>
             </div>
         </div>,
