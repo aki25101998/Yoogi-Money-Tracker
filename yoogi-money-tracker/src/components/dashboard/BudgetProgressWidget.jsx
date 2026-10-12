@@ -147,9 +147,6 @@ const BudgetProgressWidget = ({ transactions, categories, wallets, budgetSetting
                         <span className="font-bold text-emerald-600 dark:text-emerald-400 underline decoration-dashed underline-offset-4 group-hover:decoration-solid pointer-events-none">
                             {formatCurrency(totalIncome)}
                         </span>
-                        <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-1.5 py-0.5 rounded-md ml-0.5 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/60 transition-colors pointer-events-none">
-                            Chi tiết
-                        </span>
                     </button>
                 </div>
             </div>
