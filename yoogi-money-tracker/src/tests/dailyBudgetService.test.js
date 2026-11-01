@@ -1,11 +1,34 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
     fetchDailyBudgetSettings,
     saveDailyBudgetSettings,
-    subscribeDailyBudgetSettings
+    subscribeDailyBudgetSettings,
+    getDefaultDailyBudgetSettings
 } from '../services/dailyBudgetService';
 
 describe('dailyBudgetService', () => {
+    afterEach(() => {
+        delete globalThis.window;
+        delete globalThis.CustomEvent;
+        vi.restoreAllMocks();
+    });
+
+    describe('getDefaultDailyBudgetSettings', () => {
+        it('returns independent default objects on each invocation', () => {
+            const first = getDefaultDailyBudgetSettings();
+            first.category_ids.push('mutated');
+            first.wallet_ids.push('mutated_wallet');
+            first.daily_limit = 999999;
+            first.enabled = false;
+
+            const second = getDefaultDailyBudgetSettings();
+            expect(second.daily_limit).toBe(150000);
+            expect(second.enabled).toBe(true);
+            expect(second.category_ids).toEqual([]);
+            expect(second.wallet_ids).toEqual([]);
+        });
+    });
+
     describe('fetchDailyBudgetSettings', () => {
         it('returns default fallback settings if no record found', async () => {
             const mockSupabase = {
@@ -29,21 +52,35 @@ describe('dailyBudgetService', () => {
             expect(settings.daily_limit).toBe(150000);
             expect(settings.enabled).toBe(true);
             expect(settings.category_ids).toEqual([]);
+            expect(settings.wallet_ids).toEqual([]);
         });
 
-        it('returns parsed settings if record exists', async () => {
+        it('ensures returned default settings are immutable across calls', async () => {
+            const first = await fetchDailyBudgetSettings(null);
+            first.category_ids.push('cat-polluted');
+            first.wallet_ids.push('wal-polluted');
+            first.daily_limit = 999999;
+
+            const second = await fetchDailyBudgetSettings(null);
+            expect(second.category_ids).toEqual([]);
+            expect(second.wallet_ids).toEqual([]);
+            expect(second.daily_limit).toBe(150000);
+        });
+
+        it('returns parsed settings if record exists with defensive clones', async () => {
+            const record = {
+                user_id: 'user-123',
+                daily_limit: '300000',
+                enabled: false,
+                category_ids: ['cat-a'],
+                wallet_ids: ['wal-b']
+            };
             const mockSupabase = {
                 from: () => ({
                     select: () => ({
                         eq: () => ({
                             maybeSingle: () => Promise.resolve({
-                                data: {
-                                    user_id: 'user-123',
-                                    daily_limit: '300000',
-                                    enabled: false,
-                                    category_ids: ['cat-a'],
-                                    wallet_ids: ['wal-b']
-                                },
+                                data: record,
                                 error: null
                             })
                         })
@@ -55,6 +92,30 @@ describe('dailyBudgetService', () => {
             expect(settings.enabled).toBe(false);
             expect(settings.category_ids).toEqual(['cat-a']);
             expect(settings.wallet_ids).toEqual(['wal-b']);
+
+            // Verify defensive clone
+            settings.category_ids.push('cat-polluted');
+            expect(record.category_ids).toEqual(['cat-a']);
+        });
+
+        it('falls back to 150000 if daily_limit is negative or 0', async () => {
+            const mockSupabase = {
+                from: () => ({
+                    select: () => ({
+                        eq: () => ({
+                            maybeSingle: () => Promise.resolve({
+                                data: {
+                                    daily_limit: 0,
+                                    enabled: true
+                                },
+                                error: null
+                            })
+                        })
+                    })
+                })
+            };
+            const settings = await fetchDailyBudgetSettings('user-123', mockSupabase);
+            expect(settings.daily_limit).toBe(150000);
         });
 
         it('returns default fallback settings on query error', async () => {
@@ -104,6 +165,55 @@ describe('dailyBudgetService', () => {
             expect(upsertedData.updated_at).toBeDefined();
         });
 
+        it('handles missing or null settings safely with defaults', async () => {
+            let upsertedData = null;
+            const mockSupabase = {
+                from: () => ({
+                    upsert: (payload) => {
+                        upsertedData = payload;
+                        return Promise.resolve({ error: null });
+                    }
+                })
+            };
+
+            await saveDailyBudgetSettings('user-123', null, mockSupabase);
+            expect(upsertedData.daily_limit).toBe(150000);
+            expect(upsertedData.enabled).toBe(true);
+            expect(upsertedData.category_ids).toEqual([]);
+            expect(upsertedData.wallet_ids).toEqual([]);
+
+            await saveDailyBudgetSettings('user-123', undefined, mockSupabase);
+            expect(upsertedData.daily_limit).toBe(150000);
+            expect(upsertedData.enabled).toBe(true);
+            expect(upsertedData.category_ids).toEqual([]);
+            expect(upsertedData.wallet_ids).toEqual([]);
+        });
+
+        it('falls back to 150000 if daily_limit is negative or 0', async () => {
+            let upsertedData = null;
+            const mockSupabase = {
+                from: () => ({
+                    upsert: (payload) => {
+                        upsertedData = payload;
+                        return Promise.resolve({ error: null });
+                    }
+                })
+            };
+            await saveDailyBudgetSettings('user-123', { daily_limit: -50000 }, mockSupabase);
+            expect(upsertedData.daily_limit).toBe(150000);
+        });
+
+        it('throws error when Supabase upsert fails', async () => {
+            const dbError = new Error('Database upsert failed');
+            const mockSupabase = {
+                from: () => ({
+                    upsert: () => Promise.resolve({ error: dbError })
+                })
+            };
+            await expect(saveDailyBudgetSettings('user-123', { daily_limit: 200000 }, mockSupabase))
+                .rejects.toThrow('Database upsert failed');
+        });
+
         it('dispatches supabase_mutate event if window is defined', async () => {
             const mockDispatch = vi.fn();
             globalThis.window = { dispatchEvent: mockDispatch };
@@ -128,9 +238,6 @@ describe('dailyBudgetService', () => {
                     detail: 'daily_budget_settings'
                 })
             );
-
-            delete globalThis.window;
-            delete globalThis.CustomEvent;
         });
     });
 

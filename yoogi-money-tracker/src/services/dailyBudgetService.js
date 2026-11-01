@@ -1,14 +1,14 @@
 import { supabase } from '../config/supabase';
 
-const DEFAULT_SETTINGS = {
+export const getDefaultDailyBudgetSettings = () => ({
     enabled: true,
     daily_limit: 150000,
     category_ids: [],
     wallet_ids: []
-};
+});
 
 export const fetchDailyBudgetSettings = async (userId, client = supabase) => {
-    if (!userId) return DEFAULT_SETTINGS;
+    if (!userId) return getDefaultDailyBudgetSettings();
     try {
         const { data, error } = await client
             .from('daily_budget_settings')
@@ -18,31 +18,34 @@ export const fetchDailyBudgetSettings = async (userId, client = supabase) => {
 
         if (error) {
             console.error('Lỗi tải daily_budget_settings:', error);
-            return DEFAULT_SETTINGS;
+            return getDefaultDailyBudgetSettings();
         }
 
-        if (!data) return DEFAULT_SETTINGS;
+        if (!data) return getDefaultDailyBudgetSettings();
 
+        const parsedLimit = Number(data.daily_limit);
         return {
             enabled: data.enabled ?? true,
-            daily_limit: Number(data.daily_limit) || 150000,
-            category_ids: Array.isArray(data.category_ids) ? data.category_ids : [],
-            wallet_ids: Array.isArray(data.wallet_ids) ? data.wallet_ids : []
+            daily_limit: parsedLimit > 0 ? parsedLimit : 150000,
+            category_ids: Array.isArray(data.category_ids) ? [...data.category_ids] : [],
+            wallet_ids: Array.isArray(data.wallet_ids) ? [...data.wallet_ids] : []
         };
     } catch (err) {
         console.error('Lỗi fetchDailyBudgetSettings:', err);
-        return DEFAULT_SETTINGS;
+        return getDefaultDailyBudgetSettings();
     }
 };
 
-export const saveDailyBudgetSettings = async (userId, settings, client = supabase) => {
+export const saveDailyBudgetSettings = async (userId, settings = {}, client = supabase) => {
     if (!userId) throw new Error('Yêu cầu userId để lưu cấu hình');
+    const safe = settings || {};
+    const parsedLimit = Number(safe.daily_limit);
     const payload = {
         user_id: userId,
-        enabled: settings.enabled ?? true,
-        daily_limit: Number(settings.daily_limit) || 150000,
-        category_ids: Array.isArray(settings.category_ids) ? settings.category_ids : [],
-        wallet_ids: Array.isArray(settings.wallet_ids) ? settings.wallet_ids : [],
+        enabled: safe.enabled ?? true,
+        daily_limit: parsedLimit > 0 ? parsedLimit : 150000,
+        category_ids: Array.isArray(safe.category_ids) ? [...safe.category_ids] : [],
+        wallet_ids: Array.isArray(safe.wallet_ids) ? [...safe.wallet_ids] : [],
         updated_at: new Date().toISOString()
     };
 
@@ -74,11 +77,12 @@ export const subscribeDailyBudgetSettings = (userId, onUpdate, client = supabase
             },
             (payload) => {
                 if (payload.new) {
+                    const parsedLimit = Number(payload.new.daily_limit);
                     onUpdate({
                         enabled: payload.new.enabled ?? true,
-                        daily_limit: Number(payload.new.daily_limit) || 150000,
-                        category_ids: Array.isArray(payload.new.category_ids) ? payload.new.category_ids : [],
-                        wallet_ids: Array.isArray(payload.new.wallet_ids) ? payload.new.wallet_ids : []
+                        daily_limit: parsedLimit > 0 ? parsedLimit : 150000,
+                        category_ids: Array.isArray(payload.new.category_ids) ? [...payload.new.category_ids] : [],
+                        wallet_ids: Array.isArray(payload.new.wallet_ids) ? [...payload.new.wallet_ids] : []
                     });
                 }
             }
