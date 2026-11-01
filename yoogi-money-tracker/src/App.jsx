@@ -34,7 +34,7 @@ export default function App() {
         installments, transactions, categories, aiMemories, abbreviations,
         wallets, payers, debtors, debts, recurringTransactions, lenders,
         budgetSettings, budgetPortfolios, userSettings, isDataLoading,
-        dailyBudgetSettings
+        dailyBudgetSettings, setDailyBudgetSettings
     } = useAppData(user);
 
     useRecurringTransactions(user, recurringTransactions);
@@ -190,8 +190,13 @@ export default function App() {
                     wallets={wallets}
                     dailyBudgetSettings={dailyBudgetSettings}
                     onSaveSettings={async (newSettings) => {
+                        setDailyBudgetSettings(newSettings);
                         if (user) {
-                            await saveDailyBudgetSettings(user.uid, newSettings);
+                            try {
+                                await saveDailyBudgetSettings(user.uid, newSettings);
+                            } catch (err) {
+                                console.warn('Lỗi khi lưu Supabase daily_budget_settings (đã lưu offline vào máy):', err);
+                            }
                         }
                     }}
                     onOpenAddTransaction={(initialData) => {

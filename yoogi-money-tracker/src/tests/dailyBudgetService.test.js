@@ -118,6 +118,39 @@ describe('dailyBudgetService', () => {
             expect(settings.daily_limit).toBe(150000);
         });
 
+        it('returns cached settings from localStorage when Supabase query errors', async () => {
+            const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+            const mockStorage = {
+                'yoogi_daily_budget_user-123': JSON.stringify({
+                    daily_limit: 250000,
+                    enabled: true,
+                    category_ids: ['cat-cached'],
+                    wallet_ids: []
+                })
+            };
+            globalThis.window = {
+                localStorage: {
+                    getItem: vi.fn((k) => mockStorage[k] || null),
+                    setItem: vi.fn()
+                }
+            };
+
+            const mockSupabase = {
+                from: () => ({
+                    select: () => ({
+                        eq: () => ({
+                            maybeSingle: () => Promise.resolve({ data: null, error: new Error('Table missing') })
+                        })
+                    })
+                })
+            };
+
+            const settings = await fetchDailyBudgetSettings('user-123', mockSupabase);
+            expect(settings.daily_limit).toBe(250000);
+            expect(settings.category_ids).toEqual(['cat-cached']);
+            consoleSpy.mockRestore();
+        });
+
         it('returns default fallback settings on query error', async () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             const mockSupabase = {
@@ -212,6 +245,34 @@ describe('dailyBudgetService', () => {
             };
             await expect(saveDailyBudgetSettings('user-123', { daily_limit: 200000 }, mockSupabase))
                 .rejects.toThrow('Database upsert failed');
+        });
+
+        it('passes onConflict user_id option and caches to localStorage', async () => {
+            let capturedOptions = null;
+            const mockStorage = {};
+            globalThis.window = {
+                localStorage: {
+                    setItem: vi.fn((k, v) => { mockStorage[k] = v; }),
+                    getItem: vi.fn((k) => mockStorage[k] || null)
+                }
+            };
+
+            const mockSupabase = {
+                from: () => ({
+                    upsert: (payload, options) => {
+                        capturedOptions = options;
+                        return Promise.resolve({ error: null });
+                    }
+                })
+            };
+
+            await saveDailyBudgetSettings('user-123', { daily_limit: 180000, category_ids: ['cat-x'] }, mockSupabase);
+
+            expect(capturedOptions).toEqual({ onConflict: 'user_id' });
+            expect(mockStorage['yoogi_daily_budget_user-123']).toBeDefined();
+            const stored = JSON.parse(mockStorage['yoogi_daily_budget_user-123']);
+            expect(stored.daily_limit).toBe(180000);
+            expect(stored.category_ids).toEqual(['cat-x']);
         });
 
         it('dispatches supabase_mutate event if window is defined', async () => {

@@ -19,3 +19,14 @@ create policy "Users can manage their own daily budget settings"
     for all
     using (auth.uid() = user_id)
     with check (auth.uid() = user_id);
+
+-- Enable Supabase Realtime broadcast for daily_budget_settings
+do $$
+begin
+    if not exists (
+        select 1 from pg_publication_tables 
+        where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'daily_budget_settings'
+    ) then
+        alter publication supabase_realtime add table public.daily_budget_settings;
+    end if;
+end $$;
