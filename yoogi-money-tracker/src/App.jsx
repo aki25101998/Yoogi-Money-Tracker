@@ -204,7 +204,11 @@ export default function App() {
                     }}
                     onDeleteTransaction={async (txn) => {
                         if (window.confirm('Bạn có chắc muốn xóa giao dịch này?')) {
-                            await deleteTransaction(user.uid, txn.id, txn);
+                            try {
+                                await deleteTransaction(user.uid, txn.id, txn);
+                            } catch (err) {
+                                alert('Lỗi khi xóa giao dịch: ' + err.message);
+                            }
                         }
                     }}
                 />
@@ -307,7 +311,7 @@ export default function App() {
                                     className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors"
                                 >
                                     <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Chuyển tiền</span>
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:blue-900/30 flex items-center justify-center">
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                                         <ArrowRightLeft className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                     </div>
                                 </button>
@@ -347,6 +351,16 @@ export default function App() {
                             setGlobalTransactionInitialData(null);
                         }}
                         onSave={handleGlobalSaveTransaction}
+                        onDelete={async (id) => {
+                            if (!user) return;
+                            try {
+                                await deleteTransaction(user.uid, id, globalTransactionInitialData);
+                                setIsGlobalTransactionOpen(false);
+                                setGlobalTransactionInitialData(null);
+                            } catch (err) {
+                                alert('Lỗi khi xóa giao dịch: ' + err.message);
+                            }
+                        }}
                         categories={categories}
                         wallets={wallets}
                         initialData={globalTransactionInitialData}

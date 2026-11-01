@@ -52,6 +52,7 @@ export const useAppData = (user) => {
         }
 
         setIsDataLoading(true);
+        let isMounted = true;
 
         seedDefaultCategories(user.uid).then((seeded) => {
             if (!seeded) {
@@ -97,12 +98,15 @@ export const useAppData = (user) => {
         const unsubBudgetSettings = subscribeBudgetSettings(user.uid, setBudgetSettings);
         const unsubBudgetPortfolios = subscribeBudgetPortfolios(user.uid, setBudgetPortfolios);
 
-        fetchDailyBudgetSettings(user.uid).then(settings => setDailyBudgetSettings(settings));
+        fetchDailyBudgetSettings(user.uid).then(settings => {
+            if (isMounted) setDailyBudgetSettings(settings);
+        });
         const unsubscribeDailyBudget = subscribeDailyBudgetSettings(user.uid, (newSettings) => {
-            setDailyBudgetSettings(newSettings);
+            if (isMounted) setDailyBudgetSettings(newSettings);
         });
 
         return () => {
+            isMounted = false;
             unsubInst();
             unsubCats();
             unsubTxns();
