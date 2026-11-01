@@ -5,6 +5,12 @@ import {
     subscribeRecurringTransactions, subscribeLenders, subscribeUserSettings, subscribeInstallments,
     subscribeAbbreviations, saveVersion, cleanupOldAutoVersions, subscribeBudgetSettings, subscribeBudgetPortfolios
 } from '../utils/supabaseHelpers';
+import {
+    fetchDailyBudgetSettings,
+    saveDailyBudgetSettings,
+    subscribeDailyBudgetSettings,
+    getDefaultDailyBudgetSettings
+} from '../services/dailyBudgetService';
 
 export const useAppData = (user) => {
     const [installments, setInstallments] = useState([]);
@@ -22,6 +28,7 @@ export const useAppData = (user) => {
     const [budgetPortfolios, setBudgetPortfolios] = useState([]);
     const [userSettings, setUserSettings] = useState({ monthStartDay: 1 });
     const [isDataLoading, setIsDataLoading] = useState(true);
+    const [dailyBudgetSettings, setDailyBudgetSettings] = useState(getDefaultDailyBudgetSettings());
 
     useEffect(() => {
         if (!user) {
@@ -39,6 +46,7 @@ export const useAppData = (user) => {
             setBudgetSettings({ incomeCategoryIds: [] });
             setBudgetPortfolios([]);
             setUserSettings({ monthStartDay: 1 });
+            setDailyBudgetSettings(getDefaultDailyBudgetSettings());
             setIsDataLoading(false);
             return;
         }
@@ -89,6 +97,11 @@ export const useAppData = (user) => {
         const unsubBudgetSettings = subscribeBudgetSettings(user.uid, setBudgetSettings);
         const unsubBudgetPortfolios = subscribeBudgetPortfolios(user.uid, setBudgetPortfolios);
 
+        fetchDailyBudgetSettings(user.uid).then(settings => setDailyBudgetSettings(settings));
+        const unsubscribeDailyBudget = subscribeDailyBudgetSettings(user.uid, (newSettings) => {
+            setDailyBudgetSettings(newSettings);
+        });
+
         return () => {
             unsubInst();
             unsubCats();
@@ -104,6 +117,7 @@ export const useAppData = (user) => {
             unsubAbbreviations();
             unsubBudgetSettings();
             unsubBudgetPortfolios();
+            unsubscribeDailyBudget();
         };
     }, [user?.uid]);
 
@@ -150,6 +164,7 @@ export const useAppData = (user) => {
         lenders,
         budgetSettings,
         budgetPortfolios,
-        userSettings, isDataLoading
+        userSettings, isDataLoading,
+        dailyBudgetSettings, setDailyBudgetSettings
     };
 };

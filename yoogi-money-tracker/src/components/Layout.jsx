@@ -11,13 +11,15 @@ import {
     ChevronLeft,
     ChevronRight,
     Users,
-    Clock
+    Clock,
+    CalendarCheck
 } from 'lucide-react';
 
 import VersionHistorySidebar from './VersionHistorySidebar';
 
 const NAV_ITEMS = [
     { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
+    { id: 'daily-discipline', label: 'Kỷ luật', icon: CalendarCheck },
     { id: 'transactions', label: 'Giao dịch', icon: ArrowRightLeft },
     { id: 'installments', label: 'Trả góp', icon: CreditCard },
     { id: 'debts', label: 'Sổ nợ', icon: Users },

@@ -1,15 +1,17 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Loader2, LogIn, Sparkles, Plus, PenSquare, ArrowRightLeft, Repeat } from 'lucide-react';
-import { addTransaction } from './utils/supabaseHelpers';
+import { addTransaction, updateTransaction, deleteTransaction } from './utils/supabaseHelpers';
 import { useAuth } from './hooks/useAuth';
 import { useAppData } from './hooks/useAppData';
 import { useRecurringTransactions } from './hooks/useRecurringTransactions';
+import { saveDailyBudgetSettings } from './services/dailyBudgetService';
 
 // Layout
 import Layout from './components/Layout';
 
 // Pages (Lazy Loaded)
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const DailyDisciplinePage = lazy(() => import('./pages/DailyDisciplinePage'));
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage'));
 const InstallmentsPage = lazy(() => import('./pages/InstallmentsPage'));
 const DebtsPage = lazy(() => import('./pages/DebtsPage'));
@@ -31,7 +33,8 @@ export default function App() {
     const { 
         installments, transactions, categories, aiMemories, abbreviations,
         wallets, payers, debtors, debts, recurringTransactions, lenders,
-        budgetSettings, budgetPortfolios, userSettings, isDataLoading 
+        budgetSettings, budgetPortfolios, userSettings, isDataLoading,
+        dailyBudgetSettings
     } = useAppData(user);
 
     useRecurringTransactions(user, recurringTransactions);
@@ -41,6 +44,7 @@ export default function App() {
     const [isGlobalAIChatOpen, setIsGlobalAIChatOpen] = useState(false);
     const [isGlobalContextWalletOpen, setIsGlobalContextWalletOpen] = useState(false);
     const [isGlobalTransactionOpen, setIsGlobalTransactionOpen] = useState(false);
+    const [globalTransactionInitialData, setGlobalTransactionInitialData] = useState(null);
     const [isGlobalTransferOpen, setIsGlobalTransferOpen] = useState(false);
     const [isGlobalRecurringOpen, setIsGlobalRecurringOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -78,8 +82,13 @@ export default function App() {
     const handleGlobalSaveTransaction = async (formData) => {
         if (!user) return;
         try {
-            await addTransaction(user.uid, { ...formData, aiCategorized: false });
+            if (globalTransactionInitialData?.id) {
+                await updateTransaction(user.uid, globalTransactionInitialData.id, formData);
+            } else {
+                await addTransaction(user.uid, { ...formData, aiCategorized: false });
+            }
             setIsGlobalTransactionOpen(false);
+            setGlobalTransactionInitialData(null);
         } catch (err) {
             alert('Lỗi: ' + err.message);
         }
@@ -172,6 +181,34 @@ export default function App() {
                     onNavigate={setActivePage}
                 />
             );
+        } else if (activePage === 'daily-discipline') {
+            PageComponent = (
+                <DailyDisciplinePage
+                    user={user}
+                    transactions={transactions}
+                    categories={categories}
+                    wallets={wallets}
+                    dailyBudgetSettings={dailyBudgetSettings}
+                    onSaveSettings={async (newSettings) => {
+                        if (user) {
+                            await saveDailyBudgetSettings(user.uid, newSettings);
+                        }
+                    }}
+                    onOpenAddTransaction={(initialData) => {
+                        setGlobalTransactionInitialData(initialData);
+                        setIsGlobalTransactionOpen(true);
+                    }}
+                    onEditTransaction={(txn) => {
+                        setGlobalTransactionInitialData(txn);
+                        setIsGlobalTransactionOpen(true);
+                    }}
+                    onDeleteTransaction={async (txn) => {
+                        if (window.confirm('Bạn có chắc muốn xóa giao dịch này?')) {
+                            await deleteTransaction(user.uid, txn.id, txn);
+                        }
+                    }}
+                />
+            );
         } else if (activePage === 'transactions') {
             PageComponent = (
                 <TransactionsPage
@@ -239,15 +276,15 @@ export default function App() {
     };
 
     return (
-            <Layout
-                activePage={activePage}
-                onNavigate={setActivePage}
-                user={user}
-                onLogout={handleLogout}
-                theme={theme}
-                onToggleTheme={toggleTheme}
-                onOpenHistory={() => setIsHistoryOpen(true)}
-            >
+        <Layout
+            activePage={activePage}
+            onNavigate={setActivePage}
+            user={user}
+            onLogout={handleLogout}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            onOpenHistory={() => setIsHistoryOpen(true)}
+        >
             {renderPage()}
 
             {/* Global FAB Menu */}
@@ -270,12 +307,12 @@ export default function App() {
                                     className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors"
                                 >
                                     <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Chuyển tiền</span>
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:blue-900/30 flex items-center justify-center">
                                         <ArrowRightLeft className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                     </div>
                                 </button>
                                 <button 
-                                    onClick={() => { setIsGlobalFabOpen(false); setIsGlobalTransactionOpen(true); }}
+                                    onClick={() => { setIsGlobalFabOpen(false); setGlobalTransactionInitialData(null); setIsGlobalTransactionOpen(true); }}
                                     className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors"
                                 >
                                     <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Nhập thủ công</span>
@@ -305,10 +342,14 @@ export default function App() {
 
                     <TransactionModal
                         isOpen={isGlobalTransactionOpen}
-                        onClose={() => setIsGlobalTransactionOpen(false)}
+                        onClose={() => {
+                            setIsGlobalTransactionOpen(false);
+                            setGlobalTransactionInitialData(null);
+                        }}
                         onSave={handleGlobalSaveTransaction}
                         categories={categories}
                         wallets={wallets}
+                        initialData={globalTransactionInitialData}
                     />
 
                     <TransferFundsModal
