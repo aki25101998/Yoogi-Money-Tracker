@@ -43,3 +43,4 @@ build_no_space.bat
 **/sync_*.cjs
 
 build-tools/
+.superpowers/
