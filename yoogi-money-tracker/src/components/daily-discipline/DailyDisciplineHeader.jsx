@@ -9,6 +9,26 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
+export const computePrevMonth = (yearNum, monthNum) => {
+    let prevYear = yearNum;
+    let prevMonth = monthNum - 1;
+    if (prevMonth < 1) {
+        prevMonth = 12;
+        prevYear -= 1;
+    }
+    return `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+};
+
+export const computeNextMonth = (yearNum, monthNum) => {
+    let nextYear = yearNum;
+    let nextMonth = monthNum + 1;
+    if (nextMonth > 12) {
+        nextMonth = 1;
+        nextYear += 1;
+    }
+    return `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+};
+
 const DailyDisciplineHeader = ({
     selectedMonth,
     onSelectMonth,
@@ -36,25 +56,11 @@ const DailyDisciplineHeader = ({
     const isCurrentMonth = monthToUse === currentMonthStr;
 
     const handlePrevMonth = () => {
-        let prevYear = yearNum;
-        let prevMonth = monthNum - 1;
-        if (prevMonth < 1) {
-            prevMonth = 12;
-            prevYear -= 1;
-        }
-        const newMonthStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
-        onSelectMonth?.(newMonthStr);
+        onSelectMonth?.(computePrevMonth(yearNum, monthNum));
     };
 
     const handleNextMonth = () => {
-        let nextYear = yearNum;
-        let nextMonth = monthNum + 1;
-        if (nextMonth > 12) {
-            nextMonth = 1;
-            nextYear += 1;
-        }
-        const newMonthStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
-        onSelectMonth?.(nextMonthStr);
+        onSelectMonth?.(computeNextMonth(yearNum, monthNum));
     };
 
     const handleJumpToCurrent = () => {

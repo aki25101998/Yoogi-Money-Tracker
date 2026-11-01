@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
-import DailyDisciplineHeader from '../components/daily-discipline/DailyDisciplineHeader';
+import DailyDisciplineHeader, {
+    computePrevMonth,
+    computeNextMonth
+} from '../components/daily-discipline/DailyDisciplineHeader';
 import MonthlySummaryCard from '../components/daily-discipline/MonthlySummaryCard';
 import DayCellItem, { formatCompactAmount } from '../components/daily-discipline/DayCellItem';
 import DisciplineCalendarGrid from '../components/daily-discipline/DisciplineCalendarGrid';
@@ -35,6 +38,16 @@ describe('DailyDisciplineHeader component', () => {
 
         expect(html).toContain('Hôm nay');
         expect(html).toContain('Tháng 01/2025');
+    });
+
+    it('computes next and prev month strings correctly', () => {
+        expect(computePrevMonth(2026, 11)).toBe('2026-10');
+        expect(computeNextMonth(2026, 11)).toBe('2026-12');
+    });
+
+    it('wraps year when computing next month on December or prev month on January', () => {
+        expect(computeNextMonth(2026, 12)).toBe('2027-01');
+        expect(computePrevMonth(2026, 1)).toBe('2025-12');
     });
 });
 
