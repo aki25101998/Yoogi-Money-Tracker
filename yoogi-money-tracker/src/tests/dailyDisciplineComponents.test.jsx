@@ -3,6 +3,8 @@ import React from 'react';
 import { renderToString } from 'react-dom/server';
 import DailyDisciplineHeader from '../components/daily-discipline/DailyDisciplineHeader';
 import MonthlySummaryCard from '../components/daily-discipline/MonthlySummaryCard';
+import DayCellItem, { formatCompactAmount } from '../components/daily-discipline/DayCellItem';
+import DisciplineCalendarGrid from '../components/daily-discipline/DisciplineCalendarGrid';
 
 describe('DailyDisciplineHeader component', () => {
     it('renders with default props and shows title and limit', () => {
@@ -166,3 +168,183 @@ describe('MonthlySummaryCard component', () => {
         expect(html).toContain('Tháng này đã kết thúc.');
     });
 });
+
+describe('DayCellItem component', () => {
+    it('formats compact amounts correctly', () => {
+        expect(formatCompactAmount(0)).toBe('0k');
+        expect(formatCompactAmount(120000)).toBe('120k');
+        expect(formatCompactAmount(50000)).toBe('50k');
+        expect(formatCompactAmount(1000000)).toBe('1M');
+        expect(formatCompactAmount(1200000)).toBe('1.2M');
+        expect(formatCompactAmount(1250000)).toBe('1.25M');
+        expect(formatCompactAmount(500)).toBe('500');
+    });
+
+    it('renders pass status with emerald styles and ✓ Đạt badge', () => {
+        const dayData = {
+            day: 15,
+            dateStr: '2026-11-15',
+            spent: 120000,
+            overAmount: 0,
+            status: 'pass'
+        };
+
+        const html = renderToString(<DayCellItem dayData={dayData} onSelectDay={() => {}} />);
+
+        expect(html).toContain('15');
+        expect(html).toContain('120k');
+        expect(html).toContain('✓ Đạt');
+        expect(html).toContain('border-emerald-200');
+        expect(html).toContain('text-emerald-700');
+    });
+
+    it('renders fail status with rose styles and ✕ Vượt badge', () => {
+        const dayData = {
+            day: 16,
+            dateStr: '2026-11-16',
+            spent: 250000,
+            overAmount: 100000,
+            status: 'fail'
+        };
+
+        const html = renderToString(<DayCellItem dayData={dayData} onSelectDay={() => {}} />);
+
+        expect(html).toContain('16');
+        expect(html).toContain('250k');
+        expect(html).toContain('✕ Vượt 100k');
+        expect(html).toContain('border-rose-200');
+        expect(html).toContain('text-rose-700');
+    });
+
+    it('renders no_spend status with teal styles and ⭐ Không tiêu badge', () => {
+        const dayData = {
+            day: 17,
+            dateStr: '2026-11-17',
+            spent: 0,
+            overAmount: 0,
+            status: 'no_spend'
+        };
+
+        const html = renderToString(<DayCellItem dayData={dayData} onSelectDay={() => {}} />);
+
+        expect(html).toContain('17');
+        expect(html).toContain('0k');
+        expect(html).toContain('⭐ Không tiêu');
+        expect(html).toContain('border-teal-200');
+        expect(html).toContain('text-teal-700');
+    });
+
+    it('renders future and unconfigured statuses with dashed border and --', () => {
+        const futureDay = {
+            day: 28,
+            dateStr: '2026-11-28',
+            spent: 0,
+            overAmount: 0,
+            status: 'future'
+        };
+
+        const htmlFuture = renderToString(<DayCellItem dayData={futureDay} onSelectDay={() => {}} />);
+        expect(htmlFuture).toContain('28');
+        expect(htmlFuture).toContain('--');
+        expect(htmlFuture).toContain('border-dashed');
+
+        const unconfigDay = {
+            day: 5,
+            dateStr: '2026-11-05',
+            spent: 0,
+            overAmount: 0,
+            status: 'unconfigured'
+        };
+
+        const htmlUnconfig = renderToString(<DayCellItem dayData={unconfigDay} onSelectDay={() => {}} />);
+        expect(htmlUnconfig).toContain('5');
+        expect(htmlUnconfig).toContain('--');
+        expect(htmlUnconfig).toContain('border-dashed');
+    });
+
+    it('highlights today with ring and Hôm nay indicator', () => {
+        const dayData = {
+            day: 1,
+            dateStr: '2026-11-01',
+            spent: 80000,
+            overAmount: 0,
+            status: 'pass'
+        };
+
+        const html = renderToString(<DayCellItem dayData={dayData} isToday={true} onSelectDay={() => {}} />);
+        expect(html).toContain('ring-2 ring-blue-500');
+        expect(html).toContain('Hôm nay');
+    });
+});
+
+describe('DisciplineCalendarGrid component', () => {
+    it('renders weekday headers with weekend colors', () => {
+        const html = renderToString(
+            <DisciplineCalendarGrid
+                selectedMonth="2026-11"
+                calendarDays={[]}
+                onSelectDay={() => {}}
+            />
+        );
+
+        expect(html).toContain('T2');
+        expect(html).toContain('T3');
+        expect(html).toContain('T4');
+        expect(html).toContain('T5');
+        expect(html).toContain('T6');
+        expect(html).toContain('T7');
+        expect(html).toContain('CN');
+        expect(html).toContain('text-amber-600'); // T7
+        expect(html).toContain('text-rose-600');  // CN
+    });
+
+    it('renders 6 offset placeholders for 2026-11 (starts on Sunday)', () => {
+        const html = renderToString(
+            <DisciplineCalendarGrid
+                selectedMonth="2026-11"
+                calendarDays={[]}
+                onSelectDay={() => {}}
+            />
+        );
+
+        // 6 empty offset divs should exist
+        const offsetMatches = html.match(/offset-\d+/g) || [];
+        expect(offsetMatches.length).toBe(6);
+    });
+
+    it('renders 0 offset placeholders for 2026-06 (starts on Monday)', () => {
+        const html = renderToString(
+            <DisciplineCalendarGrid
+                selectedMonth="2026-06"
+                calendarDays={[]}
+                onSelectDay={() => {}}
+            />
+        );
+
+        const offsetMatches = html.match(/offset-\d+/g) || [];
+        expect(offsetMatches.length).toBe(0);
+    });
+
+    it('renders all calendar days provided', () => {
+        const sampleDays = [
+            { day: 1, dateStr: '2026-11-01', spent: 100000, overAmount: 0, status: 'pass' },
+            { day: 2, dateStr: '2026-11-02', spent: 200000, overAmount: 50000, status: 'fail' }
+        ];
+
+        const html = renderToString(
+            <DisciplineCalendarGrid
+                selectedMonth="2026-11"
+                calendarDays={sampleDays}
+                onSelectDay={() => {}}
+                currentDateStr="2026-11-01"
+            />
+        );
+
+        expect(html).toContain('100k');
+        expect(html).toContain('200k');
+        expect(html).toContain('✓ Đạt');
+        expect(html).toContain('✕ Vượt 50k');
+        expect(html).toContain('Hôm nay');
+    });
+});
+
