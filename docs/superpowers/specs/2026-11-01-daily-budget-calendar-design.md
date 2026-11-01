@@ -41,11 +41,11 @@ Tính năng tuân thủ nghiêm ngặt Hiến pháp dự án Yoogi Money Tracker
 ## 3. Mô Hình Dữ Liệu & Lưu Trữ (Data Model & Storage)
 
 ### 3.1. Bảng cấu hình Supabase (`daily_budget_settings`)
-Tạo migration chuẩn `yoogi-money-tracker/supabase/migrations/14_create_daily_budget_settings.sql`:
+Tạo migration chuẩn `yoogi-money-tracker/database_migrations/14_create_daily_budget_settings.sql`:
 
 ```sql
 create table if not exists public.daily_budget_settings (
-    user_id text primary key references auth.users(id) on delete cascade,
+    user_id uuid primary key references auth.users(id) on delete cascade,
     enabled boolean not null default true,
     daily_limit numeric not null default 150000,
     category_ids text[] not null default '{}',
@@ -59,8 +59,8 @@ alter table public.daily_budget_settings enable row level security;
 create policy "Users can manage their own daily budget settings"
     on public.daily_budget_settings
     for all
-    using (auth.uid()::text = user_id)
-    with check (auth.uid()::text = user_id);
+    using (auth.uid() = user_id)
+    with check (auth.uid() = user_id);
 ```
 
 ### 3.2. Cấu trúc TypeScript Interface
@@ -148,6 +148,7 @@ $$\text{Success Rate} = \begin{cases} \text{round}\left(\frac{N_{\text{pass}}}{N
 Toàn bộ mã nguồn đặt chuẩn trong thư mục `yoogi-money-tracker/src/`:
 - **Trang mới:** `yoogi-money-tracker/src/pages/DailyDisciplinePage.jsx`.
 - **Hook mới:** `yoogi-money-tracker/src/hooks/useDailyDiscipline.js`.
+- **Service đồng bộ:** `yoogi-money-tracker/src/services/dailyBudgetService.js` (fetch, save, realtime subscribe).
 - **Components:** `yoogi-money-tracker/src/components/daily-discipline/`:
   - `DailyDisciplineHeader.jsx`: Chuyển tháng (`< Tháng MM/YYYY >`) và nút Cài đặt.
   - `MonthlySummaryCard.jsx`: Thẻ thống kê 3 KPI (Đạt, Vượt, %), Thanh đo thực tế vs kỳ vọng, Banner gợi ý ngày còn lại.
