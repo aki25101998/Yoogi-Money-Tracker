@@ -40,11 +40,33 @@ Tính năng tuân thủ nghiêm ngặt Hiến pháp dự án Yoogi Money Tracker
 
 ## 3. Mô Hình Dữ Liệu & Lưu Trữ (Data Model & Storage)
 
-### 3.1. Cấu trúc cấu hình (`daily_budget_settings`)
-Cấu hình được lưu trữ trên Supabase trong bảng `user_settings` (hoặc bảng độc lập `daily_budget_settings` với RLS theo `user_id`):
+### 3.1. Bảng cấu hình Supabase (`daily_budget_settings`)
+Tạo migration chuẩn `yoogi-money-tracker/supabase/migrations/14_create_daily_budget_settings.sql`:
 
+```sql
+create table if not exists public.daily_budget_settings (
+    user_id text primary key references auth.users(id) on delete cascade,
+    enabled boolean not null default true,
+    daily_limit numeric not null default 150000,
+    category_ids text[] not null default '{}',
+    wallet_ids text[] not null default '{}',
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+alter table public.daily_budget_settings enable row level security;
+
+create policy "Users can manage their own daily budget settings"
+    on public.daily_budget_settings
+    for all
+    using (auth.uid()::text = user_id)
+    with check (auth.uid()::text = user_id);
+```
+
+### 3.2. Cấu trúc TypeScript Interface
 ```typescript
 interface DailyBudgetConfig {
+  user_id: string;
   enabled: boolean;              // Trạng thái kích hoạt tính năng
   daily_limit: number;           // Hạn mức tiền tiêu mỗi ngày (VD: 150000)
   category_ids: string[];        // Danh sách ID danh mục cha/con được áp dụng
@@ -52,136 +74,130 @@ interface DailyBudgetConfig {
 }
 ```
 
-*Giá trị mặc định ban đầu nếu người dùng chưa cài đặt:*
-- `enabled`: `true`
-- `daily_limit`: `150000` (150.000 đ)
-- `category_ids`: `[]` (hệ thống tự động gợi ý chọn các danh mục ăn uống/sinh hoạt mặc định nếu có)
-- `wallet_ids`: `[]` (áp dụng toàn bộ ví)
+### 3.3. Xử lý Trạng thái Khởi tạo Ban Đầu (Initial Setup State)
+- Nếu người dùng mới chưa cấu hình hoặc `category_ids.length === 0`:
+  - **Setup Banner:** Hiển thị banner hướng dẫn ở đầu trang: *"Bạn chưa chọn danh mục chi tiêu áp dụng cho Kỷ luật ngày (ví dụ: Ăn uống, Cà phê...)"* kèm nút **"Thiết lập ngay"**.
+  - **Smart Pre-selection:** Khi mở modal cấu hình lần đầu, hệ thống tự động quét danh sách categories hiện có của user: nếu danh mục/danh mục con chứa các từ khóa (`"ăn"`, `"uống"`, `"cà phê"`, `"cafe"`, `"ăn vặt"`, `"đi chợ"`), hệ thống tự động tick sẵn làm gợi ý để người dùng chỉ cần bấm 1 click để kích hoạt.
+  - **Tránh kết quả ảo:** Khi chưa chọn danh mục nào (`category_ids.length === 0`), lịch **không** hiển thị 100% sao ⭐ "Không tiêu" ảo, mà hiển thị trạng thái chờ cấu hình.
 
 ---
 
 ## 4. Thuật Toán Xử Lý & Đánh Giá On-The-Fly (Calculation Engine)
 
-Logic được đóng gói trong Custom Hook: `useDailyDiscipline({ transactions, categories, config, selectedMonth })`.
+Logic được đóng gói trong Custom Hook: `useDailyDiscipline({ transactions, categories, config, selectedMonth })` tại `yoogi-money-tracker/src/hooks/useDailyDiscipline.js`.
 
 ### 4.1. Lọc giao dịch tháng (Month Filter)
-- Chọn tháng hiển thị: `selectedMonth` (định dạng `YYYY-MM`, ví dụ: `2026-11`).
-- Xác định khoảng ngày: từ ngày `01` đến ngày cuối cùng của tháng ($N_{\text{total\_days}}$: 28, 29, 30 hoặc 31 ngày).
-- Lọc các giao dịch:
-  1. `t.type === 'expense'`: Chỉ lấy giao dịch chi tiêu thực tế (bỏ qua thu nhập, chuyển khoản ví, trả nợ, nợ vay).
-  2. `isDateInMonth(t.date, selectedMonth)`: Giao dịch thuộc tháng đang chọn (sử dụng chuỗi ngày local `YYYY-MM-DD` để tránh lệch múi giờ UTC).
+- Xác định tháng hiển thị: `selectedMonth` (định dạng `YYYY-MM`, ví dụ: `2026-11`).
+- Xác định số ngày trong tháng $N_{\text{total\_days}}$ bằng `new Date(year, month, 0).getDate()` (xử lý chính xác 28, 29, 30, 31 ngày).
+- Lọc giao dịch:
+  1. `t.type === 'expense'`: Bỏ qua thu nhập, chuyển ví, nợ.
+  2. Ngày giao dịch thuộc `selectedMonth`: so sánh chuỗi `t.date.startsWith(selectedMonth)` (chuỗi local `YYYY-MM-DD` chống lệch UTC).
   3. **Bộ lọc danh mục**: `config.category_ids.includes(t.categoryId) || config.category_ids.includes(t.subcategoryId)`.
   4. **Bộ lọc ví**: Nếu `config.wallet_ids.length > 0`, kiểm tra `config.wallet_ids.includes(t.walletId)`.
 
-### 4.2. Đánh giá trạng thái từng ngày
-Với mỗi ngày $d \in [1, N_{\text{total\_days}}]$:
-- Tính tổng tiền chi trong ngày của nhóm danh mục: $\text{spent}(d) = \sum \text{amount}(t \in \text{Day } d)$.
-- Phân loại trạng thái:
-  - **Ngày tương lai ($d > \text{today}$ trong tháng hiện tại):** `status = 'future'`, không tính vào số ngày Đạt/Thất bại.
-  - **Ngày hôm nay hoặc quá khứ ($d \le \text{today}$):**
-    - Nếu $\text{spent}(d) == 0$: `status = 'no_spend'` (Đạt xuất sắc, huy hiệu ⭐).
-    - Nếu $0 < \text{spent}(d) \le \text{daily\_limit}$: `status = 'pass'` (Đạt, huy hiệu &check;).
-    - Nếu $\text{spent}(d) > \text{daily\_limit}$: `status = 'fail'` (Vượt mục tiêu, huy hiệu &times;, ghi chú: vượt $\text{spent}(d) - \text{daily\_limit}$).
+### 4.2. Phân nhánh Ngữ cảnh Thời Gian & Đánh giá Trạng thái Ngày
 
-### 4.3. Tổng hợp chỉ số tháng & So sánh kỳ vọng
-- $N_{\text{elapsed}}$: Số ngày đã qua trong tháng tính đến thời điểm hiện tại (nếu xem tháng quá khứ thì $N_{\text{elapsed}} = N_{\text{total\_days}}$).
+Hệ thống phân biệt rõ ràng 3 ngữ cảnh thời gian:
+
+#### Ngữ cảnh A: Tháng hiện tại (`selectedMonth === currentMonth`)
+- $N_{\text{elapsed}} = \text{today.getDate()}$ (số ngày đã trôi qua tính đến hôm nay).
+- Ngày $d \le \text{today}$:
+  - $\text{spent}(d) == 0$: `status = 'no_spend'` (⭐ Tuyệt vời - Không tiêu).
+  - $0 < \text{spent}(d) \le \text{daily\_limit}$: `status = 'pass'` (✓ Đạt).
+  - $\text{spent}(d) > \text{daily\_limit}$: `status = 'fail'` (✕ Vượt $\text{spent}(d) - \text{daily\_limit}$).
+- Ngày $d > \text{today}$: `status = 'future'` (Màu xám, chưa diễn ra).
+
+#### Ngữ cảnh B: Tháng trong quá khứ (`selectedMonth < currentMonth`)
+- $N_{\text{elapsed}} = N_{\text{total\_days}}$ (toàn bộ các ngày trong tháng đều đã kết thúc).
+- Toàn bộ các ngày $d \in [1, N_{\text{total\_days}}]$ đều được đánh giá `pass`, `fail` hoặc `no_spend`.
+- Không có bất kỳ ngày nào là `future`.
+
+#### Ngữ cảnh C: Tháng trong tương lai (`selectedMonth > currentMonth`)
+- $N_{\text{elapsed}} = 0$ (chưa có ngày nào diễn ra).
+- Toàn bộ các ngày trong tháng đều có `status = 'future'`.
+
+---
+
+### 4.3. Tổng hợp Chỉ số Tháng & Phòng Chống Lỗi Chia Cho 0 ($\text{NaN}\%$)
+
 - $N_{\text{pass}}$: Tổng số ngày có `status === 'pass' || status === 'no_spend'`.
 - $N_{\text{fail}}$: Tổng số ngày có `status === 'fail'`.
-- Tỷ lệ hoàn thành: $\text{Success Rate} = \frac{N_{\text{pass}}}{N_{\text{elapsed}}} \times 100\%$.
-- **Kỳ vọng lũy kế đến hiện tại (Month-to-Date Expected):**
-  $$\text{Expected}_{\text{MTD}} = \text{daily\_limit} \times N_{\text{elapsed}}$$
-- **Thực tế đã chi lũy kế đến hiện tại (Month-to-Date Actual):**
-  $$\text{Actual}_{\text{MTD}} = \sum_{d=1}^{N_{\text{elapsed}}} \text{spent}(d)$$
-- **Chênh lệch so với kỳ vọng:**
-  $$\text{Diff} = \text{Expected}_{\text{MTD}} - \text{Actual}_{\text{MTD}}$$
-  - $\text{Diff} \ge 0$: Đang chi tiêu **đúng kỳ vọng** (Tiết kiệm được $\text{Diff}$ đ).
-  - $\text{Diff} < 0$: Đang chi tiêu **vượt quá kỳ vọng** (Lạm chi $|\text{Diff}|$ đ).
-- **Ngân sách và Định mức cho các ngày còn lại:**
-  - Số ngày còn lại: $N_{\text{remaining}} = N_{\text{total\_days}} - N_{\text{elapsed}}$.
-  - Ngân sách trần cả tháng: $\text{Budget}_{\text{Total}} = \text{daily\_limit} \times N_{\text{total\_days}}$.
-  - Ngân sách khả dụng còn lại: $\text{Budget}_{\text{Remaining}} = \max(0, \text{Budget}_{\text{Total}} - \text{Actual}_{\text{MTD}})$.
-  - Hạn mức chi tiêu trung bình gợi ý mỗi ngày còn lại:
-    $$\text{Daily Suggested} = \begin{cases} \frac{\text{Budget}_{\text{Remaining}}}{N_{\text{remaining}}}, & \text{nếu } N_{\text{remaining}} > 0 \\ 0, & \text{nếu } N_{\text{remaining}} = 0 \end{cases}$$
+
+#### Công thức Tỷ lệ thành công (Success Rate):
+$$\text{Success Rate} = \begin{cases} \text{round}\left(\frac{N_{\text{pass}}}{N_{\text{elapsed}}} \times 100\right)\%, & \text{khi } N_{\text{elapsed}} > 0 \\ 0\%, & \text{khi } N_{\text{elapsed}} = 0 \text{ (Tháng tương lai - Hiển thị: 'Chưa bắt đầu')} \end{cases}$$
+
+#### So sánh Kỳ vọng Lũy kế đến Hiện tại (Month-to-Date):
+- **Kỳ vọng đến nay:** $\text{Expected}_{\text{MTD}} = \text{daily\_limit} \times N_{\text{elapsed}}$.
+- **Thực tế đã chi:** $\text{Actual}_{\text{MTD}} = \sum_{d=1}^{N_{\text{elapsed}}} \text{spent}(d)$.
+- **Chênh lệch:** $\text{Diff} = \text{Expected}_{\text{MTD}} - \text{Actual}_{\text{MTD}}$.
+  - Nếu $\text{Diff} \ge 0$: Đang chi tiêu **đúng kỳ vọng** (Tiết kiệm $+\text{Diff}$ đ).
+  - Nếu $\text{Diff} < 0$: Đang chi tiêu **vượt quá kỳ vọng** (Lạm chi $-|\text{Diff}|$ đ).
+
+#### Ngân sách & Hạn mức gợi ý cho các ngày còn lại:
+- Số ngày còn lại: $N_{\text{remaining}} = N_{\text{total\_days}} - N_{\text{elapsed}}$.
+- Tổng ngân sách trần tháng: $\text{Budget}_{\text{Total}} = \text{daily\_limit} \times N_{\text{total\_days}}$.
+- Ngân sách khả dụng còn lại: $\text{Budget}_{\text{Remaining}} = \max(0, \text{Budget}_{\text{Total}} - \text{Actual}_{\text{MTD}})$.
+- Hạn mức gợi ý trung bình mỗi ngày:
+  $$\text{Daily Suggested} = \begin{cases} \text{round}\left(\frac{\text{Budget}_{\text{Remaining}}}{N_{\text{remaining}}}\right), & \text{khi } N_{\text{remaining}} > 0 \\ 0, & \text{khi } N_{\text{remaining}} = 0 \text{ (Tháng đã kết thúc)} \end{cases}$$
 
 ---
 
 ## 5. Thiết Kế Giao Diện & Trải Nghiệm Người Dùng (UI/UX Architecture)
 
-### 5.1. Cấu trúc Trang & Điều hướng (Navigation)
-- Bổ sung một mục mới vào thanh Menu (Sidebar Desktop & Tabbar Mobile) trong `Layout.jsx`:
-  - `id`: `'daily-budget'`
-  - `label`: `'Lịch Kỷ Luật'`
-  - `icon`: `CalendarCheck` (từ `lucide-react`)
-- Tạo Page Component chính: `src/pages/DailyDisciplinePage.jsx`.
+### 5.1. Cấu trúc Thư Mục & Điều Hướng
+Toàn bộ mã nguồn đặt chuẩn trong thư mục `yoogi-money-tracker/src/`:
+- **Trang mới:** `yoogi-money-tracker/src/pages/DailyDisciplinePage.jsx`.
+- **Hook mới:** `yoogi-money-tracker/src/hooks/useDailyDiscipline.js`.
+- **Components:** `yoogi-money-tracker/src/components/daily-discipline/`:
+  - `DailyDisciplineHeader.jsx`: Chuyển tháng (`< Tháng MM/YYYY >`) và nút Cài đặt.
+  - `MonthlySummaryCard.jsx`: Thẻ thống kê 3 KPI (Đạt, Vượt, %), Thanh đo thực tế vs kỳ vọng, Banner gợi ý ngày còn lại.
+  - `DisciplineCalendarGrid.jsx`: Lưới lịch 7 cột (Thứ 2 đến Chủ nhật).
+  - `DayCellItem.jsx`: Ô hiển thị từng ngày (Số ngày, Số tiền, Badge trạng thái).
+  - `DayDetailsModal.jsx`: Modal xem chi tiết ngày.
+  - `DailyBudgetConfigModal.jsx`: Modal cấu hình hạn mức & chọn danh mục.
 
-### 5.2. Các Thành Phần Giao Diện (Components Hierarchy)
-```
-DailyDisciplinePage.jsx
-├── DailyDisciplineHeader.jsx
-│   ├── MonthNavigator (Chuyển tháng: < Tháng 11/2026 >)
-│   └── ConfigButton (Nút mở Modal cài đặt hạn mức & danh mục)
-├── MonthlySummaryCard.jsx
-│   ├── KPI Badges (Số ngày Hoàn thành, Số ngày Thất bại, Tỷ lệ %)
-│   ├── MonthToDateProgressBar (Tiến độ thực tế vs kỳ vọng đến hôm nay)
-│   └── RemainingAllowanceBanner (Hạn mức còn lại & gợi ý cho các ngày tiếp theo)
-├── DisciplineCalendarGrid.jsx
-│   ├── WeekdayHeader (Thứ 2, Thứ 3, Thứ 4, Thứ 5, Thứ 6, Thứ 7, Chủ Nhật)
-│   └── CalendarDayCells (35 hoặc 42 ô ngày theo ma trận tháng)
-│       └── DayCellItem: Số ngày, Số tiền đã tiêu, Badge Đạt/Vượt/No-spend
-├── DayDetailsModal.jsx (Popup khi bấm vào một ô ngày)
-│   ├── Header: Ngày, Tổng tiền đã tiêu / 150k, Trạng thái Pass/Fail
-│   ├── TrackedTransactionsList (Danh sách món chi thuộc hạn mức)
-│   ├── QuickAddTransactionButton (Nút thêm nhanh giao dịch cho ngày đó)
-│   └── OtherExpensesCollapsible (Khoản chi khác ngoài hạn mức trong ngày)
-└── DailyBudgetConfigModal.jsx (Cửa sổ cấu hình)
-    ├── Input Hạn mức ngày (VD: 150,000 đ)
-    ├── CategoryMultiSelect (Chọn các danh mục áp dụng: Ăn uống, Cà phê...)
-    └── WalletFilterSelect (Chọn ví áp dụng hoặc Tất cả ví)
-```
+### 5.2. Điều Hướng Menu (Navigation Bar)
+Trong `yoogi-money-tracker/src/components/Layout.jsx`:
+- Thêm item vào mảng `NAV_ITEMS`:
+  ```javascript
+  { id: 'daily-discipline', label: 'Kỷ luật', icon: CalendarCheck }
+  ```
+- **Tối ưu Mobile:** Đặt nhãn ngắn gọn là `"Kỷ luật"` (kèm icon `CalendarCheck` từ `lucide-react`) để đảm bảo thanh Tab Bar 6 mục hiển thị vừa vặn, không bị vỡ hàng hay che khuất trên màn hình điện thoại (từ 360px trở lên).
 
-### 5.3. Chi tiết thiết kế từng ô ngày trên Lịch (`CalendarDayCells`)
-- **Ô ngày đạt ($\le 150k$):** Viền xanh ngọc / nền nhạt (`bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800`), số tiền hiển thị màu xanh lá đậm (vd: `120k`), badge nhỏ `✓ Đạt`.
-- **Ô ngày vượt ($> 150k$):** Viền đỏ / nền nhạt (`bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800`), số tiền hiển thị màu đỏ (vd: `195k`), badge nhỏ `✕ Vượt 45k`.
-- **Ô ngày không tiêu tiền ($0k$):** Viền lục bảo nổi bật, số tiền `0k`, huy hiệu ngôi sao vàng/xanh ⭐ `Không tiêu`.
-- **Ô ngày tương lai:** Nền xám mờ (`bg-slate-50 dark:bg-slate-900 border-dashed border-slate-200 dark:border-slate-800`), hiển thị số ngày, số tiền để `--`.
-- **Hiệu ứng tương tác:** `hover:scale-[1.02] cursor-pointer transition-all active:scale-[0.98]`.
+### 5.3. Tái Sử Dụng Modal Thêm Giao Dịch
+- Trong `DayDetailsModal.jsx`, khi người dùng bấm nút **"+ Thêm nhanh giao dịch"**, component sẽ tái sử dụng `TransactionModal` sẵn có của hệ thống và truyền `initialDate = selectedDay` cùng danh mục được chọn sẵn. Không tạo form nhập liệu trùng lặp.
+- Hỗ trợ hiển thị mục thu gọn: *"Các khoản chi khác trong ngày không tính vào hạn mức"* (ví dụ: Tiền điện, Tiền trọ...) để người dùng có cái nhìn đầy đủ nếu muốn kiểm tra.
 
 ---
 
 ## 6. Xử Lý Các Trường Hợp Biên (Edge Cases & Safety)
 
-1. **Ngày không phát sinh giao dịch nào:**
-   - Hệ thống đánh giá là ngày `no_spend` (Đạt xuất sắc). Không gây lỗi chia cho 0 hay undefined.
-2. **Xóa hoặc sửa danh mục trong cài đặt chung:**
-   - Nếu một danh mục từng được chọn theo dõi bị người dùng xóa ở trang Danh mục, Hook tự động lọc bỏ ID không còn tồn tại, không gây crash ứng dụng.
-3. **Múi giờ (Timezone Offset):**
-   - Sử dụng định dạng chuẩn `YYYY-MM-DD` từ trường `date` của transaction, không dùng `new Date().toISOString()` để tránh hiện tượng giao dịch 23:30 bị trôi sang ngày hôm sau.
-4. **Năm nhuận và số ngày trong tháng:**
-   - Sử dụng hàm chuẩn `new Date(year, month, 0).getDate()` để lấy chính xác số ngày trong tháng (28/29 ngày cho tháng 2, 30/31 ngày cho các tháng còn lại).
-5. **Xem lại các tháng cũ trong quá khứ:**
-   - Khi xem tháng đã kết thúc (ví dụ tháng trước), toàn bộ các ngày trong tháng đó đều được xem là ngày đã qua ($N_{\text{elapsed}} = N_{\text{total\_days}}$), không có ngày `future`.
+1. **Category bị xóa hoặc sửa:**
+   - Nếu danh mục đang được theo dõi bị xóa khỏi hệ thống, hook tự động loại bỏ ID rác khỏi bộ nhớ mà không gây crash trang.
+2. **Thao tác chuyển tháng:**
+   - Hỗ trợ xem các tháng trong quá khứ hoặc tương lai; các công thức tự động thích ứng với số ngày đã qua ($N_{\text{elapsed}}$) mà không bị lỗi NaN.
+3. **Múi giờ (Timezone Drift):**
+   - Tuyệt đối không dùng `Date.prototype.toISOString()` để trích xuất ngày. Luôn dùng định dạng chuỗi `YYYY-MM-DD` địa phương từ transaction để đảm bảo các giao dịch vào ban đêm (23:45) không bị trôi sang ngày hôm sau.
 
 ---
 
 ## 7. Kế Hoạch Kiểm Thử & Nghiệm Thu (Verification & Testing)
 
-1. **Kiểm thử logic tính toán (Unit Tests):**
-   - Test hàm lọc giao dịch với các loại `income`, `transfer`, `expense`.
-   - Test trường hợp tiền điện/tiền trọ phát sinh cùng ngày với tiền ăn uống: Xác nhận tiền điện bị loại bỏ 100%, chỉ tính tiền ăn uống.
-   - Test công thức tính số ngày pass/fail, chênh lệch kỳ vọng $\text{Diff}$, và hạn mức gợi ý ngày còn lại.
-2. **Kiểm thử tương tác giao diện (Component Integration):**
-   - Kiểm tra chuyển tháng tới/lui.
-   - Click vào ô ngày mở đúng `DayDetailsModal` với các giao dịch của ngày đó.
-   - Thêm/xóa giao dịch phản hồi ngay lập tức trên ô lịch (Zero latency).
-3. **Kiểm thử đóng gói di động (Capacitor Android):**
-   - Build và kiểm tra layout trên kích thước màn hình điện thoại (thanh cuộn ngang/dọc, chạm tap mượt mà, không giật lag).
+1. **Kiểm thử Logic (Unit Tests):**
+   - Viết test case cho `useDailyDiscipline`:
+     - Test loại bỏ giao dịch `income`, `transfer`, `debt`.
+     - Test loại bỏ giao dịch chi tiêu không thuộc danh mục chọn (ví dụ: tiền điện 1.2M bị bỏ qua, chỉ tính tiền ăn uống).
+     - Test 3 ngữ cảnh: Tháng quá khứ, Tháng hiện tại, Tháng tương lai.
+2. **Kiểm thử Giao Diện & Tương Tác:**
+   - Kiểm tra click chọn ngày mở đúng modal chi tiết ngày.
+   - Thêm giao dịch mới $\rightarrow$ Ô lịch lập tức đổi màu và nhảy số tiền Realtime.
+3. **Kiểm thử Đóng Gói (Capacitor Android):**
    - Chạy `npm run build` đảm bảo không có lỗi biên dịch.
+   - Kiểm tra layout trên giao diện Android responsive.
 
 ---
 
-## 8. Lộ Trình Triển Khai (Next Steps)
-Sau khi tài liệu thiết kế này được phê duyệt:
-1. Dispatch Subagent Review để kiểm tra tính toàn vẹn và nhất quán của tài liệu.
-2. Tạo Implementation Plan thông qua skill `writing-plans`.
-3. Tiến hành code theo từng module nhỏ và kiểm thử tự động.
-4. Build APK Android và deploy tự động theo Hiến pháp.
+## 8. Lộ Trình Triển Khai Tiếp Theo
+1. Chạy vòng lặp Spec Reviewer để duyệt tài liệu thiết kế.
+2. Xin xác nhận của người dùng.
+3. Kích hoạt skill `writing-plans` để chia nhỏ task và tiến hành lập trình.
