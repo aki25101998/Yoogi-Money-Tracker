@@ -13,7 +13,8 @@ create table if not exists public.daily_budget_settings (
 
 alter table public.daily_budget_settings enable row level security;
 
--- Policy: Users can view and manage their own daily budget settings
+-- Policy: Users can view and manage their own daily budget settings (Idempotent)
+drop policy if exists "Users can manage their own daily budget settings" on public.daily_budget_settings;
 create policy "Users can manage their own daily budget settings"
     on public.daily_budget_settings
     for all
