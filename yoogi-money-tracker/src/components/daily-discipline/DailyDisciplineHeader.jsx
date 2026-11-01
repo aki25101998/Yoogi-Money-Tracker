@@ -99,12 +99,12 @@ const DailyDisciplineHeader = ({
                     <button
                         type="button"
                         onClick={onOpenConfig}
-                        className="p-2 sm:px-3 sm:py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl transition-colors flex items-center gap-1.5 border border-slate-200/60 dark:border-slate-600 shadow-sm"
+                        className="p-2 sm:px-3 sm:py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 border border-slate-200/60 dark:border-slate-600 shadow-sm"
                         title="Cấu hình kỷ luật"
                         aria-label="Cấu hình kỷ luật"
                     >
-                        <SlidersHorizontal className="w-4 h-4 text-slate-500 dark:text-slate-300" />
-                        <span className="hidden sm:inline">Cài đặt</span>
+                        <SlidersHorizontal className="w-4 h-4 text-slate-500 dark:text-slate-300 pointer-events-none" />
+                        <span className="hidden sm:inline pointer-events-none">Cài đặt</span>
                     </button>
                 </div>
             </div>
@@ -115,15 +115,15 @@ const DailyDisciplineHeader = ({
                     <button
                         type="button"
                         onClick={handlePrevMonth}
-                        className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors shadow-sm"
+                        className="p-2.5 sm:p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all active:scale-95 shadow-sm"
                         title="Tháng trước"
                         aria-label="Tháng trước"
                     >
-                        <ChevronLeft className="w-4 h-4" />
+                        <ChevronLeft className="w-4 h-4 pointer-events-none" />
                     </button>
 
                     <div className="relative inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white font-semibold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer min-w-[130px]">
-                        <span>{formattedMonthLabel}</span>
+                        <span className="pointer-events-none">{formattedMonthLabel}</span>
                         <input
                             type="month"
                             value={monthToUse}
@@ -136,11 +136,11 @@ const DailyDisciplineHeader = ({
                     <button
                         type="button"
                         onClick={handleNextMonth}
-                        className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors shadow-sm"
+                        className="p-2.5 sm:p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all active:scale-95 shadow-sm"
                         title="Tháng sau"
                         aria-label="Tháng sau"
                     >
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-4 h-4 pointer-events-none" />
                     </button>
                 </div>
 
@@ -149,11 +149,12 @@ const DailyDisciplineHeader = ({
                     <button
                         type="button"
                         onClick={handleJumpToCurrent}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl border border-indigo-200/60 dark:border-indigo-800/60 transition-colors shadow-sm"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl border border-indigo-200/60 dark:border-indigo-800/60 transition-all active:scale-95 shadow-sm"
                         title="Quay về tháng hiện tại"
+                        aria-label="Quay về tháng hiện tại"
                     >
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>Hôm nay</span>
+                        <Calendar className="w-3.5 h-3.5 pointer-events-none" />
+                        <span className="pointer-events-none">Hôm nay</span>
                     </button>
                 )}
             </div>
