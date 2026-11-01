@@ -6,7 +6,10 @@ import DayDetailsModal, {
     getCategoryInfo,
     getWalletName
 } from '../components/daily-discipline/DayDetailsModal';
-import DailyBudgetConfigModal from '../components/daily-discipline/DailyBudgetConfigModal';
+import DailyBudgetConfigModal, {
+    toggleSubcategorySelection,
+    computeFoodCategoryIds
+} from '../components/daily-discipline/DailyBudgetConfigModal';
 
 describe('DayDetailsModal Helpers', () => {
     it('formatDayTitle formats date string into Vietnamese weekday and date format', () => {
@@ -183,6 +186,7 @@ describe('DayDetailsModal Component', () => {
 
         // Other expenses section toggle
         expect(html).toContain('Khoản chi khác ngoài hạn mức trong ngày');
+        expect(html).toContain('pointer-events-none">Khoản chi khác ngoài hạn mức trong ngày</span>');
         expect(html).toContain('500.000');
     });
 
@@ -380,5 +384,83 @@ describe('DailyBudgetConfigModal Component', () => {
         expect(html).toContain('Đang tạm dừng tính năng kỷ luật');
         expect(html).toContain('200.000');
         expect(html).toContain('Ví Tiền Mặt');
+
+        // Check mobile scrollability: no nested max-h scroll classes
+        expect(html).not.toContain('max-h-60 overflow-y-auto');
+        expect(html).not.toContain('max-h-40 overflow-y-auto');
+    });
+
+    it('toggleSubcategorySelection handles parent/child hierarchy correctly', () => {
+        const parentCat = {
+            id: 'parent-1',
+            name: 'Ăn uống',
+            subcategories: [
+                { id: 'sub-1', name: 'Cơm' },
+                { id: 'sub-2', name: 'Cà phê' }
+            ]
+        };
+
+        // 1. Checking sub-1 when sub-2 is not checked -> adds sub-1, does not add parent-1
+        let selected = toggleSubcategorySelection([], 'sub-1', parentCat);
+        expect(selected).toContain('sub-1');
+        expect(selected).not.toContain('parent-1');
+
+        // 2. Checking sub-2 when sub-1 is checked -> now all subcategories are checked, adds parent-1
+        selected = toggleSubcategorySelection(selected, 'sub-2', parentCat);
+        expect(selected).toContain('sub-1');
+        expect(selected).toContain('sub-2');
+        expect(selected).toContain('parent-1');
+
+        // 3. Unchecking sub-1 -> removes sub-1 AND removes parent-1
+        selected = toggleSubcategorySelection(selected, 'sub-1', parentCat);
+        expect(selected).not.toContain('sub-1');
+        expect(selected).not.toContain('parent-1');
+        expect(selected).toContain('sub-2');
+    });
+
+    it('computeFoodCategoryIds matches food keywords selectively', () => {
+        const categories = [
+            {
+                id: 'cat-eat',
+                name: 'Ăn uống', // matches food keywords
+                subcategories: [
+                    { id: 'sub-food-1', name: 'Cơm trưa' },
+                    { id: 'sub-food-2', name: 'Trà đá' }
+                ]
+            },
+            {
+                id: 'cat-fun',
+                name: 'Giải trí', // does not match
+                subcategories: [
+                    { id: 'sub-cafe', name: 'Cà phê bạn bè' }, // matches 'cà phê'
+                    { id: 'sub-cinema', name: 'Xem phim' } // does not match
+                ]
+            },
+            {
+                id: 'cat-all-subs-match',
+                name: 'Dịch vụ khác', // does not match
+                subcategories: [
+                    { id: 'sub-food-a', name: 'Ăn vặt' }, // matches
+                    { id: 'sub-food-b', name: 'Đi chợ' } // matches
+                ]
+            }
+        ];
+
+        const matched = computeFoodCategoryIds(categories, []);
+
+        // 1. cat-eat matches: adds cat-eat and all its subcategories
+        expect(matched).toContain('cat-eat');
+        expect(matched).toContain('sub-food-1');
+        expect(matched).toContain('sub-food-2');
+
+        // 2. cat-fun: only sub-cafe matches, cinema does not -> adds sub-cafe, does NOT add cat-fun
+        expect(matched).toContain('sub-cafe');
+        expect(matched).not.toContain('sub-cinema');
+        expect(matched).not.toContain('cat-fun');
+
+        // 3. cat-all-subs-match: all subcategories match -> adds all subs and cat-all-subs-match
+        expect(matched).toContain('sub-food-a');
+        expect(matched).toContain('sub-food-b');
+        expect(matched).toContain('cat-all-subs-match');
     });
 });

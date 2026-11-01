@@ -77,6 +77,10 @@ const DayDetailsModal = ({
     const [isOtherExpanded, setIsOtherExpanded] = useState(false);
 
     useEffect(() => {
+        setIsOtherExpanded(false);
+    }, [dayData?.dateStr]);
+
+    useEffect(() => {
         if (!isOpen) return;
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') {
@@ -275,17 +279,17 @@ const DayDetailsModal = ({
                             className="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-100/60 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
                             aria-expanded={isOtherExpanded}
                         >
-                            <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                            <div className="flex items-center gap-2 min-w-0 pointer-events-none">
+                                <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 pointer-events-none">
                                     Khoản chi khác ngoài hạn mức trong ngày
                                 </span>
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold">
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold pointer-events-none">
                                     {otherTransactions.length}
                                 </span>
                             </div>
 
-                            <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                            <div className="flex items-center gap-2 shrink-0 pointer-events-none">
+                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 pointer-events-none">
                                     {formatCurrency(otherTotal)}
                                 </span>
                                 {isOtherExpanded ? (

@@ -3,7 +3,52 @@ import { createPortal } from 'react-dom';
 import { X, Sparkles, Loader2, CheckSquare, Square, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
-const FOOD_KEYWORDS = ['ăn', 'uống', 'cà phê', 'cafe', 'ăn vặt', 'đi chợ'];
+export const FOOD_KEYWORDS = ['ăn', 'uống', 'cà phê', 'cafe', 'ăn vặt', 'đi chợ'];
+
+export const toggleSubcategorySelection = (selectedIds = [], subId, parentCat) => {
+    const set = new Set(selectedIds);
+    if (set.has(subId)) {
+        set.delete(subId);
+        if (parentCat) set.delete(parentCat.id);
+    } else {
+        set.add(subId);
+        // If all subcategories of parentCat are now selected, also add parentCat.id
+        if (parentCat && parentCat.subcategories) {
+            const allSubsSelected = parentCat.subcategories.every(s => set.has(s.id) || s.id === subId);
+            if (allSubsSelected) set.add(parentCat.id);
+        }
+    }
+    return Array.from(set);
+};
+
+export const computeFoodCategoryIds = (categories = [], currentSelected = []) => {
+    const matched = new Set(currentSelected);
+    categories.forEach(cat => {
+        const catName = (cat.name || '').toLowerCase();
+        const catMatches = FOOD_KEYWORDS.some(kw => catName.includes(kw));
+
+        if (catMatches) {
+            matched.add(cat.id);
+            if (Array.isArray(cat.subcategories)) {
+                cat.subcategories.forEach(sub => matched.add(sub.id));
+            }
+        } else if (Array.isArray(cat.subcategories) && cat.subcategories.length > 0) {
+            const matchedSubs = [];
+            cat.subcategories.forEach(sub => {
+                const subName = (sub.name || '').toLowerCase();
+                if (FOOD_KEYWORDS.some(kw => subName.includes(kw))) {
+                    matched.add(sub.id);
+                    matchedSubs.push(sub.id);
+                }
+            });
+            // Only add cat.id if all subcategories match
+            if (matchedSubs.length === cat.subcategories.length) {
+                matched.add(cat.id);
+            }
+        }
+    });
+    return Array.from(matched);
+};
 
 const COMMON_LIMIT_CHIPS = [
     { label: '100k', value: 100000 },
@@ -84,38 +129,12 @@ const DailyBudgetConfigModal = ({
         }
     };
 
-    const handleToggleSingleCategory = (id) => {
-        setSelectedCategoryIds(prev => {
-            if (prev.includes(id)) {
-                return prev.filter(itemId => itemId !== id);
-            } else {
-                return [...prev, id];
-            }
-        });
+    const handleToggleSingleCategory = (subId, parentCat) => {
+        setSelectedCategoryIds(prev => toggleSubcategorySelection(prev, subId, parentCat));
     };
 
     const handleAutoSuggestFood = () => {
-        const matched = new Set(selectedCategoryIds);
-        expenseCategories.forEach(cat => {
-            const catName = (cat.name || '').toLowerCase();
-            const catMatches = FOOD_KEYWORDS.some(kw => catName.includes(kw));
-
-            if (catMatches) {
-                matched.add(cat.id);
-                if (Array.isArray(cat.subcategories)) {
-                    cat.subcategories.forEach(sub => matched.add(sub.id));
-                }
-            } else if (Array.isArray(cat.subcategories)) {
-                cat.subcategories.forEach(sub => {
-                    const subName = (sub.name || '').toLowerCase();
-                    if (FOOD_KEYWORDS.some(kw => subName.includes(kw))) {
-                        matched.add(sub.id);
-                        matched.add(cat.id);
-                    }
-                });
-            }
-        });
-        setSelectedCategoryIds(Array.from(matched));
+        setSelectedCategoryIds(prev => computeFoodCategoryIds(expenseCategories, prev));
     };
 
     const handleSelectAllCategories = () => {
@@ -157,6 +176,7 @@ const DailyBudgetConfigModal = ({
             onClose?.();
         } catch (err) {
             console.error('Lỗi khi lưu cấu hình hạn mức hàng ngày:', err);
+            alert('Lỗi khi lưu cấu hình: ' + (err.message || 'Vui lòng kiểm tra lại kết nối'));
         } finally {
             setIsSaving(false);
         }
@@ -311,7 +331,7 @@ const DailyBudgetConfigModal = ({
                         </div>
 
                         {/* Category List */}
-                        <div className="border border-slate-200 dark:border-slate-700 rounded-2xl max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 bg-slate-50/50 dark:bg-slate-900/30 p-2">
+                        <div className="border border-slate-200 dark:border-slate-700 rounded-2xl divide-y divide-slate-100 dark:divide-slate-800 bg-slate-50/50 dark:bg-slate-900/30 p-2">
                             {expenseCategories.length === 0 ? (
                                 <div className="p-4 text-center text-xs text-slate-400">
                                     Không có danh mục chi tiêu nào
@@ -375,7 +395,7 @@ const DailyBudgetConfigModal = ({
                                                         return (
                                                             <div
                                                                 key={sub.id}
-                                                                onClick={() => handleToggleSingleCategory(sub.id)}
+                                                                onClick={() => handleToggleSingleCategory(sub.id, cat)}
                                                                 className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100/70 dark:hover:bg-slate-800/60 cursor-pointer text-xs"
                                                             >
                                                                 <span className="text-emerald-600 dark:text-emerald-400 shrink-0">
@@ -441,7 +461,7 @@ const DailyBudgetConfigModal = ({
                         </div>
 
                         {!isAllWallets && wallets && wallets.length > 0 && (
-                            <div className="grid grid-cols-2 gap-2 mt-2 max-h-40 overflow-y-auto p-1 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-900/30">
+                            <div className="grid grid-cols-2 gap-2 mt-2 p-1 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-900/30">
                                 {wallets.map(w => {
                                     const isChecked = selectedWalletIds.includes(w.id);
                                     return (
