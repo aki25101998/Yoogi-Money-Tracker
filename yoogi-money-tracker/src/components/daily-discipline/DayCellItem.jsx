@@ -117,6 +117,7 @@ const DayCellItem = ({
             type="button"
             onClick={handleClick}
             title={tooltipTitle}
+            aria-label={tooltipTitle}
             className={`group relative w-full min-h-[68px] sm:min-h-[84px] p-1.5 sm:p-2 rounded-xl flex flex-col justify-between text-left transition-all active:scale-95 cursor-pointer border ${currentBoxStyle} ${
                 isToday ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-1 sm:ring-offset-2 dark:ring-offset-slate-900 shadow-xs' : ''
             } ${className}`}
