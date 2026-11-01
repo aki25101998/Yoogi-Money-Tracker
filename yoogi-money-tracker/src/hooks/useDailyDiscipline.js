@@ -23,7 +23,8 @@ export const calculateDailyDiscipline = ({
 } = {}) => {
     const safeConfig = config || { enabled: true, daily_limit: 150000, category_ids: [], wallet_ids: [] };
     const monthToUse = selectedMonth || currentDateStr.slice(0, 7);
-    const isSetupRequired = !safeConfig.category_ids || safeConfig.category_ids.length === 0;
+    const isEnabled = safeConfig.enabled !== false;
+    const isSetupRequired = !isEnabled || !safeConfig.category_ids || safeConfig.category_ids.length === 0;
 
     const [year, month] = monthToUse.split('-').map(Number);
     const totalDaysInMonth = new Date(year, month, 0).getDate();
@@ -124,6 +125,7 @@ export const calculateDailyDiscipline = ({
     const dailySuggested = remainingDays > 0 ? Math.round(remainingBudget / remainingDays) : 0;
 
     return {
+        isEnabled,
         isSetupRequired,
         calendarDays,
         summary: {
@@ -150,16 +152,18 @@ export const useDailyDiscipline = ({
     transactions = [],
     categories = [],
     config,
-    selectedMonth
+    selectedMonth,
+    currentDateStr
 } = {}) => {
     return useMemo(() => {
         return calculateDailyDiscipline({
             transactions,
             categories,
             config,
-            selectedMonth
+            selectedMonth,
+            currentDateStr
         });
-    }, [transactions, categories, config, selectedMonth]);
+    }, [transactions, categories, config, selectedMonth, currentDateStr]);
 };
 
 export default useDailyDiscipline;
