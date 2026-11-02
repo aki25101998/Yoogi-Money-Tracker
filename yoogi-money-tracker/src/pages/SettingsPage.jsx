@@ -9,7 +9,7 @@ import GeneralSettings from '../components/settings/GeneralSettings';
 import BudgetSettings from '../components/settings/BudgetSettings';
 import AdminYoogiTemplate from '../components/settings/AdminYoogiTemplate';
 
-const SettingsPage = ({ user, userSettings, categories, aiMemories, abbreviations, wallets, payers, budgetSettings, budgetPortfolios, initialTab = 'general' }) => {
+const SettingsPage = ({ user, userSettings, categories, aiMemories, abbreviations, wallets, payers, budgetSettings, budgetPortfolios, initialTab = 'general', onTabChange }) => {
     const [activeTab, setActiveTab] = useState(initialTab);
 
     useEffect(() => {
@@ -62,18 +62,27 @@ const SettingsPage = ({ user, userSettings, categories, aiMemories, abbreviation
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
                     return (
-                        <button
+                        <a
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
+                            href={`#/settings/${tab.id}`}
+                            onClick={(e) => {
+                                if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                                    e.preventDefault();
+                                    setActiveTab(tab.id);
+                                    if (onTabChange) {
+                                        onTabChange(tab.id);
+                                    }
+                                }
+                            }}
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
                                 isActive 
                                     ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-800 shadow-md' 
                                     : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                         >
-                            <Icon className="w-4 h-4" />
-                            {tab.label}
-                        </button>
+                            <Icon className="w-4 h-4 pointer-events-none" />
+                            <span className="pointer-events-none">{tab.label}</span>
+                        </a>
                     );
                 })}
             </div>

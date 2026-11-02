@@ -35,15 +35,24 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
             {/* Desktop Sidebar */}
             <aside className={`fixed left-0 top-0 h-full z-30 hidden lg:flex flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 ${sidebarCollapsed ? 'w-[72px]' : 'w-[240px]'}`}>
                 {/* Logo */}
-                <div className={`flex items-center gap-3 px-4 h-16 border-b border-slate-100 dark:border-slate-700 ${sidebarCollapsed ? 'justify-center' : ''}`}>
-                    <img src="/logo.jpg" alt="Yoogi" className="w-9 h-9 rounded-xl shadow-lg shadow-emerald-200 dark:shadow-none flex-shrink-0 object-cover" />
+                <a 
+                    href="#/dashboard"
+                    onClick={(e) => {
+                        if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                            e.preventDefault();
+                            onNavigate('dashboard');
+                        }
+                    }}
+                    className={`flex items-center gap-3 px-4 h-16 border-b border-slate-100 dark:border-slate-700 ${sidebarCollapsed ? 'justify-center' : ''}`}
+                >
+                    <img src="/logo.jpg" alt="Yoogi" className="w-9 h-9 rounded-xl shadow-lg shadow-emerald-200 dark:shadow-none flex-shrink-0 object-cover pointer-events-none" />
                     {!sidebarCollapsed && (
-                        <div className="overflow-hidden">
+                        <div className="overflow-hidden pointer-events-none">
                             <h1 className="text-sm font-bold text-slate-800 dark:text-white whitespace-nowrap">Yoogi Money Tracker</h1>
                             <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">Personal Finance</span>
                         </div>
                     )}
-                </div>
+                </a>
 
                 {/* Nav Items */}
                 <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
@@ -51,9 +60,15 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
                         const Icon = item.icon;
                         const isActive = activePage === item.id || activePage?.startsWith(item.id + ':');
                         return (
-                            <button
+                            <a
                                 key={item.id}
-                                onClick={() => onNavigate(item.id)}
+                                href={`#/${item.id}`}
+                                onClick={(e) => {
+                                    if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                                        e.preventDefault();
+                                        onNavigate(item.id);
+                                    }
+                                }}
                                 title={sidebarCollapsed ? item.label : undefined}
                                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${sidebarCollapsed ? 'justify-center' : ''} ${
                                     isActive
@@ -61,12 +76,12 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
                                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'
                                 }`}
                             >
-                                <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
-                                {!sidebarCollapsed && <span className="whitespace-nowrap">{item.label}</span>}
+                                <Icon className={`w-5 h-5 flex-shrink-0 transition-colors pointer-events-none ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
+                                {!sidebarCollapsed && <span className="whitespace-nowrap pointer-events-none">{item.label}</span>}
                                 {isActive && !sidebarCollapsed && (
-                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500 pointer-events-none" />
                                 )}
-                            </button>
+                            </a>
                         );
                     })}
                 </nav>
@@ -128,10 +143,19 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
             {/* Mobile Header */}
             <header className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="flex items-center justify-between px-4 h-14">
-                    <div className="flex items-center gap-2">
-                        <img src="/logo.jpg" alt="Yoogi" className="w-7 h-7 rounded-lg object-cover" />
-                        <h1 className="text-sm font-bold text-slate-800 dark:text-white">Yoogi</h1>
-                    </div>
+                    <a 
+                        href="#/dashboard"
+                        onClick={(e) => {
+                            if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                                e.preventDefault();
+                                onNavigate('dashboard');
+                            }
+                        }}
+                        className="flex items-center gap-2"
+                    >
+                        <img src="/logo.jpg" alt="Yoogi" className="w-7 h-7 rounded-lg object-cover pointer-events-none" />
+                        <h1 className="text-sm font-bold text-slate-800 dark:text-white pointer-events-none">Yoogi</h1>
+                    </a>
                     <div className="flex items-center gap-2">
                         <button onClick={() => setIsHistoryOpen(true)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" title="Nhật ký phiên bản">
                             <Clock className="w-4 h-4" />
@@ -164,22 +188,28 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
                         const Icon = item.icon;
                         const isActive = activePage === item.id || activePage?.startsWith(item.id + ':');
                         return (
-                            <button
+                            <a
                                 key={item.id}
-                                onClick={() => onNavigate(item.id)}
+                                href={`#/${item.id}`}
+                                onClick={(e) => {
+                                    if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                                        e.preventDefault();
+                                        onNavigate(item.id);
+                                    }
+                                }}
                                 className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2 rounded-xl transition-all min-w-[56px] ${
                                     isActive
                                         ? 'text-emerald-600 dark:text-emerald-400'
                                         : 'text-slate-400 dark:text-slate-500'
                                 }`}
                             >
-                                <div className={`p-1 rounded-lg transition-colors ${isActive ? 'bg-emerald-50 dark:bg-emerald-900/30' : ''}`}>
-                                    <Icon className="w-5 h-5" />
+                                <div className={`p-1 rounded-lg transition-colors pointer-events-none ${isActive ? 'bg-emerald-50 dark:bg-emerald-900/30' : ''}`}>
+                                    <Icon className="w-5 h-5 pointer-events-none" />
                                 </div>
-                                <span className={`text-[10px] font-medium ${isActive ? 'text-emerald-700 dark:text-emerald-300' : ''}`}>
+                                <span className={`text-[10px] font-medium pointer-events-none ${isActive ? 'text-emerald-700 dark:text-emerald-300' : ''}`}>
                                     {item.label}
                                 </span>
-                            </button>
+                            </a>
                         );
                     })}
                 </div>

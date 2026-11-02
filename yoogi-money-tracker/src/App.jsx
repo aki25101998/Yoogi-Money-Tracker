@@ -5,6 +5,7 @@ import { useAuth } from './hooks/useAuth';
 import { useAppData } from './hooks/useAppData';
 import { useRecurringTransactions } from './hooks/useRecurringTransactions';
 import { saveDailyBudgetSettings } from './services/dailyBudgetService';
+import { getPageFromHash, getHashFromPage, getPageTitle } from './utils/routes';
 
 // Layout
 import Layout from './components/Layout';
@@ -49,7 +50,25 @@ export default function App() {
     const [isGlobalRecurringOpen, setIsGlobalRecurringOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-    const [activePage, setActivePage] = useState('dashboard');
+    const [activePage, setActivePage] = useState(() => getPageFromHash());
+
+    // --- Hash-based URL Routing & Dynamic Page Title ---
+    useEffect(() => {
+        document.title = getPageTitle(activePage);
+        const targetHash = getHashFromPage(activePage);
+        if (window.location.hash !== targetHash) {
+            window.location.hash = targetHash;
+        }
+    }, [activePage]);
+
+    useEffect(() => {
+        const handleHashChange = () => {
+            const pageFromUrl = getPageFromHash();
+            setActivePage(prev => (prev !== pageFromUrl ? pageFromUrl : prev));
+        };
+        window.addEventListener('hashchange', handleHashChange);
+        return () => window.removeEventListener('hashchange', handleHashChange);
+    }, []);
 
     // --- Theme ---
     const [theme, setTheme] = useState(() => {
@@ -268,6 +287,7 @@ export default function App() {
                     budgetSettings={budgetSettings}
                     budgetPortfolios={budgetPortfolios}
                     initialTab={initialTab}
+                    onTabChange={(tabId) => setActivePage(`settings:${tabId}`)}
                 />
             );
         }
