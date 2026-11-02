@@ -225,6 +225,7 @@ describe('DayCellItem component', () => {
         expect(html).toContain('16');
         expect(html).toContain('250k');
         expect(html).toContain('✕ Vượt 100k');
+        expect(html).toContain('hidden sm:inline-flex');
         expect(html).toContain('border-rose-200');
         expect(html).toContain('text-rose-700');
     });

@@ -87,7 +87,7 @@ const DayCellItem = ({
         if (status === 'fail') {
             return (
                 <span 
-                    className="pointer-events-none inline-flex items-center px-1 sm:px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-semibold bg-rose-100/90 dark:bg-rose-900/50 text-rose-800 dark:text-rose-200 truncate max-w-full" 
+                    className="pointer-events-none hidden sm:inline-flex items-center px-1 sm:px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-semibold bg-rose-100/90 dark:bg-rose-900/50 text-rose-800 dark:text-rose-200 truncate max-w-full" 
                     title={`Vượt ${formatCurrency(overAmount)}`}
                 >
                     {`✕ Vượt ${formatCompactAmount(overAmount)}`}
