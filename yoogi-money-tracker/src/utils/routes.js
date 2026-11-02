@@ -1,5 +1,5 @@
 /**
- * Utility for hash-based routing and page titles in Yoogi Money Tracker
+ * Utility for URL routing (HTML5 History API path-based & hash fallback) and page titles in Yoogi Money Tracker
  */
 
 export const VALID_PAGES = [
@@ -22,45 +22,66 @@ export const SETTINGS_SUBTABS = {
 };
 
 /**
- * Extracts and normalizes the page identifier from a URL hash string
+ * Extracts and normalizes the page identifier from a URL path and/or hash string
+ * @param {string} [pathname] - Optional pathname (defaults to window.location.pathname)
  * @param {string} [hashStr] - Optional hash string (defaults to window.location.hash)
  * @returns {string} Normalized page id (e.g. 'dashboard', 'transactions', 'settings:wallets')
  */
-export function getPageFromHash(hashStr) {
-    const raw = typeof hashStr === 'string' 
-        ? hashStr 
-        : (typeof window !== 'undefined' ? window.location.hash : '');
-    
-    // Remove leading # and /
-    const cleaned = raw.replace(/^#[/]?/, '').trim();
-    if (!cleaned) return 'dashboard';
+export function getPageFromLocation(pathname, hashStr) {
+    const rawPath = typeof pathname === 'string'
+        ? pathname
+        : (typeof window !== 'undefined' ? window.location.pathname : '/');
 
-    // Support both settings/tab and settings:tab
-    if (cleaned.startsWith('settings/')) {
-        const sub = cleaned.replace('settings/', '').trim();
-        return sub ? `settings:${sub}` : 'settings';
+    // Clean leading/trailing slashes
+    const cleanedPath = rawPath.replace(/^\/+|\/+$/g, '').trim();
+
+    // 1. Try parsing from pathname first
+    if (cleanedPath && cleanedPath !== 'index.html') {
+        if (cleanedPath === 'settings') {
+            return 'settings';
+        }
+        if (cleanedPath.startsWith('settings/')) {
+            const sub = cleanedPath.replace('settings/', '').trim();
+            return sub ? `settings:${sub}` : 'settings';
+        }
+        const [base] = cleanedPath.split('/');
+        if (VALID_PAGES.includes(base)) {
+            return base;
+        }
     }
 
-    const [basePage] = cleaned.split(':');
-    if (VALID_PAGES.includes(basePage)) {
-        return cleaned;
+    // 2. Fallback to hash if pathname is empty or root (e.g. legacy bookmarks with #/transactions)
+    const rawHash = typeof hashStr === 'string'
+        ? hashStr
+        : (typeof window !== 'undefined' ? window.location.hash : '');
+
+    const cleanedHash = rawHash.replace(/^#[/]?/, '').trim();
+    if (cleanedHash) {
+        if (cleanedHash.startsWith('settings/')) {
+            const sub = cleanedHash.replace('settings/', '').trim();
+            return sub ? `settings:${sub}` : 'settings';
+        }
+        const [baseHash] = cleanedHash.split(':');
+        if (VALID_PAGES.includes(baseHash)) {
+            return cleanedHash;
+        }
     }
 
     return 'dashboard';
 }
 
 /**
- * Converts a page identifier to a URL hash
+ * Converts a page identifier to a clean URL pathname
  * @param {string} page - Page id (e.g. 'transactions', 'settings:wallets')
- * @returns {string} Hash string starting with '#/'
+ * @returns {string} Clean path string (e.g. '/transactions', '/settings/wallets')
  */
-export function getHashFromPage(page) {
-    if (!page) return '#/dashboard';
+export function getUrlFromPage(page) {
+    if (!page || page === 'dashboard') return '/dashboard';
     if (page.startsWith('settings:')) {
         const sub = page.split(':')[1];
-        return `#/settings/${sub}`;
+        return `/settings/${sub}`;
     }
-    return `#/${page}`;
+    return `/${page}`;
 }
 
 /**

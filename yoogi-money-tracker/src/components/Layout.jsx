@@ -36,7 +36,7 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
             <aside className={`fixed left-0 top-0 h-full z-30 hidden lg:flex flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 ${sidebarCollapsed ? 'w-[72px]' : 'w-[240px]'}`}>
                 {/* Logo */}
                 <a 
-                    href="#/dashboard"
+                    href="/dashboard"
                     onClick={(e) => {
                         if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
                             e.preventDefault();
@@ -62,7 +62,7 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
                         return (
                             <a
                                 key={item.id}
-                                href={`#/${item.id}`}
+                                href={`/${item.id}`}
                                 onClick={(e) => {
                                     if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
                                         e.preventDefault();
@@ -144,7 +144,7 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
             <header className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="flex items-center justify-between px-4 h-14">
                     <a 
-                        href="#/dashboard"
+                        href="/dashboard"
                         onClick={(e) => {
                             if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
                                 e.preventDefault();
@@ -190,7 +190,7 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
                         return (
                             <a
                                 key={item.id}
-                                href={`#/${item.id}`}
+                                href={`/${item.id}`}
                                 onClick={(e) => {
                                     if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
                                         e.preventDefault();

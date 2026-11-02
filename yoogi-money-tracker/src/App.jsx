@@ -5,7 +5,7 @@ import { useAuth } from './hooks/useAuth';
 import { useAppData } from './hooks/useAppData';
 import { useRecurringTransactions } from './hooks/useRecurringTransactions';
 import { saveDailyBudgetSettings } from './services/dailyBudgetService';
-import { getPageFromHash, getHashFromPage, getPageTitle } from './utils/routes';
+import { getPageFromLocation, getUrlFromPage, getPageTitle } from './utils/routes';
 
 // Layout
 import Layout from './components/Layout';
@@ -50,24 +50,32 @@ export default function App() {
     const [isGlobalRecurringOpen, setIsGlobalRecurringOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-    const [activePage, setActivePage] = useState(() => getPageFromHash());
+    const [activePage, setActivePage] = useState(() => getPageFromLocation());
 
-    // --- Hash-based URL Routing & Dynamic Page Title ---
+    // --- Path-based URL Routing & Dynamic Page Title ---
     useEffect(() => {
         document.title = getPageTitle(activePage);
-        const targetHash = getHashFromPage(activePage);
-        if (window.location.hash !== targetHash) {
-            window.location.hash = targetHash;
+        const targetUrl = getUrlFromPage(activePage);
+        if (typeof window !== 'undefined') {
+            const currentPath = window.location.pathname;
+            const currentHash = window.location.hash;
+            if (currentPath !== targetUrl || currentHash) {
+                window.history.pushState(null, '', targetUrl);
+            }
         }
     }, [activePage]);
 
     useEffect(() => {
-        const handleHashChange = () => {
-            const pageFromUrl = getPageFromHash();
+        const handleLocationChange = () => {
+            const pageFromUrl = getPageFromLocation(window.location.pathname, window.location.hash);
             setActivePage(prev => (prev !== pageFromUrl ? pageFromUrl : prev));
         };
-        window.addEventListener('hashchange', handleHashChange);
-        return () => window.removeEventListener('hashchange', handleHashChange);
+        window.addEventListener('popstate', handleLocationChange);
+        window.addEventListener('hashchange', handleLocationChange);
+        return () => {
+            window.removeEventListener('popstate', handleLocationChange);
+            window.removeEventListener('hashchange', handleLocationChange);
+        };
     }, []);
 
     // --- Theme ---

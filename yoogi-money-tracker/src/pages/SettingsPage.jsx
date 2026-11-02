@@ -64,7 +64,7 @@ const SettingsPage = ({ user, userSettings, categories, aiMemories, abbreviation
                     return (
                         <a
                             key={tab.id}
-                            href={`#/settings/${tab.id}`}
+                            href={`/settings/${tab.id}`}
                             onClick={(e) => {
                                 if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
                                     e.preventDefault();

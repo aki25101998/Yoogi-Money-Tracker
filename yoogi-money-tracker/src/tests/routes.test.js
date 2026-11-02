@@ -1,47 +1,53 @@
 import { describe, it, expect } from 'vitest';
-import { getPageFromHash, getHashFromPage, getPageTitle } from '../utils/routes';
+import { getPageFromLocation, getUrlFromPage, getPageTitle } from '../utils/routes';
 
-describe('routes utility', () => {
-    describe('getPageFromHash', () => {
-        it('handles empty, root, and missing hashes', () => {
-            expect(getPageFromHash('')).toBe('dashboard');
-            expect(getPageFromHash('#')).toBe('dashboard');
-            expect(getPageFromHash('#/')).toBe('dashboard');
-            expect(getPageFromHash('#/unknown-page')).toBe('dashboard');
+describe('routes utility (Path-based with hash fallback)', () => {
+    describe('getPageFromLocation', () => {
+        it('handles root, empty, and index.html paths', () => {
+            expect(getPageFromLocation('/', '')).toBe('dashboard');
+            expect(getPageFromLocation('', '')).toBe('dashboard');
+            expect(getPageFromLocation('/index.html', '')).toBe('dashboard');
+            expect(getPageFromLocation('/unknown-page', '')).toBe('dashboard');
         });
 
-        it('parses valid primary pages', () => {
-            expect(getPageFromHash('#/dashboard')).toBe('dashboard');
-            expect(getPageFromHash('#dashboard')).toBe('dashboard');
-            expect(getPageFromHash('#/daily-discipline')).toBe('daily-discipline');
-            expect(getPageFromHash('#/transactions')).toBe('transactions');
-            expect(getPageFromHash('#/installments')).toBe('installments');
-            expect(getPageFromHash('#/debts')).toBe('debts');
-            expect(getPageFromHash('#/settings')).toBe('settings');
+        it('parses valid primary pathname routes without hash', () => {
+            expect(getPageFromLocation('/dashboard')).toBe('dashboard');
+            expect(getPageFromLocation('/daily-discipline')).toBe('daily-discipline');
+            expect(getPageFromLocation('/transactions')).toBe('transactions');
+            expect(getPageFromLocation('/installments')).toBe('installments');
+            expect(getPageFromLocation('/debts')).toBe('debts');
+            expect(getPageFromLocation('/settings')).toBe('settings');
         });
 
-        it('parses sub-settings routes formatted as slash or colon', () => {
-            expect(getPageFromHash('#/settings/wallets')).toBe('settings:wallets');
-            expect(getPageFromHash('#/settings:wallets')).toBe('settings:wallets');
-            expect(getPageFromHash('#/settings/categories')).toBe('settings:categories');
-            expect(getPageFromHash('#/settings/ai')).toBe('settings:ai');
-            expect(getPageFromHash('#/settings/')).toBe('settings');
+        it('parses sub-settings pathname routes', () => {
+            expect(getPageFromLocation('/settings/wallets')).toBe('settings:wallets');
+            expect(getPageFromLocation('/settings/categories')).toBe('settings:categories');
+            expect(getPageFromLocation('/settings/ai')).toBe('settings:ai');
+            expect(getPageFromLocation('/settings/')).toBe('settings');
+        });
+
+        it('supports fallback to legacy hash when pathname is root', () => {
+            expect(getPageFromLocation('/', '#/transactions')).toBe('transactions');
+            expect(getPageFromLocation('/', '#/debts')).toBe('debts');
+            expect(getPageFromLocation('/', '#/settings/wallets')).toBe('settings:wallets');
+            expect(getPageFromLocation('/index.html', '#/installments')).toBe('installments');
         });
     });
 
-    describe('getHashFromPage', () => {
-        it('generates correct hash for primary pages', () => {
-            expect(getHashFromPage('dashboard')).toBe('#/dashboard');
-            expect(getHashFromPage('transactions')).toBe('#/transactions');
-            expect(getHashFromPage('installments')).toBe('#/installments');
-            expect(getHashFromPage('debts')).toBe('#/debts');
-            expect(getHashFromPage('')).toBe('#/dashboard');
+    describe('getUrlFromPage', () => {
+        it('generates clean path URL without hash', () => {
+            expect(getUrlFromPage('dashboard')).toBe('/dashboard');
+            expect(getUrlFromPage('transactions')).toBe('/transactions');
+            expect(getUrlFromPage('installments')).toBe('/installments');
+            expect(getUrlFromPage('debts')).toBe('/debts');
+            expect(getUrlFromPage('daily-discipline')).toBe('/daily-discipline');
+            expect(getUrlFromPage('settings')).toBe('/settings');
+            expect(getUrlFromPage('')).toBe('/dashboard');
         });
 
-        it('generates slash-formatted hash for settings sub-pages', () => {
-            expect(getHashFromPage('settings')).toBe('#/settings');
-            expect(getHashFromPage('settings:wallets')).toBe('#/settings/wallets');
-            expect(getHashFromPage('settings:categories')).toBe('#/settings/categories');
+        it('generates clean path URL for settings sub-pages', () => {
+            expect(getUrlFromPage('settings:wallets')).toBe('/settings/wallets');
+            expect(getUrlFromPage('settings:categories')).toBe('/settings/categories');
         });
     });
 
