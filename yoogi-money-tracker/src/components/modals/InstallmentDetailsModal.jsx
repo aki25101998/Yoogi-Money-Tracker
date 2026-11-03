@@ -5,12 +5,12 @@ import { formatCurrency } from '../../utils/formatters';
 import InstallmentItem from '../InstallmentItem';
 import { calculateItemStats, getYearMonth, calculateWrapperMonthlyRemaining, getLenderDueInfo } from '../../utils/calculations';
 
-const InstallmentDetailsModal = ({ 
-    isOpen, 
-    onClose, 
-    groupedLender, 
-    onEditItem, 
-    onDeleteItem, 
+const InstallmentDetailsModal = ({
+    isOpen,
+    onClose,
+    groupedLender,
+    onEditItem,
+    onDeleteItem,
     onTogglePaid,
     referenceDate,
     onAddNewItem,
@@ -39,12 +39,12 @@ const InstallmentDetailsModal = ({
     (groupedLender.items || []).forEach(item => {
         const start = new Date(item.startDate);
         const paidMonths = item.paidMonths || [];
-        
+
         for (let i = 0; i < item.term; i++) {
             const checkDate = new Date(start.getFullYear(), start.getMonth() + i, 1);
             const mStr = getYearMonth(checkDate);
             const isPaid = paidMonths.includes(mStr);
-            
+
             if (mStr < targetMonthStr) {
                 if (isPaid) {
                     historyItems.push({
@@ -87,7 +87,7 @@ const InstallmentDetailsModal = ({
 
     const amountDueThisMonth = activeItems.reduce((sum, wrapper) => {
         const monthlyRemaining = calculateWrapperMonthlyRemaining(wrapper, transactions);
-        
+
         wrapper.monthlyRemaining = monthlyRemaining;
         wrapper.partialPaid = wrapper.item.monthlyPayment - monthlyRemaining;
 
@@ -103,7 +103,7 @@ const InstallmentDetailsModal = ({
     const getDisplayItems = () => {
         if (activeTab === 'active') return activeItems;
         if (activeTab === 'paid') return paidItems;
-        
+
         const groupedHistory = {};
         historyItems.forEach(w => {
             if (!groupedHistory[w.item.id]) {
@@ -114,7 +114,7 @@ const InstallmentDetailsModal = ({
             }
             groupedHistory[w.item.id].paidTerms.push(w);
         });
-        
+
         let result = Object.values(groupedHistory).map(group => ({
             item: group.item,
             isGroupedHistory: true,
@@ -123,14 +123,14 @@ const InstallmentDetailsModal = ({
             refDate: new Date(),
             monthStr: 'group'
         }));
-        
+
         if (hideCompletedHistory) {
             result = result.filter(group => {
                 const stats = calculateItemStats(group.item, referenceDate, transactions);
                 return !stats.isFinished;
             });
         }
-        
+
         return result;
     };
 
@@ -162,8 +162,8 @@ const InstallmentDetailsModal = ({
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button 
-                                onClick={() => onAddNewItem && onAddNewItem(groupedLender.lenderName)} 
+                            <button
+                                onClick={() => onAddNewItem && onAddNewItem(groupedLender.lenderName)}
                                 className="p-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-800/50 rounded-lg transition-colors"
                                 title="Thêm khoản mới cho đơn vị này"
                             >
@@ -174,19 +174,19 @@ const InstallmentDetailsModal = ({
                     </div>
 
                     <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-lg">
-                        <button 
+                        <button
                             onClick={() => handleTabChange('active')}
                             className={`flex-1 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${activeTab === 'active' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                         >
                             Đang chờ ({activeItems.length})
                         </button>
-                        <button 
+                        <button
                             onClick={() => handleTabChange('paid')}
                             className={`flex-1 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${activeTab === 'paid' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                         >
                             Đã xong ({paidItems.length})
                         </button>
-                        <button 
+                        <button
                             onClick={() => handleTabChange('history')}
                             className={`flex-1 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${activeTab === 'history' ? 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                         >
@@ -225,8 +225,8 @@ const InstallmentDetailsModal = ({
                     {activeTab === 'history' && historyItems.length > 0 && (
                         <div className="flex justify-end mt-2 px-1">
                             <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900/50 dark:border-slate-700 w-3.5 h-3.5"
                                     checked={hideCompletedHistory}
                                     onChange={(e) => setHideCompletedHistory(e.target.checked)}

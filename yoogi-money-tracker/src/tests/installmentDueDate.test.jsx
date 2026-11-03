@@ -200,4 +200,43 @@ describe('Installment Due Date Calculations', () => {
             expect(info.badgeText).toBe('✓ Đã thanh toán');
         });
     });
+
+    describe('SetLenderDueModal Rendering', () => {
+        it('renders null when isOpen is false', async () => {
+            const { default: SetLenderDueModal } = await import('../components/modals/SetLenderDueModal');
+            const { renderToString } = await import('react-dom/server');
+            const html = renderToString(
+                <SetLenderDueModal
+                    isOpen={false}
+                    onClose={() => {}}
+                    lenderName="TP Bank"
+                    currentDueDay={15}
+                    onSave={() => {}}
+                />
+            );
+            expect(html).toBe('');
+        });
+
+        it('renders modal content with lender name and options when isOpen is true', async () => {
+            const { default: SetLenderDueModal } = await import('../components/modals/SetLenderDueModal');
+            const { renderToString } = await import('react-dom/server');
+            const html = renderToString(
+                <SetLenderDueModal
+                    isOpen={true}
+                    onClose={() => {}}
+                    lenderName="TP Bank"
+                    currentDueDay={15}
+                    detectedDueDays={[15, 20]}
+                    referenceMonth="11/2026"
+                    onSave={() => {}}
+                />
+            );
+            expect(html).toContain('Cài đặt hạn thanh toán');
+            expect(html).toContain('TP Bank');
+            expect(html).toContain('Cố định hàng tháng');
+            expect(html).toContain('Tự động theo hợp đồng');
+            expect(html).toContain('Lưu hạn thanh toán');
+        });
+    });
 });
+

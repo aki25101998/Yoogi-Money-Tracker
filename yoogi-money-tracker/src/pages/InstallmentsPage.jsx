@@ -5,14 +5,14 @@ import {
     Plus, CreditCard, Calendar, TrendingUp, Target,
     Loader2, Filter, FileJson, Upload,
     Sparkles, X, AlertTriangle, Trash2,
-    RotateCcw, ChevronUp, ChevronDown, Check, ChevronRight, Clock
+    RotateCcw, ChevronUp, ChevronDown, Check, ChevronRight, Clock, Pencil
 } from 'lucide-react';
 
 import { addPayer, deletePayer, addLender, deleteLender, updateLender, deleteTransaction, addInstallment, updateInstallment, deleteInstallment, addTransaction, paymentDebugLog } from '../utils/supabaseHelpers';
 import { processBulkInstallmentPayment } from '../services/installmentPaymentService';
 import { supabase } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
-import { calculateLoan, calculateItemStats, getYearMonth, getLenderDueInfo } from '../utils/calculations';
+import { calculateLoan, calculateItemStats, getYearMonth, getLenderDueInfo, getItemDueDay } from '../utils/calculations';
 
 import Card from '../components/ui/Card';
 import InstallmentItem from '../components/InstallmentItem';
@@ -22,6 +22,7 @@ const InstallmentDetailsModal = lazy(() => import('../components/modals/Installm
 const MinimumPaymentModal = lazy(() => import('../components/modals/MinimumPaymentModal'));
 const LoanEditModal = lazy(() => import('../components/modals/LoanEditModal'));
 const PayInstallmentModal = lazy(() => import('../components/modals/PayInstallmentModal'));
+const SetLenderDueModal = lazy(() => import('../components/modals/SetLenderDueModal'));
 
 const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, transactions, categories }) => {
     const {
@@ -85,7 +86,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
     const handleSaveLenderDueDay = async (lenderName, day) => {
         const parsed = parseInt(day, 10);
         const validDay = !isNaN(parsed) && parsed >= 1 && parsed <= 31 ? parsed : null;
-        
+
         setLenderDueDays(prev => {
             const next = { ...prev };
             if (validDay) {
@@ -112,26 +113,27 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
         }
     };
 
-    const handlePromptSetLenderDueDay = (e, groupOrName) => {
+    // Due Date Modal State
+    const [dueModalState, setDueModalState] = useState({
+        isOpen: false,
+        lenderName: '',
+        currentDueDay: null,
+        detectedDueDays: []
+    });
+
+    const handleOpenSetDueModal = (e, groupOrName) => {
         if (e && e.stopPropagation) e.stopPropagation();
         const lenderName = typeof groupOrName === 'string' ? groupOrName : groupOrName.lenderName;
-        const currentVal = lenderDueDays[lenderName] || '';
-        const input = window.prompt(
-            `Cài đặt ngày đến hạn thanh toán hàng tháng cho "${lenderName}" (1 - 31):\n(Để trống hoặc nhập 0 để tự động tính theo các khoản trả góp)`,
-            currentVal
-        );
-        if (input === null) return;
-        const trimmed = input.trim();
-        if (trimmed === '' || trimmed === '0') {
-            handleSaveLenderDueDay(lenderName, null);
-        } else {
-            const num = parseInt(trimmed, 10);
-            if (isNaN(num) || num < 1 || num > 31) {
-                alert('Vui lòng nhập ngày hợp lệ từ 1 đến 31.');
-                return;
-            }
-            handleSaveLenderDueDay(lenderName, num);
-        }
+        const group = typeof groupOrName === 'object' ? groupOrName : groupedLenders.find(g => g.lenderName === lenderName);
+        const items = group?.items || filteredItems.filter(item => (item.lender || 'Khác') === lenderName);
+        const detected = [...new Set(items.map(item => getItemDueDay(item)))].sort((a, b) => a - b);
+
+        setDueModalState({
+            isOpen: true,
+            lenderName,
+            currentDueDay: lenderDueDays[lenderName] || null,
+            detectedDueDays: detected
+        });
     };
 
     // Refs
@@ -211,7 +213,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
             // Undo payment: delete related transactions
             const relatedTxns = transactions?.filter(t => {
                 if (t.installmentId !== item.id || (t.type !== 'installment_repaid' && t.type !== 'loan_repaid')) return false;
-                
+
                 let txMonthStr = null;
                 const match = t.description?.match(/\(T(\d{2})\/(\d{4})\)$/);
                 if (match) {
@@ -222,14 +224,14 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                 } else {
                     txMonthStr = t.date ? `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}` : null;
                 }
-                
+
                 return txMonthStr === monthStr;
             }) || [];
-            
+
             for (const t of relatedTxns) {
                 try {
                     await deleteTransaction(user.uid, t.id, t);
-                } catch(e) { console.error("Error deleting related txn", e); }
+                } catch (e) { console.error("Error deleting related txn", e); }
             }
         } else {
             newPaidMonths = [...currentPaidMonths, monthStr].sort();
@@ -455,7 +457,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
 
             const prompt = `Hãy đóng vai một Chuyên Gia Phân Tích Tài Chính Cấp Cao.\nDựa trên dữ liệu: ${JSON.stringify(summaryData)}.\nHãy lập BÁO CÁO TÀI CHÍNH NGẮN GỌN (tối đa 300 chữ) theo 3 phần:\n1. TỔNG QUAN DANH MỤC NỢ 📊\n2. KHUYẾN NGHỊ THANH KHOẢN 🎯\n3. GIẢI PHÁP TỐI ƯU DÒNG TIỀN 💡\nQUY TẮC TRÌNH BÀY (BẮT BUỘC TUÂN THỦ):\n⛔ CẤM TUYỆT ĐỐI dùng Markdown.\n⛔ KHÔNG dùng gạch đầu dòng.\n✅ Văn phong: Chuyên nghiệp, súc tích.\n✅ Chỉ dùng Emoji ở đầu câu.`;
 
-            
+
             const { data, error } = await supabase.functions.invoke('gemini-ai', {
                 body: {
                     action: 'analyze_installments',
@@ -500,7 +502,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
 
     const handleRenameLender = async (e, group) => {
         e.stopPropagation();
-        
+
         if (group.lenderName === 'Khác') {
             alert('Không thể đổi tên đơn vị "Khác".');
             return;
@@ -541,7 +543,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
 
     const handleConfirmPayment = async (paymentData) => {
         const traceId = paymentData.paymentBatchId || 'PAGE_NO_TRACE';
-        
+
         paymentDebugLog('PAGE', 'HANDLE_CONFIRM_START', {
             traceId,
             userId: user?.uid,
@@ -563,7 +565,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                 traceId
             });
             paymentDebugLog('PAGE', 'SERVICE_SUCCESS', { traceId });
-            
+
             // Đóng modal sau khi thành công
             setIsPayInstallmentOpen(false);
             setSelectedItemsForPayment([]);
@@ -612,7 +614,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                             </select>
                         </div>
                         {filterOwner !== 'all' && filterOwner !== 'Tôi' && (
-                            <button 
+                            <button
                                 onClick={() => confirmDeletePayer(filterOwner)}
                                 className="ml-2 z-20 flex items-center justify-center p-1.5 text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/30 border border-slate-200 dark:border-slate-600 rounded-lg transition-colors shadow-sm"
                                 title="Xóa người trả"
@@ -621,8 +623,8 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                             </button>
                         )}
                     </div>
-                    <button 
-                        onClick={handleQuickAddPayer} 
+                    <button
+                        onClick={handleQuickAddPayer}
                         className="flex items-center justify-center px-2 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-colors"
                         title="Thêm người trả mới"
                     >
@@ -633,7 +635,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                 <div className="flex gap-2 ml-auto items-center">
                     <div className="relative flex items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg p-0.5 transition-colors">
                         <div className="border-r border-slate-200 dark:border-slate-700 pr-[11px] mr-1">
-                            <select 
+                            <select
                                 value={!filterDate ? 'all' : filterDate.length === 4 ? 'year' : 'month'}
                                 onChange={(e) => {
                                     const val = e.target.value;
@@ -655,7 +657,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                 <span>Tất cả</span>
                             </div>
                         )}
-                        
+
                         {filterDate && filterDate.length === 7 && (
                             <div className="relative flex items-center gap-1.5 px-3 py-1.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 rounded-r-md transition-colors" onClick={() => dateInputRef.current?.showPicker()}>
                                 <Calendar className="w-3.5 h-3.5 text-indigo-500" />
@@ -665,16 +667,16 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                 <input ref={dateInputRef} type="month" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="absolute start-0 bottom-0 w-0 h-0 opacity-0 -z-10 border-0 p-0 m-0" />
                             </div>
                         )}
-                        
+
                         {filterDate && filterDate.length === 4 && (
                             <div className="relative flex items-center gap-1.5 px-2 py-1.5">
                                 <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-                                <select 
-                                    value={filterDate} 
+                                <select
+                                    value={filterDate}
                                     onChange={(e) => setFilterDate(e.target.value)}
                                     className="bg-transparent text-xs font-medium text-indigo-600 dark:text-indigo-400 outline-none cursor-pointer pr-6 pl-1"
                                 >
-                                    {Array.from({length: 10}, (_, i) => new Date().getFullYear() - 5 + i).map(y => (
+                                    {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(y => (
                                         <option key={y} value={y.toString()}>Năm {y}</option>
                                     ))}
                                 </select>
@@ -746,19 +748,19 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
             {/* Tab Navigation */}
             <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 mb-6">
                 <div className="flex overflow-x-auto hide-scrollbar">
-                    <button 
+                    <button
                         onClick={() => setActiveTab('list')}
                         className={`pb-4 px-6 font-bold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'list' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                     >
                         Danh sách trả góp
                     </button>
-                    <button 
+                    <button
                         onClick={() => setActiveTab('history')}
                         className={`pb-4 px-6 font-bold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'history' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                     >
                         Lịch sử thanh toán
                     </button>
-                    <button 
+                    <button
                         onClick={() => setActiveTab('lenders')}
                         className={`pb-4 px-6 font-bold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'lenders' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                     >
@@ -780,7 +782,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
             {activeTab === 'list' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {(() => {
-                        const displayLenders = hideZeroLenders 
+                        const displayLenders = hideZeroLenders
                             ? groupedLenders.filter(group => group.totalAmount > 0)
                             : groupedLenders;
 
@@ -799,7 +801,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                             const remaining = group.totalAmount - group.repaidAmount;
                             const progress = group.totalAmount > 0 ? Math.round((group.repaidAmount / group.totalAmount) * 100) : 0;
                             const isPaid = group.status === 'paid';
-                            
+
                             const activeCount = inProgressItems.filter(wrapper => (wrapper.item.lender || 'Khác') === group.lenderName).length;
                             const paidCount = completedItems.filter(wrapper => (wrapper.item.lender || 'Khác') === group.lenderName).length;
 
@@ -807,29 +809,57 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                             const dueInfo = getLenderDueInfo(group, activeReferenceDate, lenderDueDays[group.lenderName]);
 
                             return (
-                                <div 
-                                    key={group.lenderName} 
+                                <div
+                                    key={group.lenderName}
                                     className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group/card"
                                 >
-                                    <div 
-                                        className="p-5 pb-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700"
-                                        onClick={(e) => handleRenameLender(e, group)}
-                                        title="Bấm để đổi tên đơn vị"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xl group-hover/card:bg-indigo-200 transition-colors">
+                                    <div className="p-5 pb-4 border-b border-slate-100 dark:border-slate-700">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xl group-hover/card:bg-indigo-200 transition-colors shrink-0 mt-0.5">
                                                 {group.lenderName.charAt(0).toUpperCase()}
                                             </div>
-                                            <div>
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <h3 className="font-bold text-slate-800 dark:text-white text-lg group-hover/card:text-indigo-600 transition-colors">{group.lenderName}</h3>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <h3 
+                                                        onClick={(e) => handleRenameLender(e, group)}
+                                                        className="font-bold text-slate-800 dark:text-white text-lg hover:text-indigo-600 transition-colors cursor-pointer truncate"
+                                                        title="Bấm để đổi tên đơn vị"
+                                                    >
+                                                        {group.lenderName}
+                                                    </h3>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => handleRenameLender(e, group)}
+                                                        className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-0.5 rounded transition-colors"
+                                                        title="Bấm để đổi tên đơn vị"
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5 pointer-events-none" />
+                                                    </button>
                                                     {(activeCount > 0 || paidCount > 0) && (
-                                                        <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-semibold border border-indigo-100 dark:border-indigo-500/20 whitespace-nowrap">
+                                                        <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-semibold border border-indigo-100 dark:border-indigo-500/20 whitespace-nowrap ml-auto sm:ml-0">
                                                             Đang nợ {activeCount} / {activeCount + paidCount} khoản
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-xs text-slate-500 mt-0.5">Bấm để đổi tên đơn vị</p>
+
+                                                {/* Vị trí hiển thị thời gian đến hạn thanh toán & cho phép bấm để đổi hạn thanh toán */}
+                                                <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => handleOpenSetDueModal(e, group)}
+                                                        className="group/due inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-indigo-50 dark:bg-slate-700/60 dark:hover:bg-indigo-900/30 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-300 border border-slate-200/80 dark:border-slate-600 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all cursor-pointer shadow-sm"
+                                                        title="Bấm để thay đổi hạn thanh toán của đơn vị này"
+                                                    >
+                                                        <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0 pointer-events-none" />
+                                                        <span className="font-bold pointer-events-none">
+                                                            {dueInfo.dateStr ? `Hạn: ${dueInfo.dateStr}` : dueInfo.displayText}
+                                                        </span>
+                                                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${dueInfo.badgeClass} pointer-events-none`}>
+                                                            {dueInfo.badgeText}
+                                                        </span>
+                                                        <Pencil className="w-3 h-3 text-slate-400 group-hover/due:text-indigo-500 ml-0.5 shrink-0 pointer-events-none" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -838,7 +868,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                         className="p-5 pt-4 cursor-pointer flex-1 flex flex-col justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                                         onClick={() => openDetailsModal(group)}
                                     >
-                                        <div className="space-y-3.5">
+                                        <div className="space-y-4">
                                             <div>
                                                 <div className="flex justify-between text-xs mb-1.5">
                                                     <span className="font-medium text-emerald-600 dark:text-emerald-400">Đã trả: {formatCurrency(group.repaidAmount)}</span>
@@ -846,34 +876,6 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                                 </div>
                                                 <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
                                                     <div className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
-                                                </div>
-                                            </div>
-
-                                            {/* Thời gian đến hạn thanh toán */}
-                                            <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-2 transition-colors">
-                                                <div className="flex items-center gap-2.5 min-w-0">
-                                                    <div className={`p-2 rounded-lg ${dueInfo.iconBgClass} shrink-0`}>
-                                                        <Calendar className={`w-4 h-4 ${dueInfo.iconColorClass} pointer-events-none`} />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Hạn thanh toán</span>
-                                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate block" title={dueInfo.displayText}>
-                                                            {dueInfo.displayText}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-1.5 shrink-0">
-                                                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${dueInfo.badgeClass}`}>
-                                                        {dueInfo.badgeText}
-                                                    </span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => handlePromptSetLenderDueDay(e, group)}
-                                                        title={dueInfo.isCustom ? `Đang đặt ngày ${dueInfo.dueDay} hàng tháng (Bấm để đổi)` : "Cài đặt ngày thanh toán cố định"}
-                                                        className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200/60 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                                                    >
-                                                        <Clock className="w-3.5 h-3.5 pointer-events-none" />
-                                                    </button>
                                                 </div>
                                             </div>
 
@@ -917,7 +919,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                         <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
                                             <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0 pointer-events-none" />
                                             <span>
-                                                {lenderDueDays[lender.name] 
+                                                {lenderDueDays[lender.name]
                                                     ? `Hạn: Ngày ${lenderDueDays[lender.name]} hàng tháng`
                                                     : 'Hạn: Tự động theo các khoản trả góp'}
                                             </span>
@@ -927,7 +929,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                 <div className="flex items-center gap-1">
                                     <button
                                         type="button"
-                                        onClick={(e) => handlePromptSetLenderDueDay(e, lender.name)}
+                                        onClick={(e) => handleOpenSetDueModal(e, lender.name)}
                                         className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
                                         title="Cài đặt ngày đến hạn thanh toán hàng tháng"
                                     >
@@ -970,47 +972,48 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                             {formatCurrency(group.total)}
                                         </div>
                                     </div>
-                                    
+
                                     <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
                                         {group.items.map(txn => {
                                             const paidCount = Array.isArray(txn.item.paidMonths) ? Math.min(txn.item.paidMonths.length, txn.item.term) : 0;
                                             const remaining = Math.max(0, txn.item.term - paidCount);
                                             const progress = Math.round((paidCount / txn.item.term) * 100);
                                             return (
-                                            <div 
-                                                key={txn.id} 
-                                                className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer"
-                                                onClick={() => { setEditingItem(txn.item); setIsAddEditModalOpen(true); }}
-                                            >
-                                                <div className="w-10 h-10 rounded-full flex flex-shrink-0 items-center justify-center text-xl bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-sm">
-                                                    💳
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-bold text-slate-800 dark:text-white truncate text-base">{txn.itemName}</p>
-                                                    <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                                        <span>Người trả: {txn.owner}</span>
-                                                        <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></span>
-                                                        <span className="font-medium text-indigo-600 dark:text-indigo-400">Đã trả: {paidCount}/{txn.item.term} kỳ ({progress}%)</span>
+                                                <div
+                                                    key={txn.id}
+                                                    className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer"
+                                                    onClick={() => { setEditingItem(txn.item); setIsAddEditModalOpen(true); }}
+                                                >
+                                                    <div className="w-10 h-10 rounded-full flex flex-shrink-0 items-center justify-center text-xl bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-sm">
+                                                        💳
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-bold text-slate-800 dark:text-white truncate text-base">{txn.itemName}</p>
+                                                        <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                                            <span>Người trả: {txn.owner}</span>
+                                                            <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></span>
+                                                            <span className="font-medium text-indigo-600 dark:text-indigo-400">Đã trả: {paidCount}/{txn.item.term} kỳ ({progress}%)</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="text-right">
+                                                            <p className="font-bold text-lg whitespace-nowrap text-emerald-600 dark:text-emerald-400">
+                                                                {formatCurrency(txn.amount)}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); togglePaidForMonth(txn.item, txn.month); }}
+                                                                title="Hoàn tác"
+                                                                className="p-2 text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/30 rounded-lg transition-colors shadow-sm border border-slate-200 dark:border-slate-700"
+                                                            >
+                                                                <RotateCcw className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                    <div className="text-right">
-                                                        <p className="font-bold text-lg whitespace-nowrap text-emerald-600 dark:text-emerald-400">
-                                                            {formatCurrency(txn.amount)}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button 
-                                                            onClick={(e) => { e.stopPropagation(); togglePaidForMonth(txn.item, txn.month); }}
-                                                            title="Hoàn tác"
-                                                            className="p-2 text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/30 rounded-lg transition-colors shadow-sm border border-slate-200 dark:border-slate-700"
-                                                        >
-                                                            <RotateCcw className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )})}
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             );
@@ -1111,6 +1114,17 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                         wallets={wallets}
                         selectedItems={selectedItemsForPayment}
                         onConfirm={handleConfirmPayment}
+                    />
+                )}
+                {dueModalState.isOpen && (
+                    <SetLenderDueModal
+                        isOpen={dueModalState.isOpen}
+                        onClose={() => setDueModalState(prev => ({ ...prev, isOpen: false }))}
+                        lenderName={dueModalState.lenderName}
+                        currentDueDay={dueModalState.currentDueDay}
+                        detectedDueDays={dueModalState.detectedDueDays}
+                        referenceMonth={filterDate && filterDate.length === 7 ? filterDate.split('-').reverse().join('/') : ''}
+                        onSave={handleSaveLenderDueDay}
                     />
                 )}
             </Suspense>

@@ -3,3 +3,4 @@
 
 ALTER TABLE public.lenders ADD COLUMN IF NOT EXISTS due_day integer;
 ALTER TABLE public.installments ADD COLUMN IF NOT EXISTS due_day integer;
+
