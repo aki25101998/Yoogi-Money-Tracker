@@ -1,45 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, Clock, Check, RotateCcw } from 'lucide-react';
+import { X, Calendar, Clock, Check, RotateCcw, Building2 } from 'lucide-react';
 
 const QUICK_DAYS = [5, 10, 15, 20, 25, 28, 30];
 
 const SetLenderDueModal = ({
     isOpen,
     onClose,
-    lenderName,
+    lenderName = '',
     currentDueDay,
     detectedDueDays = [],
     referenceMonth = '',
     onSave
 }) => {
+    const [nameInput, setNameInput] = useState(lenderName || '');
     const [selectedDay, setSelectedDay] = useState(currentDueDay || '');
     const [isAuto, setIsAuto] = useState(!currentDueDay);
 
     useEffect(() => {
         if (isOpen) {
+            setNameInput(lenderName || '');
             setSelectedDay(currentDueDay || (detectedDueDays[0] || ''));
             setIsAuto(!currentDueDay);
         }
-    }, [isOpen, currentDueDay, detectedDueDays]);
+    }, [isOpen, lenderName, currentDueDay, detectedDueDays]);
 
     if (!isOpen) return null;
 
     const handleSave = () => {
-        if (isAuto) {
-            onSave(lenderName, null);
-        } else {
-            const dayNum = parseInt(selectedDay, 10);
+        const trimmedName = (nameInput || '').trim();
+        if (!trimmedName) {
+            alert('Vui lòng nhập tên đơn vị cho vay.');
+            return;
+        }
+
+        let dayNum = null;
+        if (!isAuto) {
+            dayNum = parseInt(selectedDay, 10);
             if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
                 alert('Vui lòng chọn ngày hợp lệ từ 1 đến 31.');
                 return;
             }
-            onSave(lenderName, dayNum);
+        }
+
+        if (typeof onSave === 'function') {
+            onSave(
+                {
+                    oldName: lenderName,
+                    newName: trimmedName,
+                    dueDay: isAuto ? null : dayNum
+                },
+                isAuto ? null : dayNum
+            );
         }
         onClose();
     };
 
     const previewDay = isAuto ? (detectedDueDays[0] || 1) : (parseInt(selectedDay, 10) || 1);
+    const displayName = (nameInput || '').trim() || lenderName;
 
     const modalContent = (
         <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
@@ -48,11 +66,11 @@ const SetLenderDueModal = ({
                 <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">
-                            <Calendar className="w-5 h-5 pointer-events-none" />
+                            <Building2 className="w-5 h-5 pointer-events-none" />
                         </div>
                         <div>
-                            <h3 className="font-bold text-lg text-slate-800 dark:text-white">Cài đặt hạn thanh toán</h3>
-                            <p className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold">{lenderName}</p>
+                            <h3 className="font-bold text-lg text-slate-800 dark:text-white">Chỉnh sửa đơn vị cho vay</h3>
+                            <p className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold">{lenderName || 'Đơn vị cho vay'}</p>
                         </div>
                     </div>
                     <button
@@ -64,10 +82,33 @@ const SetLenderDueModal = ({
                 </div>
 
                 {/* Content */}
-                <div className="p-6 space-y-5">
+                <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+                    {/* Tên đơn vị */}
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                            Phương thức xác định ngày đến hạn
+                            Tên đơn vị cho vay
+                        </label>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={nameInput}
+                                onChange={(e) => setNameInput(e.target.value)}
+                                disabled={lenderName === 'Khác'}
+                                className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-indigo-500 focus:outline-none font-bold text-sm disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                                placeholder="Nhập tên đơn vị (Vd: TP Bank, VP Bank...)"
+                            />
+                        </div>
+                        {lenderName === 'Khác' && (
+                            <p className="text-[11px] text-amber-500 mt-1">
+                                Đơn vị &quot;Khác&quot; là danh mục mặc định của hệ thống không thể đổi tên.
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Phương thức xác định ngày đến hạn */}
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                            Cài đặt hạn thanh toán
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                             <button
@@ -147,18 +188,24 @@ const SetLenderDueModal = ({
                             </p>
                             <p className="text-[11px] text-slate-500 dark:text-slate-400">
                                 {detectedDueDays.length > 0
-                                    ? `Các khoản vay hiện tại của ${lenderName} đang đến hạn vào ngày: ${detectedDueDays.join(', ')} hàng tháng.`
-                                    : `Chưa phát hiện ngày từ khoản vay nào của ${lenderName}.`}
+                                    ? `Các khoản vay hiện tại của ${displayName} đang đến hạn vào ngày: ${detectedDueDays.join(', ')} hàng tháng.`
+                                    : `Chưa phát hiện ngày từ khoản vay nào của ${displayName}.`}
                             </p>
                         </div>
                     )}
 
                     {/* Preview box */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700/60">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider mb-1">
+                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700/60 space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
                             Xem trước hiển thị trên thẻ
                         </span>
-                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                        <div className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold shrink-0">
+                                {displayName.charAt(0).toUpperCase()}
+                            </span>
+                            <span>{displayName}</span>
+                        </div>
+                        <div className="text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 pl-8">
                             <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                             <span>
                                 {isAuto
@@ -188,7 +235,7 @@ const SetLenderDueModal = ({
                         onClick={handleSave}
                         className="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-200 dark:shadow-none transition-colors"
                     >
-                        Lưu hạn thanh toán
+                        Lưu thay đổi
                     </button>
                 </div>
             </div>

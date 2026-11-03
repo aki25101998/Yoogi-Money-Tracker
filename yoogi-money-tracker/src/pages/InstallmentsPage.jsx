@@ -83,16 +83,36 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
         });
     }, [lenders]);
 
-    const handleSaveLenderDueDay = async (lenderName, day) => {
-        const parsed = parseInt(day, 10);
+    const handleSaveLenderConfig = async (saveData, maybeDueDay) => {
+        let oldName = '';
+        let newName = '';
+        let dueDay = null;
+
+        if (typeof saveData === 'object' && saveData !== null) {
+            oldName = saveData.oldName || '';
+            newName = (saveData.newName || oldName || '').trim();
+            dueDay = saveData.dueDay !== undefined ? saveData.dueDay : null;
+        } else {
+            oldName = saveData || '';
+            newName = oldName;
+            dueDay = maybeDueDay !== undefined ? maybeDueDay : null;
+        }
+
+        if (!newName) return;
+
+        const parsed = parseInt(dueDay, 10);
         const validDay = !isNaN(parsed) && parsed >= 1 && parsed <= 31 ? parsed : null;
 
+        // 1. Cập nhật state và localStorage cho lenderDueDays
         setLenderDueDays(prev => {
             const next = { ...prev };
+            if (oldName && newName !== oldName) {
+                delete next[oldName];
+            }
             if (validDay) {
-                next[lenderName] = validDay;
+                next[newName] = validDay;
             } else {
-                delete next[lenderName];
+                delete next[newName];
             }
             try {
                 localStorage.setItem(`yoogi_lender_due_days_${user?.uid || 'guest'}`, JSON.stringify(next));
@@ -100,18 +120,52 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
             return next;
         });
 
-        // Try updating in Supabase if lender exists in lenders table
+        // 2. Cập nhật Supabase & danh sách khoản trả góp liên quan nếu có user
         if (user) {
-            const lenderObj = lenders?.find(l => l.name === lenderName);
-            if (lenderObj) {
-                try {
-                    await updateLender(user.uid, lenderObj.id, { due_day: validDay });
-                } catch (err) {
-                    console.log("Supabase lender due_day update skipped or unavailable:", err.message);
+            setIsProcessing(true);
+            try {
+                const nameChanged = oldName && newName !== oldName && oldName !== 'Khác';
+                const lenderObj = lenders?.find(l => l.name === oldName);
+
+                if (nameChanged) {
+                    // Cập nhật tên đơn vị và hạn thanh toán
+                    if (lenderObj) {
+                        await updateLender(user.uid, lenderObj.id, { name: newName, due_day: validDay });
+                    } else {
+                        await addLender(user.uid, { name: newName, due_day: validDay });
+                    }
+
+                    // Cập nhật các khoản trả góp thuộc lender cũ sang lender mới
+                    const itemsToUpdate = items.filter(item => (item.lender || 'Khác') === oldName);
+                    for (const item of itemsToUpdate) {
+                        try {
+                            await updateInstallment(user.uid, item.id, { lender: newName, updatedAt: new Date().toISOString() });
+                        } catch (itemErr) {
+                            console.error("Error updating installment lender:", itemErr);
+                        }
+                    }
+
+                    if (selectedLenderName === oldName) {
+                        setSelectedLenderName(newName);
+                    }
+                } else if (lenderObj) {
+                    // Chỉ cập nhật due_day
+                    try {
+                        await updateLender(user.uid, lenderObj.id, { due_day: validDay });
+                    } catch (err) {
+                        console.log("Supabase lender due_day update skipped or unavailable:", err.message);
+                    }
                 }
+            } catch (err) {
+                console.error("Error saving lender details:", err);
+                alert("Lỗi khi lưu đơn vị: " + err.message);
+            } finally {
+                setIsProcessing(false);
             }
         }
     };
+
+    const handleSaveLenderDueDay = handleSaveLenderConfig;
 
     // Due Date Modal State
     const [dueModalState, setDueModalState] = useState({
@@ -500,40 +554,8 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
         return null;
     };
 
-    const handleRenameLender = async (e, group) => {
-        e.stopPropagation();
-
-        if (group.lenderName === 'Khác') {
-            alert('Không thể đổi tên đơn vị "Khác".');
-            return;
-        }
-
-        const newName = window.prompt(`Nhập tên mới cho đơn vị "${group.lenderName}":`, group.lenderName);
-        if (!newName || newName.trim() === '' || newName.trim() === group.lenderName) return;
-
-        const trimmedName = newName.trim();
-        setIsProcessing(true);
-        if (user) {
-            try {
-                // 1. Tìm lender id
-                const lenderObj = lenders?.find(l => l.name === group.lenderName);
-                if (lenderObj) {
-                    await updateLender(user.uid, lenderObj.id, { name: trimmedName });
-                } else {
-                    await addLender(user.uid, { name: trimmedName });
-                }
-
-                // 2. Cập nhật tất cả các khoản trả góp của lender cũ sang lender mới
-                const itemsToUpdate = items.filter(item => (item.lender || 'Khác') === group.lenderName);
-                for (const item of itemsToUpdate) {
-                    await updateInstallment(user.uid, item.id, { lender: trimmedName, updatedAt: new Date().toISOString() });
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Lỗi khi đổi tên đơn vị: " + err.message);
-            }
-        }
-        setIsProcessing(false);
+    const handleRenameLender = (e, group) => {
+        handleOpenSetDueModal(e, group);
     };
 
     const openDetailsModal = (group) => {
@@ -815,15 +837,20 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                 >
                                     <div className="p-5 pb-4 border-b border-slate-100 dark:border-slate-700">
                                         <div className="flex items-start gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xl group-hover/card:bg-indigo-200 transition-colors shrink-0 mt-0.5">
+                                            {/* Avatar: Bấm vào mở modal chỉnh sửa đơn vị & hạn thanh toán */}
+                                            <div 
+                                                onClick={(e) => handleOpenSetDueModal(e, group)}
+                                                className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xl hover:scale-105 active:scale-95 hover:bg-indigo-200 dark:hover:bg-indigo-800/50 hover:ring-2 hover:ring-indigo-400 hover:ring-offset-2 dark:hover:ring-offset-slate-800 transition-all shrink-0 mt-0.5 cursor-pointer shadow-sm select-none"
+                                                title="Bấm để chỉnh sửa đơn vị & hạn thanh toán"
+                                            >
                                                 {group.lenderName.charAt(0).toUpperCase()}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <h3 
-                                                        onClick={(e) => handleRenameLender(e, group)}
+                                                        onClick={(e) => handleOpenSetDueModal(e, group)}
                                                         className="font-bold text-slate-800 dark:text-white text-lg hover:text-indigo-600 transition-colors cursor-pointer truncate"
-                                                        title="Bấm để đổi tên đơn vị"
+                                                        title="Bấm để chỉnh sửa đơn vị & hạn thanh toán"
                                                     >
                                                         {group.lenderName}
                                                     </h3>
@@ -838,7 +865,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                                 <p 
                                                     onClick={(e) => handleOpenSetDueModal(e, group)}
                                                     className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors truncate group/due"
-                                                    title="Bấm để đổi hạn thanh toán của đơn vị này"
+                                                    title="Bấm để chỉnh sửa đơn vị & hạn thanh toán"
                                                 >
                                                     <Calendar className="w-3.5 h-3.5 shrink-0 opacity-70 group-hover/due:opacity-100 group-hover/due:text-indigo-500 pointer-events-none" />
                                                     <span className="pointer-events-none">
@@ -1121,7 +1148,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                         currentDueDay={dueModalState.currentDueDay}
                         detectedDueDays={dueModalState.detectedDueDays}
                         referenceMonth={filterDate && filterDate.length === 7 ? filterDate.split('-').reverse().join('/') : ''}
-                        onSave={handleSaveLenderDueDay}
+                        onSave={handleSaveLenderConfig}
                     />
                 )}
             </Suspense>

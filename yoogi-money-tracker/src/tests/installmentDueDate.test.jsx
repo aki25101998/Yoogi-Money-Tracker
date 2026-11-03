@@ -231,11 +231,13 @@ describe('Installment Due Date Calculations', () => {
                     onSave={() => {}}
                 />
             );
+            expect(html).toContain('Chỉnh sửa đơn vị cho vay');
+            expect(html).toContain('Tên đơn vị cho vay');
             expect(html).toContain('Cài đặt hạn thanh toán');
             expect(html).toContain('TP Bank');
             expect(html).toContain('Cố định hàng tháng');
             expect(html).toContain('Tự động theo hợp đồng');
-            expect(html).toContain('Lưu hạn thanh toán');
+            expect(html).toContain('Lưu thay đổi');
         });
     });
 });
