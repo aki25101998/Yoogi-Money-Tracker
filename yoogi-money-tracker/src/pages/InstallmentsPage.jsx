@@ -819,7 +819,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                                 {group.lenderName.charAt(0).toUpperCase()}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                <div className="flex items-center gap-2 flex-wrap">
                                                     <h3 
                                                         onClick={(e) => handleRenameLender(e, group)}
                                                         className="font-bold text-slate-800 dark:text-white text-lg hover:text-indigo-600 transition-colors cursor-pointer truncate"
@@ -827,39 +827,36 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                                     >
                                                         {group.lenderName}
                                                     </h3>
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => handleRenameLender(e, group)}
-                                                        className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-0.5 rounded transition-colors"
-                                                        title="Bấm để đổi tên đơn vị"
-                                                    >
-                                                        <Pencil className="w-3.5 h-3.5 pointer-events-none" />
-                                                    </button>
                                                     {(activeCount > 0 || paidCount > 0) && (
-                                                        <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-semibold border border-indigo-100 dark:border-indigo-500/20 whitespace-nowrap ml-auto sm:ml-0">
+                                                        <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-semibold border border-indigo-100 dark:border-indigo-500/20 whitespace-nowrap">
                                                             Đang nợ {activeCount} / {activeCount + paidCount} khoản
                                                         </span>
                                                     )}
                                                 </div>
 
-                                                {/* Vị trí hiển thị thời gian đến hạn thanh toán & cho phép bấm để đổi hạn thanh toán */}
-                                                <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => handleOpenSetDueModal(e, group)}
-                                                        className="group/due inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-indigo-50 dark:bg-slate-700/60 dark:hover:bg-indigo-900/30 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-300 border border-slate-200/80 dark:border-slate-600 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all cursor-pointer shadow-sm"
-                                                        title="Bấm để thay đổi hạn thanh toán của đơn vị này"
-                                                    >
-                                                        <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0 pointer-events-none" />
-                                                        <span className="font-bold pointer-events-none">
-                                                            {dueInfo.dateStr ? `Hạn: ${dueInfo.dateStr}` : dueInfo.displayText}
-                                                        </span>
-                                                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${dueInfo.badgeClass} pointer-events-none`}>
-                                                            {dueInfo.badgeText}
-                                                        </span>
-                                                        <Pencil className="w-3 h-3 text-slate-400 group-hover/due:text-indigo-500 ml-0.5 shrink-0 pointer-events-none" />
-                                                    </button>
-                                                </div>
+                                                {/* Hiển thị hạn thanh toán tinh gọn, không đóng khung */}
+                                                <p 
+                                                    onClick={(e) => handleOpenSetDueModal(e, group)}
+                                                    className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors truncate group/due"
+                                                    title="Bấm để đổi hạn thanh toán của đơn vị này"
+                                                >
+                                                    <Calendar className="w-3.5 h-3.5 shrink-0 opacity-70 group-hover/due:opacity-100 group-hover/due:text-indigo-500 pointer-events-none" />
+                                                    <span className="pointer-events-none">
+                                                        {dueInfo.dateStr ? `Hạn: ${dueInfo.dateStr}` : dueInfo.displayText}
+                                                    </span>
+                                                    <span className="opacity-40 pointer-events-none">•</span>
+                                                    <span className={`font-medium pointer-events-none ${
+                                                        dueInfo.status === 'overdue' ? 'text-rose-500 dark:text-rose-400 font-semibold' :
+                                                        dueInfo.status === 'today' ? 'text-amber-500 dark:text-amber-400 font-semibold' :
+                                                        dueInfo.status === 'paid' ? 'text-emerald-500 dark:text-emerald-400' :
+                                                        'text-indigo-600 dark:text-indigo-400'
+                                                    }`}>
+                                                        {dueInfo.status === 'overdue' ? `Quá hạn ${Math.abs(dueInfo.diffDays)} ngày` :
+                                                         dueInfo.status === 'today' ? 'Hôm nay đến hạn' :
+                                                         dueInfo.status === 'paid' ? 'Đã trả' :
+                                                         `Còn ${dueInfo.diffDays} ngày`}
+                                                    </span>
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
