@@ -5,14 +5,14 @@ import {
     Plus, CreditCard, Calendar, TrendingUp, Target,
     Loader2, Filter, FileJson, Upload,
     Sparkles, X, AlertTriangle, Trash2,
-    RotateCcw, ChevronUp, ChevronDown, Check, ChevronRight
+    RotateCcw, ChevronUp, ChevronDown, Check, ChevronRight, Clock
 } from 'lucide-react';
 
 import { addPayer, deletePayer, addLender, deleteLender, updateLender, deleteTransaction, addInstallment, updateInstallment, deleteInstallment, addTransaction, paymentDebugLog } from '../utils/supabaseHelpers';
 import { processBulkInstallmentPayment } from '../services/installmentPaymentService';
 import { supabase } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
-import { calculateLoan, calculateItemStats, getYearMonth } from '../utils/calculations';
+import { calculateLoan, calculateItemStats, getYearMonth, getLenderDueInfo } from '../utils/calculations';
 
 import Card from '../components/ui/Card';
 import InstallmentItem from '../components/InstallmentItem';
@@ -54,6 +54,85 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
     const [hideZeroLenders, setHideZeroLenders] = useState(true);
     const [hideCompleted, setHideCompleted] = useState(false);
     const [activeTab, setActiveTab] = useState('list'); // 'list' | 'history'
+
+    // Lender Custom Due Days State (cached in localStorage per user)
+    const [lenderDueDays, setLenderDueDays] = useState(() => {
+        if (typeof window === 'undefined') return {};
+        try {
+            const cached = localStorage.getItem(`yoogi_lender_due_days_${user?.uid || 'guest'}`);
+            return cached ? JSON.parse(cached) : {};
+        } catch (e) {
+            return {};
+        }
+    });
+
+    // Sync lender due days from lenders prop if any have dueDay
+    useEffect(() => {
+        if (!lenders || lenders.length === 0) return;
+        setLenderDueDays(prev => {
+            let changed = false;
+            const updated = { ...prev };
+            lenders.forEach(l => {
+                if (l.dueDay && updated[l.name] !== l.dueDay) {
+                    updated[l.name] = l.dueDay;
+                    changed = true;
+                }
+            });
+            return changed ? updated : prev;
+        });
+    }, [lenders]);
+
+    const handleSaveLenderDueDay = async (lenderName, day) => {
+        const parsed = parseInt(day, 10);
+        const validDay = !isNaN(parsed) && parsed >= 1 && parsed <= 31 ? parsed : null;
+        
+        setLenderDueDays(prev => {
+            const next = { ...prev };
+            if (validDay) {
+                next[lenderName] = validDay;
+            } else {
+                delete next[lenderName];
+            }
+            try {
+                localStorage.setItem(`yoogi_lender_due_days_${user?.uid || 'guest'}`, JSON.stringify(next));
+            } catch (e) { console.error("Error saving lender due days to localStorage", e); }
+            return next;
+        });
+
+        // Try updating in Supabase if lender exists in lenders table
+        if (user) {
+            const lenderObj = lenders?.find(l => l.name === lenderName);
+            if (lenderObj) {
+                try {
+                    await updateLender(user.uid, lenderObj.id, { due_day: validDay });
+                } catch (err) {
+                    console.log("Supabase lender due_day update skipped or unavailable:", err.message);
+                }
+            }
+        }
+    };
+
+    const handlePromptSetLenderDueDay = (e, groupOrName) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const lenderName = typeof groupOrName === 'string' ? groupOrName : groupOrName.lenderName;
+        const currentVal = lenderDueDays[lenderName] || '';
+        const input = window.prompt(
+            `Cài đặt ngày đến hạn thanh toán hàng tháng cho "${lenderName}" (1 - 31):\n(Để trống hoặc nhập 0 để tự động tính theo các khoản trả góp)`,
+            currentVal
+        );
+        if (input === null) return;
+        const trimmed = input.trim();
+        if (trimmed === '' || trimmed === '0') {
+            handleSaveLenderDueDay(lenderName, null);
+        } else {
+            const num = parseInt(trimmed, 10);
+            if (isNaN(num) || num < 1 || num > 31) {
+                alert('Vui lòng nhập ngày hợp lệ từ 1 đến 31.');
+                return;
+            }
+            handleSaveLenderDueDay(lenderName, num);
+        }
+    };
 
     // Refs
     const fileInputRef = useRef(null);
@@ -725,6 +804,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                             const paidCount = completedItems.filter(wrapper => (wrapper.item.lender || 'Khác') === group.lenderName).length;
 
                             const amountDueThisMonth = group.monthlyDue || 0;
+                            const dueInfo = getLenderDueInfo(group, activeReferenceDate, lenderDueDays[group.lenderName]);
 
                             return (
                                 <div 
@@ -758,7 +838,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                         className="p-5 pt-4 cursor-pointer flex-1 flex flex-col justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                                         onClick={() => openDetailsModal(group)}
                                     >
-                                        <div className="space-y-4">
+                                        <div className="space-y-3.5">
                                             <div>
                                                 <div className="flex justify-between text-xs mb-1.5">
                                                     <span className="font-medium text-emerald-600 dark:text-emerald-400">Đã trả: {formatCurrency(group.repaidAmount)}</span>
@@ -766,6 +846,34 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                                 </div>
                                                 <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
                                                     <div className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+                                                </div>
+                                            </div>
+
+                                            {/* Thời gian đến hạn thanh toán */}
+                                            <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-2 transition-colors">
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <div className={`p-2 rounded-lg ${dueInfo.iconBgClass} shrink-0`}>
+                                                        <Calendar className={`w-4 h-4 ${dueInfo.iconColorClass} pointer-events-none`} />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Hạn thanh toán</span>
+                                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate block" title={dueInfo.displayText}>
+                                                            {dueInfo.displayText}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${dueInfo.badgeClass}`}>
+                                                        {dueInfo.badgeText}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => handlePromptSetLenderDueDay(e, group)}
+                                                        title={dueInfo.isCustom ? `Đang đặt ngày ${dueInfo.dueDay} hàng tháng (Bấm để đổi)` : "Cài đặt ngày thanh toán cố định"}
+                                                        className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200/60 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                                    >
+                                                        <Clock className="w-3.5 h-3.5 pointer-events-none" />
+                                                    </button>
                                                 </div>
                                             </div>
 
@@ -806,14 +914,34 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-slate-800 dark:text-white">{lender.name}</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                                            <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0 pointer-events-none" />
+                                            <span>
+                                                {lenderDueDays[lender.name] 
+                                                    ? `Hạn: Ngày ${lenderDueDays[lender.name]} hàng tháng`
+                                                    : 'Hạn: Tự động theo các khoản trả góp'}
+                                            </span>
+                                        </p>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => confirmDeleteLender(lender.name)}
-                                    className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => handlePromptSetLenderDueDay(e, lender.name)}
+                                        className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+                                        title="Cài đặt ngày đến hạn thanh toán hàng tháng"
+                                    >
+                                        <Clock className="w-4 h-4 pointer-events-none" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => confirmDeleteLender(lender.name)}
+                                        className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                        title="Xóa đơn vị"
+                                    >
+                                        <Trash2 className="w-4 h-4 pointer-events-none" />
+                                    </button>
+                                </div>
                             </div>
                         )) : (
                             <div className="col-span-full text-center py-20 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
@@ -926,6 +1054,7 @@ const InstallmentsPage = ({ user, items, payers, lenders, isLoading, wallets, tr
                         isOpen={isDetailsOpen}
                         onClose={() => setIsDetailsOpen(false)}
                         groupedLender={currentLenderDetails}
+                        customDueDay={selectedLenderName ? lenderDueDays[selectedLenderName] : null}
                         onEditItem={(item) => {
                             setEditingItem(item);
                             setInitialLender('');

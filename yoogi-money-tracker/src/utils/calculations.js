@@ -174,3 +174,202 @@ export const calculateMonthlyDueForItems = (items, targetDate, transactions) => 
     
     return totalDue;
 };
+
+export const getItemDueDay = (item, customDueDay = null) => {
+    if (customDueDay && !isNaN(customDueDay)) {
+        const parsedCustom = parseInt(customDueDay, 10);
+        if (parsedCustom >= 1 && parsedCustom <= 31) return parsedCustom;
+    }
+    if (item?.dueDay && !isNaN(item.dueDay)) {
+        const parsedDueDay = parseInt(item.dueDay, 10);
+        if (parsedDueDay >= 1 && parsedDueDay <= 31) return parsedDueDay;
+    }
+    if (item?.startDate) {
+        const parts = String(item.startDate).split('-');
+        if (parts.length >= 3) {
+            const day = parseInt(parts[2], 10);
+            if (!isNaN(day) && day >= 1 && day <= 31) return day;
+        }
+    }
+    return 1;
+};
+
+export const getInstallmentDueDate = (item, targetDate = new Date(), customDueDay = null) => {
+    const d = new Date(targetDate);
+    const targetYear = d.getFullYear();
+    const targetMonth = d.getMonth();
+    const dueDay = getItemDueDay(item, customDueDay);
+    const maxDays = new Date(targetYear, targetMonth + 1, 0).getDate();
+    const safeDay = Math.min(dueDay, maxDays);
+    return new Date(targetYear, targetMonth, safeDay);
+};
+
+export const getDueStatus = (dueDate, isPaid = false, compareDate = new Date()) => {
+    const today = new Date(compareDate);
+    today.setHours(0, 0, 0, 0);
+
+    const due = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (isPaid) {
+        return {
+            status: 'paid',
+            text: 'Đã thanh toán kỳ này',
+            badgeText: '✓ Đã thanh toán',
+            diffDays,
+            badgeClass: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800',
+            iconColorClass: 'text-emerald-500 dark:text-emerald-400',
+            iconBgClass: 'bg-emerald-50 dark:bg-emerald-900/30'
+        };
+    }
+
+    if (diffDays < 0) {
+        const overdueDays = Math.abs(diffDays);
+        return {
+            status: 'overdue',
+            text: `Quá hạn ${overdueDays} ngày`,
+            badgeText: `⚠ Quá hạn ${overdueDays} ngày`,
+            diffDays,
+            badgeClass: 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800',
+            iconColorClass: 'text-rose-500 dark:text-rose-400',
+            iconBgClass: 'bg-rose-50 dark:bg-rose-900/30'
+        };
+    }
+
+    if (diffDays === 0) {
+        return {
+            status: 'today',
+            text: 'Hôm nay đến hạn',
+            badgeText: '⏰ Hôm nay đến hạn!',
+            diffDays: 0,
+            badgeClass: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 animate-pulse',
+            iconColorClass: 'text-amber-500 dark:text-amber-400',
+            iconBgClass: 'bg-amber-50 dark:bg-amber-900/30'
+        };
+    }
+
+    return {
+        status: 'upcoming',
+        text: `Còn ${diffDays} ngày`,
+        badgeText: `Còn ${diffDays} ngày`,
+        diffDays,
+        badgeClass: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800',
+        iconColorClass: 'text-indigo-500 dark:text-indigo-400',
+        iconBgClass: 'bg-indigo-50 dark:bg-indigo-900/30'
+    };
+};
+
+export const getLenderDueInfo = (group, targetDate = new Date(), customDueDay = null, compareDate = new Date()) => {
+    const d = new Date(targetDate);
+    const targetYear = d.getFullYear();
+    const targetMonth = d.getMonth();
+    const targetMonthStr = getYearMonth(d);
+    const items = group.items || [];
+    const monthlyDue = group.monthlyDue ?? 0;
+    const isLenderFullyPaid = group.status === 'paid';
+    const isPeriodPaid = monthlyDue <= 0 && items.length > 0;
+
+    // 1. Trường hợp lender có ngày cố định tùy chỉnh
+    if (customDueDay && !isNaN(customDueDay)) {
+        const fixedDay = parseInt(customDueDay, 10);
+        if (fixedDay >= 1 && fixedDay <= 31) {
+            const maxDays = new Date(targetYear, targetMonth + 1, 0).getDate();
+            const safeDay = Math.min(fixedDay, maxDays);
+            const dueDate = new Date(targetYear, targetMonth, safeDay);
+            const dateStr = `${String(safeDay).padStart(2, '0')}/${String(targetMonth + 1).padStart(2, '0')}/${targetYear}`;
+            const status = getDueStatus(dueDate, isPeriodPaid || isLenderFullyPaid, compareDate);
+
+            return {
+                dueDay: fixedDay,
+                dueDate,
+                dateStr,
+                title: `${dateStr} (Ngày ${fixedDay} hàng tháng)`,
+                displayText: `${dateStr} (Ngày ${fixedDay} hàng tháng)`,
+                shortText: `Hạn: ${dateStr}`,
+                ...status,
+                isCustom: true
+            };
+        }
+    }
+
+    // 2. Không có item
+    if (items.length === 0) {
+        return {
+            dueDay: null,
+            dueDate: null,
+            dateStr: '',
+            title: 'Chưa có khoản vay',
+            displayText: 'Chưa có khoản vay',
+            badgeText: 'Chưa có dữ liệu',
+            badgeClass: 'bg-slate-100 dark:bg-slate-700 text-slate-500 border border-slate-200 dark:border-slate-600',
+            iconColorClass: 'text-slate-400',
+            iconBgClass: 'bg-slate-100 dark:bg-slate-700',
+            status: 'none',
+            isCustom: false
+        };
+    }
+
+    // 3. Tự động tính từ các món trả góp
+    const unpaidItems = items.filter(item => {
+        const paidMonths = item.paidMonths || [];
+        return !paidMonths.includes(targetMonthStr);
+    });
+
+    const relevantItems = unpaidItems.length > 0 ? unpaidItems : items;
+    const dueDays = [...new Set(relevantItems.map(item => getItemDueDay(item)))].sort((a, b) => a - b);
+
+    if (dueDays.length === 1) {
+        const day = dueDays[0];
+        const maxDays = new Date(targetYear, targetMonth + 1, 0).getDate();
+        const safeDay = Math.min(day, maxDays);
+        const dueDate = new Date(targetYear, targetMonth, safeDay);
+        const dateStr = `${String(safeDay).padStart(2, '0')}/${String(targetMonth + 1).padStart(2, '0')}/${targetYear}`;
+        const status = getDueStatus(dueDate, isPeriodPaid || isLenderFullyPaid, compareDate);
+
+        return {
+            dueDay: day,
+            dueDate,
+            dateStr,
+            title: `${dateStr} (Ngày ${day} hàng tháng)`,
+            displayText: `${dateStr} (Ngày ${day} hàng tháng)`,
+            shortText: `Hạn: ${dateStr}`,
+            ...status,
+            allDays: dueDays,
+            isCustom: false
+        };
+    }
+
+    // Nhiều ngày đến hạn khác nhau
+    const today = new Date(compareDate);
+    today.setHours(0, 0, 0, 0);
+
+    const mappedDueDates = dueDays.map(day => {
+        const maxDays = new Date(targetYear, targetMonth + 1, 0).getDate();
+        const safeDay = Math.min(day, maxDays);
+        const dueDate = new Date(targetYear, targetMonth, safeDay);
+        return { day: safeDay, dueDate, diff: dueDate.getTime() - today.getTime() };
+    });
+
+    mappedDueDates.sort((a, b) => {
+        if (a.diff >= 0 && b.diff >= 0) return a.diff - b.diff;
+        if (a.diff < 0 && b.diff < 0) return b.diff - a.diff;
+        return a.diff < 0 ? -1 : 1;
+    });
+
+    const nearest = mappedDueDates[0];
+    const nearestDateStr = `${String(nearest.day).padStart(2, '0')}/${String(targetMonth + 1).padStart(2, '0')}/${targetYear}`;
+    const status = getDueStatus(nearest.dueDate, isPeriodPaid || isLenderFullyPaid, compareDate);
+
+    return {
+        dueDay: nearest.day,
+        dueDate: nearest.dueDate,
+        dateStr: nearestDateStr,
+        title: `Gần nhất: ${nearestDateStr} (Ngày ${dueDays.join(', ')})`,
+        displayText: `Gần nhất: ${nearestDateStr} (Ngày ${dueDays.join(', ')})`,
+        shortText: `Hạn: ${nearestDateStr}`,
+        ...status,
+        allDays: dueDays,
+        isCustom: false
+    };
+};

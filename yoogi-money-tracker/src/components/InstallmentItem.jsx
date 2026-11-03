@@ -1,15 +1,26 @@
 import React from 'react';
-import { Pencil, Trash2, User, AlertCircle } from 'lucide-react';
+import { Pencil, Trash2, User, AlertCircle, Calendar } from 'lucide-react';
 import Card from './ui/Card';
 import Badge from './ui/Badge';
 import { formatCurrency } from '../utils/formatters';
-import { calculateItemStats, monthDiff } from '../utils/calculations';
+import { calculateItemStats, monthDiff, getItemDueDay, getDueStatus } from '../utils/calculations';
 
-const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, onMinimumPayment, isReadOnly, kyIndex, transactions, onEditTransaction, isSelectable, isSelected, onToggleSelect, onPayItem, groupedHistoryTerms }) => {
+const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, onMinimumPayment, isReadOnly, kyIndex, transactions, onEditTransaction, isSelectable, isSelected, onToggleSelect, onPayItem, groupedHistoryTerms, customDueDay }) => {
     const stats = calculateItemStats(item, referenceDate, transactions);
     const paidCount = Array.isArray(item.paidMonths) ? item.paidMonths.length : stats.effectiveMonths;
     const cannotTickMore = !isPaid && paidCount >= item.term;
     const isDisabled = isReadOnly || cannotTickMore;
+
+    // Calculate due date and countdown for this term
+    const targetRefDate = referenceDate || new Date();
+    const targetYear = targetRefDate.getFullYear();
+    const targetMonth = targetRefDate.getMonth();
+    const itemDueDay = getItemDueDay(item, customDueDay);
+    const maxDays = new Date(targetYear, targetMonth + 1, 0).getDate();
+    const safeDay = Math.min(itemDueDay, maxDays);
+    const dueDate = new Date(targetYear, targetMonth, safeDay);
+    const dueInfo = getDueStatus(dueDate, isPaid);
+    const formattedDueDate = `${String(safeDay).padStart(2, '0')}/${String(targetMonth + 1).padStart(2, '0')}/${targetYear}`;
 
     // Calculate missed payments
     const now = new Date();
@@ -72,6 +83,12 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                                     `Kỳ T${referenceDate.getMonth() + 1}/${referenceDate.getFullYear()}`
                                 )}
                             </div>
+                            {!groupedHistoryTerms && (
+                                <div className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${dueInfo.badgeClass}`}>
+                                    <Calendar className="w-3 h-3 pointer-events-none" />
+                                    <span>Hạn: {String(safeDay).padStart(2, '0')}/{String(targetMonth + 1).padStart(2, '0')} ({dueInfo.text})</span>
+                                </div>
+                            )}
                             {stats.isFinished ? (
                                 <Badge type="success">Hoàn tất</Badge>
                             ) : (
@@ -80,7 +97,9 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
                         </div>
                         <h4 className={`font-bold text-base sm:text-lg line-clamp-1 mb-1 ${isPaid ? 'text-slate-500 dark:text-slate-400' : 'text-slate-800 dark:text-white'}`}>{item.name}</h4>
                         <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <span>{new Date(item.startDate).toLocaleDateString('vi-VN')}</span>
+                            <span>Bắt đầu: {new Date(item.startDate).toLocaleDateString('vi-VN')}</span>
+                            <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></span>
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">Hạn kỳ này: {formattedDueDate}</span>
                             <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></span>
                             <span>{item.term} kỳ</span>
                             <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></span>

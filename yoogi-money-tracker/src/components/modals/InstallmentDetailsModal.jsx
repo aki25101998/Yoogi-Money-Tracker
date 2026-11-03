@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Calendar, Trash2, Pencil, RefreshCw, ChevronDown, Plus } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import InstallmentItem from '../InstallmentItem';
-import { calculateItemStats, getYearMonth, calculateWrapperMonthlyRemaining } from '../../utils/calculations';
+import { calculateItemStats, getYearMonth, calculateWrapperMonthlyRemaining, getLenderDueInfo } from '../../utils/calculations';
 
 const InstallmentDetailsModal = ({ 
     isOpen, 
@@ -17,7 +17,8 @@ const InstallmentDetailsModal = ({
     onMinimumPayment,
     transactions,
     onEditTransaction,
-    onPayInstallments
+    onPayInstallments,
+    customDueDay
 }) => {
     const [activeTab, setActiveTab] = useState('active'); // active, paid, history
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -28,6 +29,7 @@ const InstallmentDetailsModal = ({
 
     const refDate = referenceDate || new Date();
     const targetMonthStr = getYearMonth(refDate);
+    const lenderDueInfo = getLenderDueInfo(groupedLender, refDate, customDueDay);
 
     // Phân loại item
     const activeItems = [];
@@ -146,6 +148,12 @@ const InstallmentDetailsModal = ({
                                 <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-semibold border border-indigo-100 dark:border-indigo-500/20">
                                     Đang nợ {activeItems.length} / {activeItems.length + paidItems.length} khoản
                                 </span>
+                                {lenderDueInfo.dateStr && (
+                                    <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 rounded-full text-xs font-semibold border border-slate-200 dark:border-slate-600 flex items-center gap-1">
+                                        <Calendar className="w-3 h-3 text-indigo-500 pointer-events-none" />
+                                        <span>Hạn: {lenderDueInfo.dateStr}</span>
+                                    </span>
+                                )}
                                 {amountDueThisMonth > 0 && (
                                     <span className="px-2 py-0.5 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-full text-xs font-semibold border border-orange-100 dark:border-orange-500/20">
                                         Cần đóng: {formatCurrency(amountDueThisMonth)}
@@ -255,6 +263,7 @@ const InstallmentDetailsModal = ({
                                         onEditTransaction={onEditTransaction}
                                         isSelectable={isSelectionMode}
                                         isSelected={isSelected}
+                                        customDueDay={customDueDay}
                                         onToggleSelect={() => {
                                             if (isSelected) {
                                                 setSelectedItemIds(prev => prev.filter(id => id !== itemId));

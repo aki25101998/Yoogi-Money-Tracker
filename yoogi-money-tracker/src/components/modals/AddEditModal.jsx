@@ -262,8 +262,15 @@ const [formData, setFormData] = useState({
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Ngày bắt đầu</label>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                            Ngày bắt đầu (Ngày đến hạn hàng tháng)
+                        </label>
                         <input type="date" required className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:border-indigo-500 focus:outline-none" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} />
+                        <p className="text-[11px] text-slate-500 mt-1">
+                            {formData.startDate && !isNaN(new Date(formData.startDate).getDate())
+                                ? `Khoản này sẽ đến hạn thanh toán vào ngày ${new Date(formData.startDate).getDate()} hàng tháng.`
+                                : 'Chọn ngày để xác định ngày đến hạn thanh toán định kỳ hàng tháng.'}
+                        </p>
                     </div>
 
                     {/* NEW: Payment Grid Section */}
