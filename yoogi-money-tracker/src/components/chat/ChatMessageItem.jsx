@@ -1,8 +1,12 @@
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
+import { getMessageDate, formatFullDateTooltip } from '../../utils/chatTimeUtils';
 
 const ChatMessageItem = ({ msg, user, categories, wallets, activeWallet, openEditModal, handleCategoryChange, handleSubcategoryChange }) => {
+    const msgDate = getMessageDate(msg);
+    const tooltipText = msgDate ? formatFullDateTooltip(msgDate) : undefined;
+
     return (
         <div className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] flex gap-2 ${msg.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -29,11 +33,14 @@ const ChatMessageItem = ({ msg, user, categories, wallets, activeWallet, openEdi
                 {/* Bubble */}
                 <div className="flex flex-col gap-2">
                     {msg.text && (
-                        <div className={`px-4 py-2.5 rounded-2xl text-[15px] shadow-sm ${
-                            msg.type === 'user' 
-                                ? 'bg-cyan-600 text-white rounded-br-sm' 
-                                : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 rounded-bl-sm'
-                        }`}>
+                        <div 
+                            title={tooltipText}
+                            className={`px-4 py-2.5 rounded-2xl text-[15px] shadow-sm ${
+                                msg.type === 'user' 
+                                    ? 'bg-cyan-600 text-white rounded-br-sm' 
+                                    : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 rounded-bl-sm'
+                            }`}
+                        >
                             {msg.text}
                         </div>
                     )}

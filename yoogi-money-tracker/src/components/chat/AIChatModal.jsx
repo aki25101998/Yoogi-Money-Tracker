@@ -8,7 +8,9 @@ import { supabase } from '../../config/supabase';
 import TransferFundsModal from '../modals/TransferFundsModal';
 import TransactionModal from '../modals/TransactionModal';
 import ChatMessageItem from './ChatMessageItem';
+import ChatDateSeparator from './ChatDateSeparator';
 import RecurringTransactionsModal from '../modals/RecurringTransactionsModal';
+import { shouldShowTimestamp, getMessageDate, formatChatTimestamp, formatFullDateTooltip } from '../../utils/chatTimeUtils';
 const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviations, wallets, payers, debtors, debts, recurringTransactions, selectedWalletId, onOpenContextWallet }) => {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
@@ -583,19 +585,34 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
 
                 {/* Chat Area */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                {messages.map(msg => (
-                    <ChatMessageItem 
-                        key={msg.id}
-                        msg={msg}
-                        user={user}
-                        categories={categories}
-                        wallets={wallets}
-                        activeWallet={activeWallet}
-                        openEditModal={openEditModal}
-                        handleCategoryChange={handleCategoryChange}
-                        handleSubcategoryChange={handleSubcategoryChange}
-                    />
-                ))}
+                {messages.map((msg, index) => {
+                    const prevMsg = index > 0 ? messages[index - 1] : null;
+                    const showSeparator = shouldShowTimestamp(msg, prevMsg);
+                    const msgDate = getMessageDate(msg);
+                    const timestampLabel = showSeparator && msgDate ? formatChatTimestamp(msgDate) : '';
+                    const tooltip = showSeparator && msgDate ? formatFullDateTooltip(msgDate) : '';
+
+                    return (
+                        <React.Fragment key={msg.id}>
+                            {showSeparator && timestampLabel && (
+                                <ChatDateSeparator 
+                                    label={timestampLabel}
+                                    tooltip={tooltip}
+                                />
+                            )}
+                            <ChatMessageItem 
+                                msg={msg}
+                                user={user}
+                                categories={categories}
+                                wallets={wallets}
+                                activeWallet={activeWallet}
+                                openEditModal={openEditModal}
+                                handleCategoryChange={handleCategoryChange}
+                                handleSubcategoryChange={handleSubcategoryChange}
+                            />
+                        </React.Fragment>
+                    );
+                })}
 
                 {isTyping && (
                     <div className="flex justify-start">
