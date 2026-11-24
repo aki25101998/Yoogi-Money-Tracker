@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, Loader2, RotateCcw, ChevronUp, CheckCircle, AlertTriangle, Lightbulb } from 'lucide-react';
 import { supabase } from '../../config/supabase';
+import { isExpenseTransaction, isIncomeTransaction } from '../../utils/transactionUtils';
 
 const UI_COLORS = [
     { bg: "bg-blue-50 dark:bg-blue-900/20", border: "border-blue-100 dark:border-blue-800/30", textTitle: "text-blue-500", textValue: "text-blue-700 dark:text-blue-300" },
@@ -74,19 +75,17 @@ const AIFinancialAnalysis = ({
                 const validWalletIds = budgetSettings?.walletIds || [];
                 const applyWalletFilter = validWalletIds.length > 0;
                 let budgetTotalIncome = 0;
-                const categoryExpenses = {};
 
                 filteredTransactions.forEach(t => {
                     if (applyWalletFilter && !validWalletIds.includes(t.walletId)) return;
 
-                    if (t.type === 'income' && validIncomeIds.includes(t.categoryId)) {
+                    const isIncomeMatch = isIncomeTransaction(t) && (
+                        validIncomeIds.includes(t.categoryId) || 
+                        (t.subcategoryId && validIncomeIds.includes(t.subcategoryId))
+                    );
+
+                    if (isIncomeMatch) {
                         budgetTotalIncome += Number(t.amount) || 0;
-                    } else if (t.type === 'expense') {
-                        const amount = Number(t.amount) || 0;
-                        const idToTrack = t.subcategoryId || t.categoryId;
-                        if (idToTrack) {
-                            categoryExpenses[idToTrack] = (categoryExpenses[idToTrack] || 0) + amount;
-                        }
                     }
                 });
 
@@ -97,7 +96,17 @@ const AIFinancialAnalysis = ({
                 activePortfolios.forEach(p => {
                     const percentage = parseFloat(p.percentage) || 0;
                     const budgetLimit = (budgetTotalIncome * percentage) / 100;
-                    const spentAmount = p.expenseCategoryIds.reduce((sum, catId) => sum + (categoryExpenses[catId] || 0), 0);
+                    const spentAmount = filteredTransactions
+                        .filter(t => {
+                            if (applyWalletFilter && !validWalletIds.includes(t.walletId)) return false;
+                            if (!isExpenseTransaction(t)) return false;
+                            if (!p?.expenseCategoryIds?.length) return false;
+                            return Boolean(
+                                (t.subcategoryId && p.expenseCategoryIds.includes(t.subcategoryId)) ||
+                                (t.categoryId && p.expenseCategoryIds.includes(t.categoryId))
+                            );
+                        })
+                        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
                     const isExceeded = spentAmount > budgetLimit && budgetLimit > 0;
                     budgetAnalysisText += `  • Nhóm [${p.name}] (${percentage}%): Đã chi ${spentAmount.toLocaleString('vi-VN')}đ / Ngân sách ${budgetLimit.toLocaleString('vi-VN')}đ ${isExceeded ? '⚠️ (VƯỢT NGÂN SÁCH)' : '✅'}\n`;
                 });

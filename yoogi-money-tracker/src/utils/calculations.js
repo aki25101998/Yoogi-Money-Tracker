@@ -27,11 +27,15 @@ export const getYearMonth = (date) => {
 };
 
 export const isTransactionForInstallment = (t, item) => {
-    if (t.type !== 'installment_repaid') return false;
+    if (!t || !item) return false;
+    const isInstallmentRepaid = t.type === 'installment_repaid';
+    const isLoanRepaidForInstallment = t.type === 'loan_repaid' && Boolean(t.installmentId || t.installment_id);
+    if (!isInstallmentRepaid && !isLoanRepaidForInstallment) return false;
     
-    if (t.installmentId) return t.installmentId === item.id;
+    const targetInstallmentId = t.installmentId || t.installment_id;
+    if (targetInstallmentId) return targetInstallmentId === item.id;
     
-    if (!t.installmentId && t.description) {
+    if (t.description) {
         return t.description.startsWith(`Trả lẻ trả góp ${item.name}:`) || 
                t.description.startsWith(`Trả tối thiểu ${item.name}`);
     }
@@ -48,7 +52,9 @@ export const getPartialPaymentForMonth = (item, monthStr, transactions) => {
             getInstallmentPaymentMonth(t) === monthStr
         );
         partialPaid = relatedTransactions.reduce((acc, t) => acc + (t.amount || 0), 0);
-    } else if (item.partialPayments && item.partialPayments[monthStr]) {
+    }
+    
+    if (partialPaid === 0 && item?.partialPayments?.[monthStr]) {
         partialPaid = parseFloat(item.partialPayments[monthStr]) || 0;
     }
     
@@ -71,19 +77,20 @@ export const calculateItemStats = (item, referenceDate = new Date(), transaction
         
         let totalPartialPaid = 0;
         
+        const partialMonths = new Set();
+        if (item.partialPayments) {
+            Object.keys(item.partialPayments).forEach(m => partialMonths.add(m));
+        }
         if (transactions && Array.isArray(transactions)) {
-            const related = transactions.filter(t => isTransactionForInstallment(t, item));
-            for (const t of related) {
-                const txMonthStr = getInstallmentPaymentMonth(t);
-                if (txMonthStr && !item.paidMonths.includes(txMonthStr)) {
-                    totalPartialPaid += (t.amount || 0);
-                }
-            }
-        } else if (item.partialPayments) {
-            for (const [mStr, amount] of Object.entries(item.partialPayments)) {
-                if (!item.paidMonths.includes(mStr)) {
-                    totalPartialPaid += parseFloat(amount) || 0;
-                }
+            transactions.filter(t => isTransactionForInstallment(t, item)).forEach(t => {
+                const m = getInstallmentPaymentMonth(t);
+                if (m) partialMonths.add(m);
+            });
+        }
+        
+        for (const mStr of partialMonths) {
+            if (!item.paidMonths.includes(mStr)) {
+                totalPartialPaid += getPartialPaymentForMonth(item, mStr, transactions);
             }
         }
         
@@ -110,7 +117,9 @@ export const getInstallmentSummaryForMonth = (transactions, year, month) => {
     const targetMonthStr = `${year}-${String(month).padStart(2, '0')}`;
     
     const installmentTxns = transactions.filter(t => {
-        if (t.type !== 'installment_repaid') return false;
+        const isInstallmentRepaid = t.type === 'installment_repaid';
+        const isLoanRepaidForInstallment = t.type === 'loan_repaid' && Boolean(t.installmentId || t.installment_id);
+        if (!isInstallmentRepaid && !isLoanRepaidForInstallment) return false;
         const txMonthStr = getInstallmentPaymentMonth(t);
         return txMonthStr === targetMonthStr;
     });
@@ -120,7 +129,7 @@ export const getInstallmentSummaryForMonth = (transactions, year, month) => {
     
     const byInstallmentMap = {};
     installmentTxns.forEach(t => {
-        let itemId = t.installmentId;
+        let itemId = t.installmentId || t.installment_id;
         
         if (!itemId) {
             const match = t.description?.match(/trả góp (.*?):/i) || t.description?.match(/tối thiểu (.*)/i);

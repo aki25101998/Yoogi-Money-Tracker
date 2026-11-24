@@ -1,6 +1,7 @@
 import React from 'react';
 import { Clock, Trash2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
+import { isExpenseTransaction } from '../../utils/transactionUtils';
 
 const RecentTransactionsList = ({
     recentTransactions,
@@ -26,7 +27,7 @@ const RecentTransactionsList = ({
                         const cat = categories.find(c => c.id === txn.categoryId);
                         const wallet = wallets?.find(w => w.id === txn.walletId);
                         const isIncome = txn.type === 'income' || txn.type === 'loan_repaid';
-                        const isExpense = txn.type === 'expense' || txn.type === 'loan_given';
+                        const isExpense = isExpenseTransaction(txn) || txn.type === 'loan_given';
                         const isLoan = txn.type === 'loan_given' || txn.type === 'loan_repaid';
                         
                         return (

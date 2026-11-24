@@ -3,7 +3,8 @@ import { Pencil, Trash2, User, AlertCircle, Calendar } from 'lucide-react';
 import Card from './ui/Card';
 import Badge from './ui/Badge';
 import { formatCurrency } from '../utils/formatters';
-import { calculateItemStats, monthDiff, getItemDueDay, getDueStatus } from '../utils/calculations';
+import { calculateItemStats, monthDiff, getItemDueDay, getDueStatus, getPartialPaymentForMonth, isTransactionForInstallment } from '../utils/calculations';
+import { getInstallmentPaymentMonth } from '../utils/transactionUtils';
 
 const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogglePaid, onMinimumPayment, isReadOnly, kyIndex, transactions, onEditTransaction, isSelectable, isSelected, onToggleSelect, onPayItem, groupedHistoryTerms, customDueDay }) => {
     const stats = calculateItemStats(item, referenceDate, transactions);
@@ -31,27 +32,11 @@ const InstallmentItem = ({ item, onEdit, onDelete, referenceDate, isPaid, onTogg
     // Partial payment logic for this specific month
     const currentMonthStr = `${referenceDate.getFullYear()}-${String(referenceDate.getMonth() + 1).padStart(2, '0')}`;
     
-    const relatedTransactions = transactions?.filter(t => {
-        if (t.type !== 'installment_repaid') return false;
-        
-        let txMonthStr = null;
-        const match = t.description?.match(/\(T(\d{2})\/(\d{4})\)$/);
-        if (match) {
-            txMonthStr = `${match[2]}-${match[1]}`;
-        } else if (t.description?.match(/\(T(\d{2})\)$/)) {
-            const m = t.description.match(/\(T(\d{2})\)$/)[1];
-            txMonthStr = t.date ? `${new Date(t.date).getFullYear()}-${m}` : null;
-        } else {
-            txMonthStr = t.date ? `${new Date(t.date).getFullYear()}-${String(new Date(t.date).getMonth() + 1).padStart(2, '0')}` : null;
-        }
+    const relatedTransactions = transactions?.filter(t => 
+        isTransactionForInstallment(t, item) && getInstallmentPaymentMonth(t) === currentMonthStr
+    ) || [];
 
-        return (
-            (t.installmentId === item.id && txMonthStr === currentMonthStr) ||
-            ((t.description?.startsWith(`Trả lẻ trả góp ${item.name}:`) || t.description?.startsWith(`Trả tối thiểu ${item.name}`)) && !t.installmentId && txMonthStr === currentMonthStr)
-        );
-    }) || [];
-
-    const partialPaid = relatedTransactions.reduce((acc, t) => acc + (t.amount || 0), 0);
+    const partialPaid = getPartialPaymentForMonth(item, currentMonthStr, transactions);
     const partialProgress = item.monthlyPayment > 0 ? Math.min(Math.round((partialPaid / item.monthlyPayment) * 100), 100) : 0;
     const monthlyRemaining = Math.max(item.monthlyPayment - partialPaid, 0);
 

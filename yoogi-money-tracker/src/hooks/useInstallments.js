@@ -1,5 +1,5 @@
 import { useMemo, useEffect } from 'react';
-import { calculateItemStats, getYearMonth, calculateMonthlyDueForItems, isTransactionForInstallment } from '../utils/calculations';
+import { calculateItemStats, getYearMonth, calculateMonthlyDueForItems, calculateWrapperMonthlyRemaining, isTransactionForInstallment } from '../utils/calculations';
 import { updateInstallment } from '../utils/supabaseHelpers';
 import { getInstallmentPaymentMonth } from '../utils/transactionUtils';
 
@@ -225,7 +225,7 @@ export const useInstallments = ({
         });
 
         inProgressItems.forEach(wrapper => {
-            monthlyTotal += wrapper.item.monthlyPayment;
+            monthlyTotal += calculateWrapperMonthlyRemaining(wrapper, transactions);
         });
 
         return { monthlyTotal, remainingTotal, projectedRemainingTotal, periodPaidTotal };

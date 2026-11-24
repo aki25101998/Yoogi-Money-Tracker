@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Filter, Calendar, Pencil, Trash2, AlertTriangle, ArrowDownRight, ArrowUpRight, ChevronDown, X, Check, Clock } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
+import { isExpenseTransaction } from '../utils/transactionUtils';
 import { deleteTransaction, deleteMultipleTransactions, updateTransaction, processCorrections, updateDebt, getTransactionByDebtId } from '../utils/supabaseHelpers';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import TransactionModal from '../components/modals/TransactionModal';
@@ -100,7 +101,7 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
             if (!groups[dateKey]) groups[dateKey] = { date: dateKey, totalIncome: 0, totalExpense: 0, items: [] };
             groups[dateKey].items.push(t);
             if (t.type === 'income' || t.type === 'loan_repaid') groups[dateKey].totalIncome += t.amount;
-            else if (t.type === 'expense' || t.type === 'loan_given') groups[dateKey].totalExpense += t.amount;
+            else if (isExpenseTransaction(t) || t.type === 'loan_given') groups[dateKey].totalExpense += t.amount;
         });
         // Sort items within each group by time descending (newest first), fallback to createdAt
         const result = Object.values(groups);
@@ -125,7 +126,7 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
         let expense = 0;
         filteredTransactions.forEach(t => {
             if (t.type === 'income') income += (t.amount || 0);
-            else if (t.type === 'expense') expense += (t.amount || 0);
+            else if (isExpenseTransaction(t)) expense += (t.amount || 0);
         });
         return { income, expense, balance: income - expense };
     }, [filteredTransactions]);
@@ -324,7 +325,7 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
                                     const cat = categories.find(c => c.id === txn.categoryId);
                                     const wallet = wallets?.find(w => w.id === txn.walletId);
                                     const isIncome = txn.type === 'income' || txn.type === 'loan_repaid';
-                                    const isExpense = txn.type === 'expense' || txn.type === 'loan_given';
+                                    const isExpense = isExpenseTransaction(txn) || txn.type === 'loan_given';
                                     const isLoan = txn.type === 'loan_given' || txn.type === 'loan_repaid';
 
                                     return (

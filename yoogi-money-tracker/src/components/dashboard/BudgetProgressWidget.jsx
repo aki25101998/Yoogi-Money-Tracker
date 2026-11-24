@@ -4,6 +4,15 @@ import { formatCurrency } from '../../utils/formatters';
 import PortfolioTransactionsModal from '../modals/PortfolioTransactionsModal';
 import BaseIncomeModal from '../modals/BaseIncomeModal';
 import { isExpenseTransaction, isIncomeTransaction } from '../../utils/transactionUtils';
+export const isTxnInPortfolio = (t, portfolio) => {
+    if (!isExpenseTransaction(t)) return false;
+    if (!portfolio?.expenseCategoryIds?.length) return false;
+    return Boolean(
+        (t.subcategoryId && portfolio.expenseCategoryIds.includes(t.subcategoryId)) ||
+        (t.categoryId && portfolio.expenseCategoryIds.includes(t.categoryId))
+    );
+};
+
 
 const BudgetProgressWidget = ({ transactions, categories, wallets, budgetSettings, budgetPortfolios, dateRange, onEditTransaction, onDeleteTransaction }) => {
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
@@ -73,7 +82,9 @@ const BudgetProgressWidget = ({ transactions, categories, wallets, budgetSetting
         let stats = activePortfolios.map(portfolio => {
             const percentage = parseFloat(portfolio.percentage) || 0;
             const originalBudget = (totalIncome * percentage) / 100;
-            const spentAmount = portfolio.expenseCategoryIds.reduce((sum, catId) => sum + (categoryExpenses[catId] || 0), 0);
+            const spentAmount = transactions
+                .filter(t => isTxnInPortfolio(t, portfolio))
+                .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
             
             return {
                 ...portfolio,
@@ -240,7 +251,7 @@ const BudgetProgressWidget = ({ transactions, categories, wallets, budgetSetting
                 isOpen={!!selectedPortfolio}
                 onClose={() => setSelectedPortfolio(null)}
                 portfolio={selectedPortfolio}
-                transactions={transactions.filter(t => isExpenseTransaction(t) && selectedPortfolio?.expenseCategoryIds?.includes(t.subcategoryId || t.categoryId))}
+                transactions={transactions.filter(t => isTxnInPortfolio(t, selectedPortfolio))}
                 categories={categories}
                 onEditTransaction={onEditTransaction}
                 onDeleteTransaction={onDeleteTransaction}

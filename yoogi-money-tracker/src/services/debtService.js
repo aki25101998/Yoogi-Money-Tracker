@@ -5,10 +5,11 @@ import { mapToCamelCase, mapToSnakeCase, createSubscription } from './coreServic
 // ============================================================
 export const subscribeDebts = (userId, callback) => createSubscription('debts', userId, (data) => {
     callback(data.map(d => {
-        const totalAmount = d.amount;
-        const repaidAmount = d.amount - (d.remainingAmount || 0);
+        const totalAmount = d.amount || 0;
+        const remainingAmount = d.remainingAmount != null ? d.remainingAmount : (d.status === 'paid' ? 0 : totalAmount);
+        const repaidAmount = Math.max(0, totalAmount - remainingAmount);
         // Tự động sửa lại status nếu đã trả đủ nhưng trong DB vẫn lưu là 'active' do lỗi migration
-        const status = repaidAmount >= totalAmount ? 'paid' : (d.status || 'active');
+        const status = (remainingAmount <= 0 || repaidAmount >= totalAmount) ? 'paid' : (d.status || 'active');
         return {
             ...d,
             totalAmount,
@@ -23,7 +24,7 @@ export const addDebt = async (userId, data) => {
     const toSave = { ...data };
     toSave.type = data.type || 'loan';
     toSave.amount = data.totalAmount;
-    toSave.remaining_amount = data.totalAmount - (data.repaidAmount || 0);
+    toSave.remaining_amount = Math.max(0, (data.totalAmount || 0) - (data.repaidAmount || 0));
     if (data.notes !== undefined) toSave.note = data.notes;
     delete toSave.totalAmount;
     delete toSave.repaidAmount;

@@ -101,7 +101,7 @@ export const updateTransaction = async (userId, id, updates) => {
     if (oldTxn && updates.amount !== undefined) {
         const diffAmount = updates.amount - oldTxn.amount;
         if (diffAmount !== 0) {
-            if (oldTxn.type === 'installment_repaid' && oldTxn.installment_id) {
+            if ((oldTxn.type === 'installment_repaid' || (oldTxn.type === 'loan_repaid' && oldTxn.installment_id)) && oldTxn.installment_id) {
                 const txMonthStr = getInstallmentPaymentMonth(mapToCamelCase(oldTxn));
                 if (txMonthStr) {
                     await updateInstallmentPartialPayment(userId, oldTxn.installment_id, txMonthStr, diffAmount);
@@ -135,7 +135,7 @@ export const deleteTransaction = async (userId, id, txn = null) => {
             if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debts' }));
         } else if (txnToDelete.type === 'loan_given' && (txnToDelete.debtId || txnToDelete.installmentId)) {
             return await deleteDebt(userId, txnToDelete.debtId || txnToDelete.installmentId);
-        } else if (txnToDelete.type === 'installment_repaid' && txnToDelete.installmentId) {
+        } else if ((txnToDelete.type === 'installment_repaid' || (txnToDelete.type === 'loan_repaid' && txnToDelete.installmentId)) && txnToDelete.installmentId) {
             const txMonthStr = getInstallmentPaymentMonth(txnToDelete);
             if (txMonthStr) {
                 await updateInstallmentPartialPayment(userId, txnToDelete.installmentId, txMonthStr, -txnToDelete.amount);
@@ -169,7 +169,7 @@ export const deleteMultipleTransactions = async (userId, ids) => {
                     p_user_id: userId, p_debt_id: txn.debtId, p_diff_amount: -txn.amount
                 });
                 if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('supabase_mutate', { detail: 'debts' }));
-            } else if (txn.type === 'installment_repaid' && txn.installmentId) {
+            } else if ((txn.type === 'installment_repaid' || (txn.type === 'loan_repaid' && txn.installmentId)) && txn.installmentId) {
                 const txMonthStr = getInstallmentPaymentMonth(txn);
                 if (txMonthStr) {
                     await updateInstallmentPartialPayment(userId, txn.installmentId, txMonthStr, -txn.amount);
