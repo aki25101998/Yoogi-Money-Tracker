@@ -307,6 +307,21 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                 return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             };
 
+            const combineDateAndTime = (dateStr, timeStr) => {
+                if (!dateStr) return new Date().toISOString();
+                if (dateStr.includes('T')) return dateStr;
+                try {
+                    const d = new Date();
+                    const [year, month, day] = dateStr.split('-');
+                    const [hours, minutes] = (timeStr || getCurrentTime()).split(':');
+                    d.setFullYear(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    d.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                    return d.toISOString();
+                } catch {
+                    return new Date().toISOString();
+                }
+            };
+
             if (result.type === 'loan_given' || result.type === 'loan_repaid') {
                 const amountNum = parseFloat(result.amount) || 0;
                 let debtId = null;
@@ -365,7 +380,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                         : `${personName} trả nợ${result.debtNotes ? ': ' + result.debtNotes : ''}`,
                     categoryId: categories.find(c => c.type === result.type)?.id || '',
                     subcategoryId: '',
-                    date: result.date || new Date().toISOString(),
+                    date: combineDateAndTime(result.date, getCurrentTime()),
                     time: getCurrentTime(),
                     walletId: finalWalletId,
                     debtId: debtId,
@@ -380,7 +395,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                     description: result.description || 'Chuyển tiền',
                     categoryId: categories.find(c => c.type === 'transfer')?.id || '',
                     subcategoryId: '',
-                    date: result.date || new Date().toISOString(),
+                    date: combineDateAndTime(result.date, getCurrentTime()),
                     time: getCurrentTime(),
                     walletId: finalWalletId,
                     transferTo: result.transferTo,
@@ -394,7 +409,7 @@ const AIChatModal = ({ isOpen, onClose, user, categories, aiMemories, abbreviati
                     description: result.description,
                     categoryId: result.categoryId,
                     subcategoryId: result.subcategoryId,
-                    date: result.date || new Date().toISOString(),
+                    date: combineDateAndTime(result.date, getCurrentTime()),
                     time: getCurrentTime(),
                     walletId: finalWalletId,
                     aiCategorized: result.aiCategorized,

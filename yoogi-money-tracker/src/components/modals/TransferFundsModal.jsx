@@ -20,16 +20,25 @@ const getCurrentTime = () => {
         if (isOpen) {
             if (initialData) {
                 let parsedDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-                let parsedTime = initialData.time || (initialData.createdAt ? new Date(initialData.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }) : getCurrentTime());
+                let parsedTime = initialData.time;
 
                 if (initialData.date) {
                     if (initialData.date.includes('T')) {
                         const d = new Date(initialData.date);
                         parsedDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-                        parsedTime = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+                        const isUtcMidnight = (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0);
+                        if (!parsedTime && !isUtcMidnight) {
+                            parsedTime = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+                        }
                     } else {
                         parsedDate = initialData.date;
                     }
+                }
+
+                if (!parsedTime) {
+                    parsedTime = (initialData.createdAt || initialData.created_at)
+                        ? new Date(initialData.createdAt || initialData.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
+                        : getCurrentTime();
                 }
 
                 setFromWallet(initialData.walletId || '');

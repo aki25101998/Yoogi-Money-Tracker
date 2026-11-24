@@ -7,10 +7,26 @@ import { getInstallmentPaymentMonth } from '../utils/transactionUtils';
 // TRANSACTIONS
 // ============================================================
 export const subscribeTransactions = (userId, callback) => createSubscription('transactions', userId, (data) => {
-    callback(data.map(t => ({
-        ...t,
-        description: t.note || t.description || '',
-    })));
+    callback(data.map(t => {
+        let time = t.time;
+        if (!time) {
+            if (t.date && t.date.includes('T')) {
+                const d = new Date(t.date);
+                const isUtcMidnight = (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0);
+                if (!isUtcMidnight) {
+                    time = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+                }
+            }
+            if (!time && (t.createdAt || t.created_at)) {
+                time = new Date(t.createdAt || t.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+            }
+        }
+        return {
+            ...t,
+            time,
+            description: t.note || t.description || '',
+        };
+    }));
 }, 'date', false);
 
 // ==========================================
@@ -24,6 +40,21 @@ export const addTransaction = async (userId, data) => {
     if (toSave.description !== undefined) {
         toSave.note = toSave.description;
         delete toSave.description;
+    }
+    if (toSave.date && !toSave.date.includes('T')) {
+        try {
+            const d = new Date();
+            const [year, month, day] = toSave.date.split('-');
+            const timeStr = data.time || `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            const [hours, minutes] = timeStr.split(':');
+            d.setFullYear(parseInt(year), parseInt(month) - 1, parseInt(day));
+            d.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            toSave.date = d.toISOString();
+        } catch (e) {
+            console.error('Error combining date and time in addTransaction', e);
+        }
+    } else if (!toSave.date) {
+        toSave.date = new Date().toISOString();
     }
     delete toSave.time;
     delete toSave.personName;
@@ -45,6 +76,18 @@ export const updateTransaction = async (userId, id, updates) => {
     if (toSave.description !== undefined) {
         toSave.note = toSave.description;
         delete toSave.description;
+    }
+    if (toSave.date && !toSave.date.includes('T') && updates.time) {
+        try {
+            const d = new Date();
+            const [year, month, day] = toSave.date.split('-');
+            const [hours, minutes] = updates.time.split(':');
+            d.setFullYear(parseInt(year), parseInt(month) - 1, parseInt(day));
+            d.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            toSave.date = d.toISOString();
+        } catch (e) {
+            console.error('Error combining date and time in updateTransaction', e);
+        }
     }
     delete toSave.time;
     delete toSave.personName;

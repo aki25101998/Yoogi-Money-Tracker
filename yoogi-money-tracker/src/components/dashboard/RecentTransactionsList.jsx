@@ -52,7 +52,8 @@ const RecentTransactionsList = ({
                                                     <Clock className="w-3 h-3" />
                                                     {(() => {
                                                         const tTime = txn.time || new Date(txn.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-                                                        const tDateStr = txn.date ? txn.date.split('T')[0] : (txn.createdAt ? new Date(txn.createdAt).toISOString().split('T')[0] : '');
+                                                        const tDateObj = txn.date ? new Date(txn.date) : (txn.createdAt ? new Date(txn.createdAt) : null);
+                                                        const tDateStr = tDateObj && !isNaN(tDateObj.getTime()) ? new Date(tDateObj.getTime() - tDateObj.getTimezoneOffset() * 60000).toISOString().split('T')[0] : (txn.date || '');
                                                         if (!tDateStr) return tTime;
                                                         
                                                         const today = new Date();

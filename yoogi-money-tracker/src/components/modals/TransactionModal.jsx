@@ -28,18 +28,28 @@ const defaultWallet = defaultWalletId || wallets?.find(w => w.isDefault)?.id || 
         if (isOpen) {
             if (initialData) {
                 let parsedDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-                let parsedTime = initialData.time || (initialData.createdAt ? new Date(initialData.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }) : getCurrentTime());
+                let parsedTime = initialData.time;
 
                 if (initialData.date) {
                     if (initialData.date.includes('T')) {
                         // It's an ISO string
                         const d = new Date(initialData.date);
                         parsedDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-                        parsedTime = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+                        // Only use date's time if it's not default UTC midnight (which results in 07:00 in UTC+7) or if parsedTime isn't already set
+                        const isUtcMidnight = (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0);
+                        if (!parsedTime && !isUtcMidnight) {
+                            parsedTime = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+                        }
                     } else {
                         // It's just a date string 'yyyy-mm-dd'
                         parsedDate = initialData.date;
                     }
+                }
+
+                if (!parsedTime) {
+                    parsedTime = (initialData.createdAt || initialData.created_at)
+                        ? new Date(initialData.createdAt || initialData.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
+                        : getCurrentTime();
                 }
 
                 let parsedDesc = initialData.description || initialData.note || '';
