@@ -11,6 +11,7 @@ import {
     subscribeDailyBudgetSettings,
     getDefaultDailyBudgetSettings
 } from '../services/dailyBudgetService';
+import { saveUserAppData, loadUserAppData } from '../services/offlineStorage';
 
 export const useAppData = (user) => {
     const [installments, setInstallments] = useState([]);
@@ -29,6 +30,19 @@ export const useAppData = (user) => {
     const [userSettings, setUserSettings] = useState({ monthStartDay: 1 });
     const [isDataLoading, setIsDataLoading] = useState(true);
     const [dailyBudgetSettings, setDailyBudgetSettings] = useState(getDefaultDailyBudgetSettings());
+    const [isOffline, setIsOffline] = useState(() => typeof navigator !== 'undefined' ? !navigator.onLine : false);
+
+    // Track online/offline status
+    useEffect(() => {
+        const handleOnline = () => setIsOffline(false);
+        const handleOffline = () => setIsOffline(true);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
     useEffect(() => {
         if (!user) {
@@ -53,6 +67,31 @@ export const useAppData = (user) => {
 
         setIsDataLoading(true);
         let isMounted = true;
+
+        // Hydrate from offline cache immediately if available
+        loadUserAppData(user.uid).then((cached) => {
+            if (cached && isMounted) {
+                if (cached.installments?.length) setInstallments(cached.installments);
+                if (cached.transactions?.length) setTransactions(cached.transactions);
+                if (cached.categories?.length) setCategories(cached.categories);
+                if (cached.aiMemories?.length) setAiMemories(cached.aiMemories);
+                if (cached.abbreviations?.length) setAbbreviations(cached.abbreviations);
+                if (cached.wallets?.length) setWallets(cached.wallets);
+                if (cached.payers?.length) setPayers(cached.payers);
+                if (cached.debtors?.length) setDebtors(cached.debtors);
+                if (cached.debts?.length) setDebts(cached.debts);
+                if (cached.recurringTransactions?.length) setRecurringTransactions(cached.recurringTransactions);
+                if (cached.lenders?.length) setLenders(cached.lenders);
+                if (cached.budgetSettings) setBudgetSettings(cached.budgetSettings);
+                if (cached.budgetPortfolios?.length) setBudgetPortfolios(cached.budgetPortfolios);
+                if (cached.userSettings) setUserSettings(cached.userSettings);
+                if (cached.dailyBudgetSettings) setDailyBudgetSettings(cached.dailyBudgetSettings);
+                
+                if (cached.wallets?.length || cached.transactions?.length) {
+                    setIsDataLoading(false);
+                }
+            }
+        });
 
         seedDefaultCategories(user.uid).then((seeded) => {
             if (!seeded) {
@@ -161,6 +200,26 @@ export const useAppData = (user) => {
         };
     }, [user?.uid]);
 
+    // Save snapshot to offline storage (debounced)
+    useEffect(() => {
+        if (!user?.uid) return;
+        // Only persist if we have actual data loaded to avoid overwriting cache with empty arrays
+        if (!transactions?.length && !wallets?.length && !categories?.length) return;
+
+        const timer = setTimeout(() => {
+            saveUserAppData(user.uid, {
+                installments, transactions, categories, aiMemories, abbreviations,
+                wallets, payers, debtors, debts, recurringTransactions, lenders,
+                budgetSettings, budgetPortfolios, userSettings, dailyBudgetSettings
+            });
+        }, 2000);
+        return () => clearTimeout(timer);
+    }, [
+        user?.uid, installments, transactions, categories, aiMemories, abbreviations,
+        wallets, payers, debtors, debts, recurringTransactions, lenders,
+        budgetSettings, budgetPortfolios, userSettings, dailyBudgetSettings
+    ]);
+
     return {
         installments, transactions, categories, aiMemories, abbreviations,
         wallets, payers, debtors, debts,
@@ -169,6 +228,7 @@ export const useAppData = (user) => {
         budgetSettings,
         budgetPortfolios,
         userSettings, isDataLoading,
-        dailyBudgetSettings, setDailyBudgetSettings
+        dailyBudgetSettings, setDailyBudgetSettings,
+        isOffline
     };
 };

@@ -30,11 +30,11 @@ import GlobalErrorBanner from './components/GlobalErrorBanner';
 
 export default function App() {
     const { user, isAuthLoading, handleGoogleLogin, handleLogout } = useAuth();
-    const { 
+    const {
         installments, transactions, categories, aiMemories, abbreviations,
         wallets, payers, debtors, debts, recurringTransactions, lenders,
         budgetSettings, budgetPortfolios, userSettings, isDataLoading,
-        dailyBudgetSettings, setDailyBudgetSettings
+        dailyBudgetSettings, setDailyBudgetSettings, isOffline
     } = useAppData(user);
 
     useRecurringTransactions(user, recurringTransactions);
@@ -192,10 +192,10 @@ export default function App() {
 
         if (activePage === 'dashboard') {
             PageComponent = (
-                <DashboardPage 
-                    user={user} 
+                <DashboardPage
+                    user={user}
                     userSettings={userSettings}
-                    transactions={transactions} 
+                    transactions={transactions}
                     categories={categories}
                     aiMemories={aiMemories}
                     wallets={wallets}
@@ -318,6 +318,7 @@ export default function App() {
             onLogout={handleLogout}
             theme={theme}
             onToggleTheme={toggleTheme}
+            isOffline={isOffline}
         >
             {renderPage()}
 
@@ -327,7 +328,7 @@ export default function App() {
                     {isGlobalFabOpen && (
                         <div className="fixed inset-0 z-30 flex" onClick={() => setIsGlobalFabOpen(false)}>
                             <div className="absolute bottom-36 right-6 md:bottom-24 md:right-8 flex flex-col gap-3 items-end">
-                                <button 
+                                <button
                                     onClick={() => { setIsGlobalFabOpen(false); setIsGlobalRecurringOpen(true); }}
                                     className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors"
                                 >
@@ -336,7 +337,7 @@ export default function App() {
                                         <Repeat className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                                     </div>
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => { setIsGlobalFabOpen(false); setIsGlobalTransferOpen(true); }}
                                     className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors"
                                 >
@@ -345,7 +346,7 @@ export default function App() {
                                         <ArrowRightLeft className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                     </div>
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => { setIsGlobalFabOpen(false); setGlobalTransactionInitialData(null); setIsGlobalTransactionOpen(true); }}
                                     className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors"
                                 >
@@ -354,7 +355,7 @@ export default function App() {
                                         <PenSquare className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                                     </div>
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => { setIsGlobalFabOpen(false); setIsGlobalAIChatOpen(true); }}
                                     className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 transition-colors"
                                 >
@@ -425,9 +426,9 @@ export default function App() {
                                 wallets={wallets}
                             />
                         )}
-                        
+
                         {isGlobalAIChatOpen && (
-                            <AIChatModal 
+                            <AIChatModal
                                 isOpen={isGlobalAIChatOpen}
                                 onClose={() => setIsGlobalAIChatOpen(false)}
                                 user={user}
@@ -456,7 +457,7 @@ export default function App() {
                     </Suspense>
                 </>
             )}
-            
+
             <GlobalErrorBanner />
         </Layout>
     );

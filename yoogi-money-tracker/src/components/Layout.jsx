@@ -12,7 +12,8 @@ import {
     ChevronRight,
     Users,
     Clock,
-    CalendarCheck
+    CalendarCheck,
+    WifiOff
 } from 'lucide-react';
 
 const VersionHistorySidebar = React.lazy(() => import('./VersionHistorySidebar'));
@@ -26,7 +27,7 @@ const NAV_ITEMS = [
     { id: 'settings', label: 'Cài đặt', icon: Settings },
 ];
 
-const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onToggleTheme }) => {
+const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onToggleTheme, isOffline }) => {
     const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
 
@@ -88,6 +89,14 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
 
                 {/* Bottom Section */}
                 <div className={`border-t border-slate-100 dark:border-slate-700 p-3 space-y-2 ${sidebarCollapsed ? 'items-center' : ''}`}>
+                    {/* Offline Indicator */}
+                    {isOffline && (
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-semibold ${sidebarCollapsed ? 'justify-center' : ''}`} title="Ứng dụng đang ngoại tuyến (dữ liệu từ bộ nhớ đệm)">
+                            <WifiOff className="w-3.5 h-3.5 flex-shrink-0 animate-pulse" />
+                            {!sidebarCollapsed && <span>Đang ngoại tuyến</span>}
+                        </div>
+                    )}
+
                     {/* Version History */}
                     <button
                         onClick={() => setIsHistoryOpen(true)}
@@ -157,6 +166,12 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
                         <h1 className="text-sm font-bold text-slate-800 dark:text-white pointer-events-none">Yoogi</h1>
                     </a>
                     <div className="flex items-center gap-2">
+                        {isOffline && (
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[11px] font-semibold" title="Ngoại tuyến">
+                                <WifiOff className="w-3 h-3 animate-pulse" />
+                                <span>Offline</span>
+                            </div>
+                        )}
                         <button onClick={() => setIsHistoryOpen(true)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" title="Nhật ký phiên bản">
                             <Clock className="w-4 h-4" />
                         </button>

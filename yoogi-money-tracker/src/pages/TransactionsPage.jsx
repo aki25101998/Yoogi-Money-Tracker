@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Filter, Calendar, Pencil, Trash2, AlertTriangle, ArrowDownRight, ArrowUpRight, ChevronDown, X, Check, Clock } from 'lucide-react';
+import { Filter, Calendar, Pencil, Trash2, AlertTriangle, ArrowDownRight, ArrowUpRight, ChevronDown, X, Check, Clock, Loader2 } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 import { isExpenseTransaction } from '../utils/transactionUtils';
 import { deleteTransaction, deleteMultipleTransactions, updateTransaction, processCorrections, updateDebt, getTransactionByDebtId } from '../utils/supabaseHelpers';
@@ -120,6 +120,37 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
         // Sort dates descending
         return result.sort((a, b) => b.date.localeCompare(a.date));
     }, [filteredTransactions, selectedWalletIds]);
+
+    // Progressive rendering window (Infinite scroll)
+    const PAGE_SIZE = 15;
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    const sentinelRef = React.useRef(null);
+
+    // Reset visible count when filters change
+    React.useEffect(() => {
+        setVisibleCount(PAGE_SIZE);
+    }, [dateRange, selectedWalletIds, selectedCategoryIds, selectedSubcategoryIds]);
+
+    const visibleGroups = useMemo(() => {
+        return groupedTransactions.slice(0, visibleCount);
+    }, [groupedTransactions, visibleCount]);
+
+    const hasMore = visibleCount < groupedTransactions.length;
+
+    React.useEffect(() => {
+        if (!hasMore || typeof IntersectionObserver === 'undefined') return;
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                setVisibleCount(prev => Math.min(prev + PAGE_SIZE, groupedTransactions.length));
+            }
+        }, { rootMargin: '300px' });
+
+        const currentEl = sentinelRef.current;
+        if (currentEl) observer.observe(currentEl);
+        return () => {
+            if (currentEl) observer.unobserve(currentEl);
+        };
+    }, [hasMore, groupedTransactions.length]);
 
     const summaryStats = useMemo(() => {
         let income = 0;
@@ -304,7 +335,7 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
                         <p>Không có giao dịch nào trong khoảng thời gian này.</p>
                     </div>
                 ) : (
-                    groupedTransactions.map(group => (
+                    visibleGroups.map(group => (
                         <div key={group.date} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                             {/* Group Header */}
                             <div className="bg-slate-50 dark:bg-slate-900/50 px-5 py-3 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
@@ -394,6 +425,13 @@ const TransactionsPage = ({ user, userSettings, transactions, categories, wallet
                             </div>
                         </div>
                     ))
+                )}
+
+                {hasMore && (
+                    <div ref={sentinelRef} className="py-6 flex justify-center items-center text-slate-400 text-sm">
+                        <Loader2 className="w-5 h-5 animate-spin mr-2 text-indigo-500" />
+                        <span>Đang nạp thêm giao dịch...</span>
+                    </div>
                 )}
             </div>
 
