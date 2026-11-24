@@ -15,7 +15,7 @@ import {
     CalendarCheck
 } from 'lucide-react';
 
-import VersionHistorySidebar from './VersionHistorySidebar';
+const VersionHistorySidebar = React.lazy(() => import('./VersionHistorySidebar'));
 
 const NAV_ITEMS = [
     { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
@@ -223,11 +223,15 @@ const Layout = ({ children, activePage, onNavigate, user, onLogout, theme, onTog
             </main>
 
             {/* Global Sidebar for Version History */}
-            <VersionHistorySidebar 
-                isOpen={isHistoryOpen} 
-                onClose={() => setIsHistoryOpen(false)} 
-                user={user} 
-            />
+            {isHistoryOpen && (
+                <React.Suspense fallback={null}>
+                    <VersionHistorySidebar 
+                        isOpen={isHistoryOpen} 
+                        onClose={() => setIsHistoryOpen(false)} 
+                        user={user} 
+                    />
+                </React.Suspense>
+            )}
         </div>
     );
 };

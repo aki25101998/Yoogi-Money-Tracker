@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['logo.jpg', 'icons/*.webp'],
+      includeAssets: ['logo.jpg'],
       manifest: {
         name: 'Yoogi Money Tracker',
         short_name: 'Yoogi',
@@ -27,6 +27,19 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/modifiers', '@dnd-kit/utilities'],
+          'vendor-charts': ['recharts']
+        }
+      }
+    }
+  },
   server: {
     host: true,
     port: 3000

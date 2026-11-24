@@ -18,16 +18,15 @@ const InstallmentsPage = lazy(() => import('./pages/InstallmentsPage'));
 const DebtsPage = lazy(() => import('./pages/DebtsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
-// Modals
-import AIChatModal from './components/chat/AIChatModal';
-import TransactionModal from './components/modals/TransactionModal';
-import AIContextModal from './components/modals/AIContextModal';
-import TransferFundsModal from './components/modals/TransferFundsModal';
-import AddRecurringTransactionModal from './components/modals/AddRecurringTransactionModal';
+// Modals (Lazy Loaded)
+const AIChatModal = lazy(() => import('./components/chat/AIChatModal'));
+const TransactionModal = lazy(() => import('./components/modals/TransactionModal'));
+const AIContextModal = lazy(() => import('./components/modals/AIContextModal'));
+const TransferFundsModal = lazy(() => import('./components/modals/TransferFundsModal'));
+const AddRecurringTransactionModal = lazy(() => import('./components/modals/AddRecurringTransactionModal'));
 
 // Components
 import GlobalErrorBanner from './components/GlobalErrorBanner';
-import VersionHistorySidebar from './components/VersionHistorySidebar';
 
 export default function App() {
     const { user, isAuthLoading, handleGoogleLogin, handleLogout } = useAuth();
@@ -48,7 +47,6 @@ export default function App() {
     const [globalTransactionInitialData, setGlobalTransactionInitialData] = useState(null);
     const [isGlobalTransferOpen, setIsGlobalTransferOpen] = useState(false);
     const [isGlobalRecurringOpen, setIsGlobalRecurringOpen] = useState(false);
-    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
     const [activePage, setActivePage] = useState(() => getPageFromLocation());
 
@@ -320,7 +318,6 @@ export default function App() {
             onLogout={handleLogout}
             theme={theme}
             onToggleTheme={toggleTheme}
-            onOpenHistory={() => setIsHistoryOpen(true)}
         >
             {renderPage()}
 
@@ -377,83 +374,87 @@ export default function App() {
                         <Plus className="w-6 h-6" />
                     </button>
 
-                    <TransactionModal
-                        isOpen={isGlobalTransactionOpen}
-                        onClose={() => {
-                            setIsGlobalTransactionOpen(false);
-                            setGlobalTransactionInitialData(null);
-                        }}
-                        onSave={handleGlobalSaveTransaction}
-                        onDelete={async (id) => {
-                            if (!user) return;
-                            try {
-                                await deleteTransaction(user.uid, id, globalTransactionInitialData);
-                                setIsGlobalTransactionOpen(false);
-                                setGlobalTransactionInitialData(null);
-                            } catch (err) {
-                                alert('Lỗi khi xóa giao dịch: ' + err.message);
-                            }
-                        }}
-                        categories={categories}
-                        wallets={wallets}
-                        initialData={globalTransactionInitialData}
-                    />
+                    <Suspense fallback={null}>
+                        {isGlobalTransactionOpen && (
+                            <TransactionModal
+                                isOpen={isGlobalTransactionOpen}
+                                onClose={() => {
+                                    setIsGlobalTransactionOpen(false);
+                                    setGlobalTransactionInitialData(null);
+                                }}
+                                onSave={handleGlobalSaveTransaction}
+                                onDelete={async (id) => {
+                                    if (!user) return;
+                                    try {
+                                        await deleteTransaction(user.uid, id, globalTransactionInitialData);
+                                        setIsGlobalTransactionOpen(false);
+                                        setGlobalTransactionInitialData(null);
+                                    } catch (err) {
+                                        alert('Lỗi khi xóa giao dịch: ' + err.message);
+                                    }
+                                }}
+                                categories={categories}
+                                wallets={wallets}
+                                initialData={globalTransactionInitialData}
+                            />
+                        )}
 
-                    <TransferFundsModal
-                        isOpen={isGlobalTransferOpen}
-                        onClose={() => setIsGlobalTransferOpen(false)}
-                        wallets={wallets}
-                        onSave={async (formData) => {
-                            if (!user) return;
-                            try {
-                                await addTransaction(user.uid, formData);
-                                setIsGlobalTransferOpen(false);
-                            } catch (err) {
-                                alert('Lỗi: ' + err.message);
-                            }
-                        }}
-                    />
+                        {isGlobalTransferOpen && (
+                            <TransferFundsModal
+                                isOpen={isGlobalTransferOpen}
+                                onClose={() => setIsGlobalTransferOpen(false)}
+                                wallets={wallets}
+                                onSave={async (formData) => {
+                                    if (!user) return;
+                                    try {
+                                        await addTransaction(user.uid, formData);
+                                        setIsGlobalTransferOpen(false);
+                                    } catch (err) {
+                                        alert('Lỗi: ' + err.message);
+                                    }
+                                }}
+                            />
+                        )}
 
-                    <AddRecurringTransactionModal
-                        isOpen={isGlobalRecurringOpen}
-                        onClose={() => setIsGlobalRecurringOpen(false)}
-                        categories={categories}
-                        user={user}
-                        wallets={wallets}
-                    />
-                    
-                    <AIChatModal 
-                        isOpen={isGlobalAIChatOpen}
-                        onClose={() => setIsGlobalAIChatOpen(false)}
-                        user={user}
-                        categories={categories}
-                        aiMemories={aiMemories}
-                        abbreviations={abbreviations}
-                        wallets={wallets}
-                        payers={payers}
-                        debtors={debtors}
-                        debts={debts}
-                        recurringTransactions={recurringTransactions}
-                        onOpenContextWallet={() => setIsGlobalContextWalletOpen(true)}
-                    />
+                        {isGlobalRecurringOpen && (
+                            <AddRecurringTransactionModal
+                                isOpen={isGlobalRecurringOpen}
+                                onClose={() => setIsGlobalRecurringOpen(false)}
+                                categories={categories}
+                                user={user}
+                                wallets={wallets}
+                            />
+                        )}
+                        
+                        {isGlobalAIChatOpen && (
+                            <AIChatModal 
+                                isOpen={isGlobalAIChatOpen}
+                                onClose={() => setIsGlobalAIChatOpen(false)}
+                                user={user}
+                                categories={categories}
+                                aiMemories={aiMemories}
+                                abbreviations={abbreviations}
+                                wallets={wallets}
+                                payers={payers}
+                                debtors={debtors}
+                                debts={debts}
+                                recurringTransactions={recurringTransactions}
+                                onOpenContextWallet={() => setIsGlobalContextWalletOpen(true)}
+                            />
+                        )}
 
-                    <AIContextModal
-                        isOpen={isGlobalContextWalletOpen}
-                        onClose={() => setIsGlobalContextWalletOpen(false)}
-                        user={user}
-                        aiMemories={aiMemories}
-                        abbreviations={abbreviations}
-                        categories={categories}
-                    />
+                        {isGlobalContextWalletOpen && (
+                            <AIContextModal
+                                isOpen={isGlobalContextWalletOpen}
+                                onClose={() => setIsGlobalContextWalletOpen(false)}
+                                user={user}
+                                aiMemories={aiMemories}
+                                abbreviations={abbreviations}
+                                categories={categories}
+                            />
+                        )}
+                    </Suspense>
                 </>
-            )}
-
-            {user && (
-                <VersionHistorySidebar 
-                    isOpen={isHistoryOpen} 
-                    onClose={() => setIsHistoryOpen(false)} 
-                    user={user} 
-                />
             )}
             
             <GlobalErrorBanner />
